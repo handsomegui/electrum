@@ -96,13 +96,13 @@ Create translations (optional)::
 
     ./contrib/make_locale
 
-To create binaries, create the 'packages' directory::
+Create the 'packages' directory::
 
     ./contrib/make_packages
 
     ln -s contrib/packages packages
 
-Now, you can py2app (make sure you have all the required python packages also on your system -- see contrib/requirements_osx.txt)::
+Now, you run can py2app (if it complains about missing python packages, use pip to install packages listed in contrib/requirements_osx.txt)::
 
     python setup-release.py py2app
 
