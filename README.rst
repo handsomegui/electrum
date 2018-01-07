@@ -107,7 +107,7 @@ Now, you run can py2app (if it complains about missing python packages, use pip 
 
     python setup-release.py py2app
 
-Now, you'll have a dist/Electron-Cash.app, but it won't quite work.  You need to do some crazy magic to get python to see the files properly. Fortunately for you, I already went to the trouble to figure out this magic, and it's embodied in the fix_libs_osx.sh script. Run it.::
+Now, you'll have a dist/Electron-Cash.app, but it won't quite work.  You need to do some crazy magic to get python to see the files properly. Fortunately for you, I already went to the trouble to figure out this magic, and it's embodied in the fix_libs_osx.sh script. Run this script::
 
     contrib/fix_libs_osx.sh
 
