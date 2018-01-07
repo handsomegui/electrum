@@ -83,9 +83,26 @@ This directory contains the python dependencies used by Electron Cash.
 Mac OS X / macOS
 --------
 
-Do all the stuff listed under 'Development Version' and 'Creating Binaries' above, and in addition:: 
+
+Compile the icons file for Qt (make sure pyrcc5 is installed)::
+
+    pyrcc5 icons.qrc -o gui/qt/icons_rc.py
+
+Compile the protobuf description file (make sure protoc is installed)::
+
+    protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto
+
+Create translations (optional)::
+
+    ./contrib/make_locale
+
+To create binaries, create the 'packages' directory::
+
+    ./contrib/make_packages
 
     ln -s contrib/packages packages
+
+Now, you can py2app (make sure you have all the required python packages also on your system -- see contrib/requirements_osx.txt)::
 
     python setup-release.py py2app
 
