@@ -83,6 +83,7 @@ This directory contains the python dependencies used by Electron Cash.
 Mac OS X / macOS
 --------
 
+Requires python3.5+, pyqt5, protoc, gettext, pycurl, pyqt5-devtools, and possibly other packages. Use MacPorts or Brew to install these (tested on MacPorts).
 
 Compile the icons file for Qt (make sure pyrcc5 is installed)::
 
