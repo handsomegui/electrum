@@ -43,6 +43,7 @@ For reasons that aren't entirely clear to me (but likely due to the way libPytho
  - **Strip Debug Symbols During Copy** = NO
  - **Strip Linked Product** = NO
  - **Strip Style** = Debugging Symbols
+ - **Enable Bitcode** = NO
    
 For more information, see this stackoverflow post: https://stackoverflow.com/questions/22261753/ios-app-wont-start-on-testflight-ad-hoc-distribution
 
