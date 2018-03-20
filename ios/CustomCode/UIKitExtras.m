@@ -6,9 +6,11 @@
 //  Copyright 2009 Calin Culianu <calin.culianu@gmail.com>. All rights reserved.
 //
 
-#import "UIViewExtras.h"
+#import "UIKitExtras.h"
 #import <QuartzCore/QuartzCore.h>
 #include <stdlib.h>
+#import <objc/objc-runtime.h>
+
 #define kGuiAnimDur 0.3 /* in seconds */
 
 static double Rand(double lo, double hi)
@@ -233,3 +235,39 @@ static double Rand(double lo, double hi)
 	}
 }
 @end
+
+
+@implementation UIControl (UIControlBlockAction)
+
+static long UIButtonBlockKey = 0xb10cb10c;
+- (void)callActionBlock:(id)sender {
+    ActionBlock block = (ActionBlock)objc_getAssociatedObject(self, &UIButtonBlockKey);
+    if (block) {
+        block(sender);
+    }
+}
+
+- (void)handleControlEvent:(UIControlEvents)event withBlock:(ActionBlock)block {
+    objc_setAssociatedObject(self, &UIButtonBlockKey, block, OBJC_ASSOCIATION_COPY);
+    [self addTarget:self action:@selector(callActionBlock:) forControlEvents:event];
+}
+
+
+@end
+
+// UIView+ViewRecursion.m
+@implementation UIView (ViewRecursion)
+- (NSArray * )allSubviewsRecursively
+{
+    NSMutableArray *ret = [NSMutableArray new];
+    NSArray *svs = self.subviews;
+    for (UIView *sv in svs) {
+        [ret addObject:sv];
+        [ret addObjectsFromArray:[sv allSubviewsRecursively]];
+    }
+    return ret;
+}
+@end
+
+
+

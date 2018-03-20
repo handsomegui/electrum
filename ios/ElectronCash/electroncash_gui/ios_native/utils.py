@@ -67,8 +67,8 @@ def get_user_dir():
 
 def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
     if view is None: return
-    view.userInteractionEnabled = b
-    view.alpha = float(1.0 if b else 0.3)
+    view.userInteractionEnabled = bool(b)
+    view.alpha = float(1.0 if bool(b) else 0.3)
     view.setNeedsDisplay()
 
 

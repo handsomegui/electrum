@@ -28,3 +28,13 @@
 - (UIImage *) renderToImage:(CGRect)rectInView;
 @end
 
+
+typedef void(^ActionBlock)(UIControl *);
+@interface UIControl (UIControlBlockAction)
+- (void)handleControlEvent:(UIControlEvents)event withBlock:(ActionBlock)block;
+@end
+
+@interface UIView (ViewRecursion)
+- (NSArray *) allSubviewsRecursively;
+@end
+

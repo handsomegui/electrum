@@ -30,6 +30,8 @@ import traceback
 import bz2
 import base64
 import time
+import math
+import re
 from datetime import datetime
 from decimal import Decimal
 from functools import partial
@@ -43,6 +45,7 @@ from . import addresses
 from . import send
 from . import receive
 from . import prefs
+from . import password_dialog
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -723,8 +726,9 @@ class ElectrumGui(PrintError):
             print("Network status button pushed.. TODO, implement...")
             utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Network setup dialog unimplemented -- coming soon!", 2.0)
         elif but.tag == TAG_PASSWD:
-            print("Password lock button pushed.. TODO, implement...")
-            utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Password/lock dialog unimplemented -- coming soon!", 2.0)
+            #print("Password lock button pushed.. TODO, implement...")
+            #utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Password/lock dialog unimplemented -- coming soon!", 2.0)
+            self.show_change_password()
         elif but.tag == TAG_SEED:
             print("Seed button pushed.. TODO, implement...")
             utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Seed dialog unimplemented -- coming soon!", 2.0)
@@ -1191,6 +1195,15 @@ class ElectrumGui(PrintError):
         utils.WaitingDialog(self.tabController, _('Broadcasting transaction...'),
                             broadcast_thread, broadcast_done, on_error)
 
+
+    def show_change_password(self, msg = None):
+        if self.wallet is None or self.wallet.storage is None: return
+        vc = password_dialog.PWChangeVC.new().autorelease()
+        vc.msg = msg
+        vc.modalPresentationStyle = UIModalPresentationOverFullScreen#UIModalPresentationOverCurrentContext
+        vc.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
+        vc.disablesAutomaticKeyboardDismissal = False
+        self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):

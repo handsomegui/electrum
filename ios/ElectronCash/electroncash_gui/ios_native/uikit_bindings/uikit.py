@@ -579,6 +579,11 @@ UIModalPresentationOverFullScreen = 5
 UIModalPresentationOverCurrentContext = 6
 UIModalPresentationPopover = 7
 UIModalPresentationNone  = -1
+# UIModalTransitionStyle
+UIModalTransitionStyleCoverVertical = 0
+UIModalTransitionStyleFlipHorizontal = 1
+UIModalTransitionStyleCrossDissolve = 2
+UIModalTransitionStylePartialCurl = 3
 
 # Locale stuff
 NSLocale = ObjCClass("NSLocale")
@@ -637,6 +642,11 @@ UIUserInterfaceIdiomPhone = 0  # NS_ENUM_AVAILABLE_IOS(3_2), // iPhone and iPod 
 UIUserInterfaceIdiomPad = 1  # NS_ENUM_AVAILABLE_IOS(3_2), // iPad style UI
 UIUserInterfaceIdiomTV = 2  # NS_ENUM_AVAILABLE_IOS(9_0), // Apple TV style UI
 UIUserInterfaceIdiomCarPlay = 3  # NS_ENUM_AVAILABLE_IOS(9_0), // CarPlay style UI
+
+def UI_USER_INTERFACE_IDIOM() -> int:
+    if UIDevice.currentDevice.respondsToSelector_(SEL(b'userInterfaceIdiom')):
+        return UIDevice.currentDevice.userInterfaceIdiom
+    return UIUserInterfaceIdiomPhone
 
 #UIStatusBarStyle
 UIStatusBarStyleDefault = 0  #, // Dark content, for use on light backgrounds
