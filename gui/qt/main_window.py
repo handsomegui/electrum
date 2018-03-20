@@ -656,7 +656,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def base_unit(self):
         assert self.decimal_point in [2, 5, 8]
         if self.decimal_point == 2:
-            return 'bits'
+            return 'cash'
         if self.decimal_point == 5:
             return 'mBCH'
         if self.decimal_point == 8:
@@ -1288,12 +1288,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return request_password
 
     def read_send_tab(self):
+
+        isInvoice= False;
+
         if self.payment_request and self.payment_request.has_expired():
             self.show_error(_('Payment request has expired'))
             return
         label = self.message_e.text()
 
         if self.payment_request:
+            isInvoice = True;
             outputs = self.payment_request.get_outputs()
         else:
             errors = self.payto_e.get_errors()
@@ -1321,7 +1325,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         freeze_fee = self.fee_e.isVisible() and self.fee_e.isModified() and (self.fee_e.text() or self.fee_e.hasFocus())
         fee = self.fee_e.get_amount() if freeze_fee else None
-        coins = self.get_coins()
+        coins = self.get_coins(isInvoice)
         return outputs, fee, label, coins
 
     def do_preview(self):
@@ -1575,13 +1579,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         cash_address.setReadOnly(True)
         legacy_address = QLineEdit()
         legacy_address.setReadOnly(True)
-        bitpay_address = QLineEdit()
-        bitpay_address.setReadOnly(True)
 
         widgets = [
             (cash_address, Address.FMT_CASHADDR),
             (legacy_address, Address.FMT_LEGACY),
-            (bitpay_address, Address.FMT_BITPAY),
         ]
 
         def convert_address():
@@ -1598,10 +1599,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         source_address.textChanged.connect(convert_address)
 
         label = WWLabel(_(
-            "This tool helps convert between 3 address formats for Bitcoin "
+            "This tool helps convert between address formats for Bitcoin "
             "Cash addresses.\nYou are encouraged to use the 'Cash address' "
-            "format.\nThe BitPay format is deprecated and support is for "
-            "a transitional period only."
+            "format."
         ))
 
         w = QWidget()
@@ -1615,8 +1615,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         grid.addWidget(cash_address, 1, 1)
         grid.addWidget(QLabel(_('Legacy address')), 2, 0)
         grid.addWidget(legacy_address, 2, 1)
-        grid.addWidget(QLabel(_('BitPay address')), 3, 0)
-        grid.addWidget(bitpay_address, 3, 1)
         w.setLayout(grid)
 
         vbox = QVBoxLayout()
@@ -1671,11 +1669,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.history_list.update()
             self.clear_receive_tab()
 
-    def get_coins(self):
+    def get_coins(self, isInvoice = False):
         if self.pay_from:
             return self.pay_from
         else:
-            return self.wallet.get_spendable_coins(None, self.config)
+            return self.wallet.get_spendable_coins(None, self.config,isInvoice)
 
     def spend_coins(self, coins):
         self.set_pay_from(coins)
@@ -2681,9 +2679,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         SSL_id_e.setReadOnly(True)
         id_widgets.append((SSL_id_label, SSL_id_e))
 
-        units = ['BCH', 'mBCH', 'bits']
+        units = ['BCH', 'mBCH', 'cash']
         msg = _('Base unit of your wallet.')\
-              + '\n1BCH=1000mBCH.\n' \
+              + '\n1 BCH = 1,000 mBCH = 1,000,000 cash.\n' \
               + _(' These settings affects the fields in the Send tab')+' '
         unit_label = HelpLabel(_('Base unit') + ':', msg)
         unit_combo = QComboBox()
@@ -2699,7 +2697,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.decimal_point = 8
             elif unit_result == 'mBCH':
                 self.decimal_point = 5
-            elif unit_result == 'bits':
+            elif unit_result == 'cash':
                 self.decimal_point = 2
             else:
                 raise Exception('Unknown base unit')
