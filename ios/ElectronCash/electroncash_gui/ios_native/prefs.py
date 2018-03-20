@@ -21,7 +21,7 @@ TAG_BLOCK_EXPLORER = 304
 TAG_FIAT_CURRENCY = 401
 TAG_FIAT_EXCHANGE = 404
 
-UNITS = { 'BCH': 8, 'mBCH': 5, 'bits' : 2}
+UNITS = { 'BCH': 8, 'mBCH': 5, 'cash' : 2}
 UNIT_KEYS = list(UNITS.keys())
 UNIT_KEYS.sort(key=lambda x: UNITS[x],reverse=True)
 

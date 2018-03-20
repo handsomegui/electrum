@@ -796,7 +796,7 @@ class ElectrumGui(PrintError):
     def base_unit(self):
         assert self.decimal_point in [2, 5, 8]
         if self.decimal_point == 2:
-            return 'bits'
+            return 'cash'
         if self.decimal_point == 5:
             return 'mBCH'
         if self.decimal_point == 8:
