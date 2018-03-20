@@ -30,8 +30,6 @@ import traceback
 import bz2
 import base64
 import time
-import math
-import re
 from datetime import datetime
 from decimal import Decimal
 from functools import partial
