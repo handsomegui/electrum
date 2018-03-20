@@ -25,6 +25,7 @@
 # SOFTWARE.
 import math
 import re
+from typing import Callable, Any
 from .uikit_bindings import *
 from . import utils
 from .custom_objc import *
@@ -33,8 +34,12 @@ from electroncash.i18n import _
 from electroncash import WalletStorage, Wallet
        
 
-def Create_PWChangeVC(msg : str, hasPW : bool, isEnc : bool) -> ObjCInstance:
-    return PWChangeVC.pwChangeVCWithMessage_hasPW_isEncrypted_(ns_from_py(msg), hasPW, isEnc)
+def Create_PWChangeVC(msg : str, hasPW : bool, isEnc : bool,
+                      callback : Callable[[str,str,bool], None] # pass a callback that accepts oldPW, newPW, encrypt_wallet_bool
+                      ) -> ObjCInstance:
+    ret = PWChangeVC.pwChangeVCWithMessage_hasPW_isEncrypted_(ns_from_py(msg), hasPW, isEnc)
+    utils.add_callback(ret, 'okcallback', callback)
+    return ret
 
 class PWChangeVC(UIViewController):
     okBut = objc_property()
@@ -46,6 +51,7 @@ class PWChangeVC(UIViewController):
     msg = objc_property()
     colors = objc_property()
     encSW = objc_property()
+    encTit = objc_property()
     
     @objc_classmethod
     def pwChangeVCWithMessage_hasPW_isEncrypted_(cls : ObjCInstance, msg : ObjCInstance, hasPW : bool, isEnc : bool) -> ObjCInstance:
@@ -69,14 +75,17 @@ class PWChangeVC(UIViewController):
         self.msg = None
         self.colors = None
         self.encSW = None
+        self.encTit = None
+        utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
     
     @objc_method
     def doChkOkBut(self) -> None:
-        if self.okBut:
-            utils.uiview_set_enabled(self.okBut,
-                                     (not self.hasPW or self.curPW.text) 
-                                     and self.pw1 and self.pw2 and self.pw1.text and self.pw2.text and self.pw1.text == self.pw2.text)
+        is_en = bool( (not self.hasPW or self.curPW.text) and self.pw1.text == self.pw2.text )
+#        for a in [self.okBut, self.encSW, self.encTit]:
+        for a in [self.okBut]:
+            if a: utils.uiview_set_enabled(a, is_en)
+
   
     @objc_method
     def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
@@ -92,8 +101,8 @@ class PWChangeVC(UIViewController):
             o = UIApplication.sharedApplication.statusBarOrientation
             if o in [UIInterfaceOrientationLandscapeLeft,UIInterfaceOrientationLandscapeRight]:
                 frame.origin.y -= 300
-                print("WAS LANDSCAPE")
-            print("frame=%f,%f,%f,%f"%(frame.origin.x,frame.origin.y,frame.size.width,frame.size.height))
+                #print("WAS LANDSCAPE")
+            #print("frame=%f,%f,%f,%f"%(frame.origin.x,frame.origin.y,frame.size.width,frame.size.height))
             sv.scrollRectToVisible_animated_(frame, True)
         
     @objc_method
@@ -164,7 +173,8 @@ class PWChangeVC(UIViewController):
         self.pw2 = v.viewWithTag_(310)
         self.curPW = v.viewWithTag_(110)
         self.encSW = v.viewWithTag_(510)
-        self.encSW.setOn_animated_(is_encrypted, False)
+        self.encSW.setOn_animated_(bool(is_encrypted or not has_pw), False)
+        self.encTit = v.viewWithTag_(500)
         pwStrLbl = v.viewWithTag_(410)
         pwStrTitLbl = v.viewWithTag_(400)
         myGreen = UIColor.colorWithRed_green_blue_alpha_(0.0,0.75,0.0,1.0)
@@ -177,6 +187,15 @@ class PWChangeVC(UIViewController):
         def onOk(but_in : objc_id) -> None:
             but = ObjCInstance(but_in)
             #print("but tag = ",but.tag)
+            cb=utils.get_callback(self, 'okcallback')
+            oldpw = self.curPW.text
+            newpw = self.pw1.text
+            enc = bool(self.encSW.isOn() and newpw)
+            oldpw = oldpw if oldpw else None
+            newpw = newpw if newpw else None
+            def onCompletion() -> None:
+                cb(oldpw, newpw, enc)
+            self.dismissViewControllerAnimated_completion_(True,onCompletion)
         def onChg(oid : objc_id) -> None:
             tf = ObjCInstance(oid)
             #print("value changed ", tf.tag,str(":"),tf.text)

@@ -1193,11 +1193,26 @@ class ElectrumGui(PrintError):
         utils.WaitingDialog(self.tabController, _('Broadcasting transaction...'),
                             broadcast_thread, broadcast_done, on_error)
 
+    def change_password(self, oldpw : str, newpw : str, enc : bool) -> None:
+        print("change pw, old=",oldpw,"new=",newpw, "enc=", str(enc))
+        try:
+            self.wallet.update_password(oldpw, newpw, enc)
+        except BaseException as e:
+            self.show_error(str(e))
+            return
+        except:
+            traceback.print_exc(file=sys.stdout)
+            self.show_error(_('Failed to update password'))
+            return
+        msg = _('Password was updated successfully') if newpw else _('Password is disabled, this wallet is not protected')
+        self.show_message(msg, title=_("Success"))
+        self.update_lock_icon()
+        
 
     def show_change_password(self, msg = None):
         if self.wallet is None or self.wallet.storage is None: return
-        vc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted())
-#        vc = password_dialog.Create_PWChangeVC(msg, True, False)
+        vc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted(), self.change_password)
+#        vc = password_dialog.Create_PWChangeVC(msg, True, False, self.change_password)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
 
     # this method is called by Electron Cash libs to start the GUI
