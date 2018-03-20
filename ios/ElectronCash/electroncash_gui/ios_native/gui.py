@@ -1198,11 +1198,8 @@ class ElectrumGui(PrintError):
 
     def show_change_password(self, msg = None):
         if self.wallet is None or self.wallet.storage is None: return
-        vc = password_dialog.PWChangeVC.new().autorelease()
-        vc.msg = msg
-        vc.modalPresentationStyle = UIModalPresentationOverFullScreen#UIModalPresentationOverCurrentContext
-        vc.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
-        vc.disablesAutomaticKeyboardDismissal = False
+        vc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted())
+#        vc = password_dialog.Create_PWChangeVC(msg, True, False)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
 
     # this method is called by Electron Cash libs to start the GUI

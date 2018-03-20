@@ -27,12 +27,14 @@ import math
 import re
 from .uikit_bindings import *
 from . import utils
-from . import gui
 from .custom_objc import *
 
 from electroncash.i18n import _
 from electroncash import WalletStorage, Wallet
        
+
+def Create_PWChangeVC(msg : str, hasPW : bool, isEnc : bool) -> ObjCInstance:
+    return PWChangeVC.pwChangeVCWithMessage_hasPW_isEncrypted_(ns_from_py(msg), hasPW, isEnc)
 
 class PWChangeVC(UIViewController):
     okBut = objc_property()
@@ -40,18 +42,33 @@ class PWChangeVC(UIViewController):
     pw2 = objc_property()
     curPW = objc_property()
     hasPW = objc_property()
+    isEnc = objc_property()
     msg = objc_property()
     colors = objc_property()
+    encSW = objc_property()
+    
+    @objc_classmethod
+    def pwChangeVCWithMessage_hasPW_isEncrypted_(cls : ObjCInstance, msg : ObjCInstance, hasPW : bool, isEnc : bool) -> ObjCInstance:
+        ret = PWChangeVC.new().autorelease()
+        ret.hasPW = hasPW
+        ret.isEnc = isEnc
+        ret.msg = msg
+        ret.modalPresentationStyle = UIModalPresentationOverFullScreen#UIModalPresentationOverCurrentContext
+        ret.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
+        ret.disablesAutomaticKeyboardDismissal = False
+        return ret
     
     @objc_method
     def dealloc(self) -> None:
         self.okBut = None
         self.hasPW = None
+        self.isEnc = None
         self.curPW = None
         self.pw1 = None
         self.pw2 = None
         self.msg = None
         self.colors = None
+        self.encSW = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -102,9 +119,8 @@ class PWChangeVC(UIViewController):
     
     @objc_method
     def loadView(self) -> None:
-        parent = gui.ElectrumGui.gui
-        is_encrypted = parent.wallet.storage.is_encrypted()
-        has_pw = parent.wallet.has_password()
+        is_encrypted = self.isEnc
+        has_pw = self.hasPW
         msg = self.msg
         if msg is None:
             if not has_pw:
@@ -116,7 +132,7 @@ class PWChangeVC(UIViewController):
                 else:
                     msg = _('Your wallet is password protected and encrypted.')
                 msg += ' ' + _('Use this dialog to change your password.')
-        self.hasPW = has_pw
+        self.msg = msg
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ChangePassword",None,None)
         v = objs[0]
         allviews = v.allSubviewsRecursively()
@@ -147,6 +163,8 @@ class PWChangeVC(UIViewController):
         self.pw1 = v.viewWithTag_(210)
         self.pw2 = v.viewWithTag_(310)
         self.curPW = v.viewWithTag_(110)
+        self.encSW = v.viewWithTag_(510)
+        self.encSW.setOn_animated_(is_encrypted, False)
         pwStrLbl = v.viewWithTag_(410)
         pwStrTitLbl = v.viewWithTag_(400)
         myGreen = UIColor.colorWithRed_green_blue_alpha_(0.0,0.75,0.0,1.0)
