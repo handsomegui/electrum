@@ -91,5 +91,6 @@ app = BUNDLE(exe,
              bundle_identifier=None,
              info_plist = {
                  'NSHighResolutionCapable':'True'
+                 'NSSupportsAutomaticGraphicsSwitching': 'True'
              }
 )
