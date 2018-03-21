@@ -53,9 +53,11 @@ from electroncash.address import Address
 # from electroncash.synchronizer import Synchronizer
 # from electroncash.verifier import SPV
 # from electroncash.util import DebugMem
-from electroncash.util import UserCancelled, print_error, format_satoshis, format_satoshis_plain, PrintError, timestamp_to_datetime
+from electroncash.util import UserCancelled, print_error, format_satoshis, format_satoshis_plain, PrintError, timestamp_to_datetime, InvalidPassword
 import electroncash.web as web
 
+class WalletFileNotFound(Exception):
+    pass
 
 # from electroncash.wallet import Abstract_Wallet
 
@@ -932,20 +934,37 @@ class ElectrumGui(PrintError):
         return self.tabController.selectedViewController
     
     # can be called from any thread, always runs in main thread
-    def show_error(self, message, title = _("Error"), onOk = None):
-        return self.show_message(message, title, onOk)
+    def show_error(self, message, title = _("Error"), onOk = None, localRunLoop = False):
+        return self.show_message(message, title, onOk, localRunLoop)
+    
+    # full stop question for user -- appropriate for send tx dialog
+    def question(self, message, title = _("Question")) -> bool:
+        ret = False
+        def onOk() -> None:
+            nonlocal ret
+            ret = True
+        self.show_message(message=message, title=title, onOk=onOk, localRunLoop = True, hasCancel = True)
+        return ret
+    
     # can be called from any thread, always runs in main thread
-    def show_message(self, message, title = _("Information"), onOk = None):
+    def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False):
         def func() -> None:
             vc = self.get_presented_viewcontroller() 
             actions = [ [_('OK')] ]
             if onOk is not None and callable(onOk): actions[0].append(onOk)
+            cancelTxt = None
+            if hasCancel:
+                cancelTxt = _('Cancel')
+                actions.append( [ cancelTxt ] )
             utils.show_alert(
                 vc = vc,
                 title = title,
                 message = message,
-                actions = actions
+                actions = actions,
+                localRunLoop = localRunLoop,
+                cancel = cancelTxt,
             )
+        if localRunLoop: return utils.do_in_main_thread_sync(func)
         return utils.do_in_main_thread(func)
 
     def on_pr(self, request):
@@ -1080,15 +1099,38 @@ class ElectrumGui(PrintError):
         self.wallet = w
 
     @staticmethod
-    def prompt_password(prmpt, dummy=0):
-        print("prompt_password(%s,%s) thread=%s mainThread?=%s"%(prmpt,str(dummy),NSThread.currentThread.description,str(NSThread.currentThread.isMainThread)))
+    def forever_prompt_for_password_on_wallet(path_or_storage, msg = None) -> str:
+        storage = WalletStorage(path_or_storage, manual_upgrades=True) if not isinstance(path_or_storage, WalletStorage) else path_or_storage
+        if not storage.file_exists():
+            raise WalletFileNotFound('Wallet File Not Found')
+        pw_ok = False
+        password = None
+        while not pw_ok and storage.is_encrypted():
+            password = ElectrumGui.prompt_password(msg)
+            if not password:
+                ElectrumGui.gui.show_error(message=_("A password is required to open this wallet"), title=_('Password Required'), localRunLoop = True)
+                continue
+            try:
+                storage.decrypt(password)
+            except:
+                ElectrumGui.gui.show_error(message=_("The password was incorrect for this encrypted wallet, please try again."),
+                                           title=_('Password Incorrect'), localRunLoop = True)
+                continue
+            pw_ok = True
+        return password
+
+    @staticmethod
+    def prompt_password(prmpt = None, dummy=0):
+        #print("prompt_password(%s,%s) thread=%s mainThread?=%s"%(prmpt,str(dummy),NSThread.currentThread.description,str(NSThread.currentThread.isMainThread)))
         if ElectrumGui.gui:
-            pw = password_dialog.prompt_password_local_runloop(ElectrumGui.gui.get_presented_viewcontroller())
+            pw = password_dialog.prompt_password_local_runloop(vc=ElectrumGui.gui.get_presented_viewcontroller(),
+                                                                prompt=prmpt)
             print("Got pw: ", str(pw))
+            return pw
         return "bchbch"
     
-    def password_dialog(self, msg) -> str:
-        print("PASSWORD_DIALOG UNIMPLEMTNED. TODO: IMPLEMENT ME!!")
+    def password_dialog(self, msg = None) -> str:
+        #print("PASSWORD_DIALOG UNIMPLEMTNED. TODO: IMPLEMENT ME!!")
         return ElectrumGui.prompt_password(msg)
 
     def generate_wallet(self, path):
@@ -1099,11 +1141,7 @@ class ElectrumGui(PrintError):
         storage = WalletStorage(path, manual_upgrades=True)
         if not storage.file_exists():
             return
-        if storage.is_encrypted():
-            password = ElectrumGui.prompt_password("EnterPasswd",0)
-            if not password:
-                return
-            storage.decrypt(password)
+        ElectrumGui.forever_prompt_for_password_on_wallet(storage, "Test wallet password is: bchbch")
         if storage.requires_split():
             return
         if storage.requires_upgrade():
@@ -1114,20 +1152,24 @@ class ElectrumGui(PrintError):
         return wallet
 
     def do_wallet_stuff(self, path, uri):
+        wallet = None
+        password = None
         try:
-            wallet = self.daemon.load_wallet(path, ElectrumGui.prompt_password("PassPrompt1"))
+            password = ElectrumGui.forever_prompt_for_password_on_wallet(path)            
+            wallet = self.daemon.load_wallet(path, password)
+        except WalletFileNotFound as e:
+            pass # continue below to generate wallet
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
             return
         if not wallet:
-            storage = WalletStorage(path, manual_upgrades=True)
             try:
                 wallet = self.generate_wallet(path)
             except Exception as e:
                 print_error('[do_wallet_stuff] Exception caught', e)
             if not wallet:
                 print("NO WALLET!!!")
-                return
+                sys.exit(1)
             wallet.start_threads(self.daemon.network)
             self.daemon.add_wallet(wallet)
         #print("WALLET=%s synchronizer=%s"%(str(wallet),str(wallet.synchronizer)))
@@ -1142,8 +1184,9 @@ class ElectrumGui(PrintError):
 
         def on_error(exc_info):
             if not isinstance(exc_info[1], UserCancelled):
-                traceback.print_exception(*exc_info)
-                self.show_error(str(exc_info[1]))
+                if not isinstance(exc_info[1], InvalidPassword):
+                    traceback.print_exception(*exc_info)
+                utils.call_later(1.0, self.show_error, str(exc_info[1]))
         def on_signed(result):
             callback(True)
         def on_failed(exc_info):
@@ -1184,15 +1227,15 @@ class ElectrumGui(PrintError):
                 if status:
                     if tx_desc is not None and tx.is_complete():
                         self.wallet.set_label(tx.txid(), tx_desc)
-                    parent.show_message(_('Payment sent.') + '\n' + msg)
+                    utils.call_later(1.0, parent.show_message, _('Payment sent.') + '\n' + msg)
                     #self.invoice_list.update()
                     self.sendVC.clear()
                 else:
-                    parent.show_error(msg)
+                    utils.call_later(1.0, parent.show_error, msg)
         def on_error(exc_info):
             if not isinstance(exc_info[1], UserCancelled):
                 traceback.print_exception(*exc_info)
-                self.show_error(str(exc_info[1]))
+                utils.call_later(1.0, self.show_error, str(exc_info[1]))
 
         utils.WaitingDialog(self.tabController, _('Broadcasting transaction...'),
                             broadcast_thread, broadcast_done, on_error)

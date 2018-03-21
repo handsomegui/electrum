@@ -103,10 +103,18 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
                destructive: str = None, # name of the button you want to designate as destructive (ends up being red)
                style: int = UIAlertControllerStyleAlert, #or: UIAlertControllerStyleActionSheet
                completion: Callable[[],None] = None, # optional completion function that gets called when alert is presented
-               animated: bool = True # whether or not to animate the alert
+               animated: bool = True, # whether or not to animate the alert
+               localRunLoop: bool = False, # whether or not to create a local event loop and block until dialog finishes.. useful for full stop error messages and/or password dialogs
+               uiTextFieldHandlers : list = None # if you want to create custom UITextFields in this alert, and the alert'ss type is UIAlertControllerStyleAlert, pass a list of fully annotated callbacks taking an objc_id as arg and returning None, one for each desired text fields you want to create
                ) -> ObjCInstance:
-    assert NSThread.currentThread.isMainThread
+    if not NSThread.currentThread.isMainThread:
+        raise Exception('utils.show_alert can only be called from the main thread!')
     alert = UIAlertController.alertControllerWithTitle_message_preferredStyle_(title, message, style)
+    if uiTextFieldHandlers:
+        if style != UIAlertControllerStyleAlert:
+            raise ValueError('Cannot combine uiTextFieldHandlers with non-UIAlertControllerStyleAlert alerts!')
+        for h in uiTextFieldHandlers:
+            alert.addTextFieldWithConfigurationHandler_(Block(h)) # let's hope h is a callable of the right type with the right number of args else exception will be thrown here
     if type(actions) is dict:
         acts = []
         for k in actions.keys():
@@ -117,6 +125,7 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
         actions = acts
     ct=0
     fun_args_dict = dict()
+    got_callback = False
     for i,arr in enumerate(actions):
         has_callable = False
         fun_args = []
@@ -131,6 +140,8 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
         def onAction(act_in : objc_id) -> None:
             act = ObjCInstance(act_in)
             fargs = fun_args_dict.get(act.ptr.value,[])
+            nonlocal got_callback
+            got_callback = True
             if len(fargs):
                 #print("Calling action...")
                 fargs[0](*fargs[1:])
@@ -140,10 +151,16 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
         ct+=1
     def onCompletion() -> None:
         #print("On completion called..")
+        nonlocal got_callback
+        if not actions: got_callback = True
         if completion is not None:
             #print("Calling completion callback..")
             completion()
     vc.presentViewController_animated_completion_(alert,animated,onCompletion)
+    if localRunLoop:
+        while not got_callback:
+            NSRunLoop.currentRunLoop().runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
+        return None
     return alert
 
 # Useful for doing a "Please wait..." style screen that takes itself offscreen automatically after a delay
@@ -169,6 +186,15 @@ def do_in_main_thread(func : Callable, *args) -> Any:
         def VoidFun() -> None:
             func(*args)
         HelpfulGlue.performBlockInMainThread_sync_(VoidFun, False)
+    return None
+
+def do_in_main_thread_sync(func : Callable, *args) -> Any:
+    if NSThread.currentThread.isMainThread:
+        return func(*args)
+    else:
+        def VoidFun() -> None:
+            func(*args)
+        HelpfulGlue.performBlockInMainThread_sync_(VoidFun, True)
     return None
 
 def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
@@ -553,10 +579,10 @@ class TaskThread:
             try:
                 result = task.task()
                 do_in_main_thread(self.on_done, result, task.cb_done, task.cb_success)
-            except BaseException:
+            except:
                 do_in_main_thread(self.on_done, sys.exc_info(), task.cb_done, task.cb_error)
         #NSLog("Exiting worker thread...")
-        
+                
     def on_done(self, result, cb_done, cb):
         # This runs in the main thread.
         if cb_done:

@@ -596,7 +596,7 @@ class SendVC(UIViewController):
         # IN THE FUTURE IF WE WANT TO APPEND SOMETHING IN THE MSG ABOUT THE FEE, CODE IS COMMENTED OUT:
         #if fee > confirm_rate * tx.estimated_size() / 1000:
         #    msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
-
+        password = None
         if wallet().has_password():
             msg.append("")
             msg.append(_("Enter your password to proceed"))
@@ -604,11 +604,9 @@ class SendVC(UIViewController):
             if not password:
                 return
         else:
-            #msg.append(_('Proceed?'))
-            #password = None
-            #if not self.question('\n'.join(msg)):
-            #    return
-            pass
+            msg.append(_('Proceed?'))
+            if not parent().question('\n'.join(msg), _("Confirm Send")):
+                return
 
         def sign_done(success) -> None:
             if success:
