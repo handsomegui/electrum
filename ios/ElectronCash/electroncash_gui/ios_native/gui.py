@@ -923,11 +923,10 @@ class ElectrumGui(PrintError):
         return int( p * x ) if x > 0 else None
     
     def get_presented_viewcontroller(self) -> ObjCInstance:
-        if self.tabController:
-            return self.tabController if self.tabController.presentedViewController is None else self.tabController.presentedViewController
-        elif self.window and self.window.rootViewController:
-            return self.window.rootViewController
-        return None
+        rvc = self.window.rootViewController if self.window else None
+        if rvc is not None and rvc.presentedViewController is not None:
+            return rvc.presentedViewController
+        return rvc
 
     def get_current_nav_controller(self) -> ObjCInstance:
         return self.tabController.selectedViewController
