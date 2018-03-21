@@ -465,6 +465,7 @@ def present_qrcode_vc_for_data(vc : ObjCInstance, data : str, title : str = "QR 
     iv.autoresizeMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleBottomMargin
     iv.contentMode = UIViewContentModeScaleAspectFit
     iv.opaque = True
+    iv.backgroundColor = UIColor.whiteColor
     qvc.view = iv
     nav = UINavigationController.alloc().initWithRootViewController_(qvc).autorelease()
     vc.presentViewController_animated_completion_(nav,True,None)

@@ -44,6 +44,7 @@ from . import send
 from . import receive
 from . import prefs
 from . import password_dialog
+from . import seed_dialog
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -728,14 +729,10 @@ class ElectrumGui(PrintError):
         elif but.tag == TAG_PASSWD:
             self.show_change_password()
         elif but.tag == TAG_SEED:
-            print("Seed button pushed.. TODO, implement...")
-            utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Seed dialog unimplemented -- coming soon!", 2.0)
+            self.show_seed_dialog()
         elif but.tag == TAG_PREFS:
-            print("Prefs button pushed")
-            # for iOS8.0+ API which uses Blocks, but rubicon blocks seem buggy so we must do this
             self.get_presented_viewcontroller().presentViewController_animated_completion_(self.prefsNav, True, None)
         elif but.tag == TAG_CASHADDR:
-            print("CashAddr button pushed.. TODO, implement fully...")
             self.toggle_cashaddr_status_bar()
         else:
             print("Unknown button pushed, tag=%d"%int(but.tag))
@@ -1259,7 +1256,48 @@ class ElectrumGui(PrintError):
     def show_change_password(self, msg = None):
         if self.wallet is None or self.wallet.storage is None: return
         vc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted(), self.change_password)
-#        vc = password_dialog.Create_PWChangeVC(msg, True, False, self.change_password)
+        self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
+
+    def protected(func):
+        '''Password request wrapper.  The password is passed to the function
+        as the 'password' named argument.  "None" indicates either an
+        unencrypted wallet, or the user cancelled the password request.
+        An empty input is passed as the empty string.'''
+        def request_password(self, *args, **kwargs):
+            if self.wallet is None: return
+            password = None
+            while self.wallet.has_password():
+                password = self.password_dialog()
+                if password is None:
+                    # User cancelled password input
+                    return
+                try:
+                    self.wallet.check_password(password)
+                    break
+                except Exception as e:
+                    self.show_error(str(e), localRunLoop = True)
+                    continue
+
+            kwargs['password'] = password
+            return func(self, *args, **kwargs)
+        return request_password
+
+    @protected
+    def show_seed_dialog(self, password):
+        if self.wallet is None or self.wallet.storage is None: return
+        if not self.wallet.has_seed():
+            self.show_message(_('This wallet has no seed'))
+            return
+        keystore = self.wallet.get_keystore()
+        seed = ""
+        passphrase = ""
+        try:
+            seed = keystore.get_seed(password)
+            passphrase = keystore.get_passphrase(password)
+        except BaseException as e:
+            self.show_error(str(e))
+            return
+        vc = seed_dialog.Create_SeedDisplayVC(seed, passphrase)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
 
     # this method is called by Electron Cash libs to start the GUI

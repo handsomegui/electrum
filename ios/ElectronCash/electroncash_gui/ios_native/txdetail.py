@@ -445,11 +445,11 @@ class TxDetail(UIViewController):
             title = _("Options"),
             message = _("Transaction ID:") + " " + self.entry[1][:12] + "...",
             actions = [
-                [ 'Cancel' ],
+                [ _('Cancel') ],
                 [ _('Copy to clipboard'), self.onCopyBut_, None ],
                 [ _('Show as QR code'), self.onQRBut_, None ],
                 [ _("View on block explorer"), on_block_explorer ],
             ],
-            cancel = 'Cancel',
+            cancel = _('Cancel'),
             style = UIAlertControllerStyleActionSheet
         )

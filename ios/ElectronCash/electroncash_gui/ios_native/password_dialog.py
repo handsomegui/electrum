@@ -93,7 +93,7 @@ class PWChangeVC(UIViewController):
         # try and center the password text fields on the screen.. this is an ugly HACK.
         # todo: fixme!
         sv = self.viewIfLoaded 
-        if sv and isinstance(sv, ObjCClass('UIScrollView')):
+        if sv and isinstance(sv, UIScrollView):
             sb = UIScreen.mainScreen.bounds
             v = sv.subviews()[0]
             frame = v.frame
@@ -115,7 +115,7 @@ class PWChangeVC(UIViewController):
     def textFieldShouldReturn_(self, tf: ObjCInstance) -> bool:
         #print("textFieldShouldReturn", tf.tag)
         nextTf = self.view.viewWithTag_(tf.tag+100) if self.viewIfLoaded else None
-        if nextTf and isinstance(nextTf, ObjCClass('UITextField')):
+        if nextTf and isinstance(nextTf, UITextField):
             nextTf.becomeFirstResponder()
         else:
             tf.resignFirstResponder()
@@ -146,16 +146,16 @@ class PWChangeVC(UIViewController):
         v = objs[0]
         allviews = v.allSubviewsRecursively()
         for a in allviews:
-            if isinstance(a,ObjCClass('UILabel')):
+            if isinstance(a, UILabel):
                 # translate UI automatically since placeholder text has potential translations 
                 a.text = _(a.text)
-            elif isinstance(a,ObjCClass('UITextField')):
+            elif isinstance(a, UITextField):
                 a.delegate = self
                 old = a.placeholder
                 new = _(old)
                 newcolon = _(old + ':').replace(':','')
                 a.placeholder = new if new != old else newcolon
-            elif isinstance(a,ObjCClass('UIButton')):
+            elif isinstance(a, UIButton):
                 a.setTitle_forState_(_(a.titleForState_(UIControlStateNormal)), UIControlStateNormal)
         msgLbl = v.viewWithTag_(20)
         msgLbl.text = msg
