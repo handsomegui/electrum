@@ -232,3 +232,51 @@ def check_password_strength(password):
     password_strength = {0:"Weak",1:"Medium",2:"Strong",3:"Very Strong"}
     strength = min(3, int(score))
     return password_strength[strength] 
+
+def create_password_prompt_alert(onOk : Callable[[str],None], # provide a callback taking 1 arg (the password entered) if they hit ok
+                                 onCancel : Callable, # provide a callback taking 0 args if they hit cancel
+                                 prompt : str = None, title : str = None) -> ObjCInstance:
+    title =  _("Enter Password") if not title else title
+    prompt = _("Enter your password to proceed") if not prompt else prompt
+    alert = UIAlertController.alertControllerWithTitle_message_preferredStyle_(title, prompt, UIAlertControllerStyleAlert)
+    tf = None
+    def tfConfigHandler(oid : objc_id) -> None:
+        nonlocal tf
+        tf = ObjCInstance(oid)
+        tf.adjustsFontSizeToFitWidth = True
+        tf.minimumFontSize = 9
+        tf.placeholder = _("Enter Password")
+        tf.backgroundColor = utils.uicolor_custom('password')
+        #tf.borderStyle = UITextBorderStyleBezel
+        tf.clearButtonMode = UITextFieldViewModeWhileEditing
+        tf.secureTextEntry = True
+    def onAction(act_in : objc_id) -> None:
+        act = ObjCInstance(act_in)
+        nonlocal tf
+        if act.style != UIAlertActionStyleCancel and onOk is not None:
+            onOk(str(tf.text))
+        elif onCancel is not None:
+            onCancel()
+    alert.addTextFieldWithConfigurationHandler_(tfConfigHandler)
+    act = UIAlertAction.actionWithTitle_style_handler_(_("OK"),UIAlertActionStyleDefault,onAction)
+    alert.addAction_(act)
+    act = UIAlertAction.actionWithTitle_style_handler_(_("Cancel"),UIAlertActionStyleCancel,onAction)
+    alert.addAction_(act)
+    return alert
+
+def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title : str = None) -> str:
+    isFinished = False
+    ret = None
+    def myOk(pw : str) -> None:
+        nonlocal isFinished
+        nonlocal ret
+        isFinished = True
+        ret = pw
+    def myCancel() -> None:
+        nonlocal isFinished
+        isFinished = True
+    alert = create_password_prompt_alert(myOk, myCancel, prompt, title)
+    vc.presentViewController_animated_completion_(alert, True, None)
+    while not isFinished:
+        NSRunLoop.currentRunLoop().runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
+    return ret

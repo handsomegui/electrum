@@ -70,7 +70,13 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
     view.userInteractionEnabled = bool(b)
     view.alpha = float(1.0 if bool(b) else 0.3)
     view.setNeedsDisplay()
-
+    
+def uicolor_custom(name : str) -> ObjCInstance:
+    name = name.strip().lower() if name else ""
+    if name in ['blue', 'myblue', 'tf', 'password']:
+        return UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995, 0.95870447160000005, 0.99979293349999998, 1.0)
+    NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
+    return UIColor.grayColor
 
 # NB: This isn't normally called since you need to specify the full pathname of the resource you want, instead
 #     if you need images, call uiimage_get, etc.  This does NOT search recursively, since NSBundle sucks.
@@ -160,16 +166,28 @@ def do_in_main_thread(func : Callable, *args) -> Any:
     if NSThread.currentThread.isMainThread:
         return func(*args)
     else:
-        call_later(0.001, func, *args)
+        def VoidFun() -> None:
+            func(*args)
+        HelpfulGlue.performBlockInMainThread_sync_(VoidFun, False)
     return None
 
 def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
-    def OnTimer(t_in : objc_id) -> None:
-        t = ObjCInstance(t_in)
-        func(*args)
-        t.invalidate()
-    timer = NSTimer.timerWithTimeInterval_repeats_block_(timeout, False, OnTimer)
-    NSRunLoop.mainRunLoop().addTimer_forMode_(timer, NSDefaultRunLoopMode)
+    timer = None
+    if not NSThread.currentThread.isMainThread:
+        # NB: From NSRunLoop docs -- messing with the run loop from another thread is bad bad bad since NSRunLoop is not thread safe
+        # so we force this scheduling of the NSTiemr to happen on the main thread...
+        NSLog("****** WARNING WARNING WARNING -- utils.call_later() called from outside the main thread! FIXME!!!! ******")
+        def inMain() -> None:
+            nonlocal timer
+            timer = call_later(timeout, func, *args)
+        HelpfulGlue.performBlockInMainThread_sync_(inMain, True)        
+    else:
+        def OnTimer(t_in : objc_id) -> None:
+            t = ObjCInstance(t_in)
+            func(*args)
+            t.invalidate()
+        timer = NSTimer.timerWithTimeInterval_repeats_block_(timeout, False, OnTimer)
+        NSRunLoop.mainRunLoop().addTimer_forMode_(timer, NSDefaultRunLoopMode)
     return timer
 
 ###

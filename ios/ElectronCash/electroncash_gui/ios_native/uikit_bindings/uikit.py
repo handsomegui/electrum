@@ -687,3 +687,6 @@ UIFontWeightSemibold = c_double.in_dll(uikit, "UIFontWeightSemibold").value
 UIFontWeightBold = c_double.in_dll(uikit, "UIFontWeightBold").value
 UIFontWeightHeavy = c_double.in_dll(uikit, "UIFontWeightHeavy").value
 UIFontWeightBlack = c_double.in_dll(uikit, "UIFontWeightBlack").value
+
+# NSDate
+NSDate = ObjCClass('NSDate')

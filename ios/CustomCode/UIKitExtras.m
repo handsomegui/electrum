@@ -9,7 +9,7 @@
 #import "UIKitExtras.h"
 #import <QuartzCore/QuartzCore.h>
 #include <stdlib.h>
-#import <objc/objc-runtime.h>
+#import <objc/runtime.h>
 
 #define kGuiAnimDur 0.3 /* in seconds */
 

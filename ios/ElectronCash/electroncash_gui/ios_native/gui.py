@@ -216,7 +216,7 @@ class ElectrumGui(PrintError):
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
         NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
         self.window.makeKeyAndVisible()
-        utils.NSLog("GUI instance creted, splash screen 2 presented")
+        utils.NSLog("GUI instance created, splash screen 2 presented")
 
     def createAndShowUI(self):
         self.helper = GuiHelper.alloc().init()
@@ -724,8 +724,6 @@ class ElectrumGui(PrintError):
             print("Network status button pushed.. TODO, implement...")
             utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Network setup dialog unimplemented -- coming soon!", 2.0)
         elif but.tag == TAG_PASSWD:
-            #print("Password lock button pushed.. TODO, implement...")
-            #utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Password/lock dialog unimplemented -- coming soon!", 2.0)
             self.show_change_password()
         elif but.tag == TAG_SEED:
             print("Seed button pushed.. TODO, implement...")
@@ -733,7 +731,7 @@ class ElectrumGui(PrintError):
         elif but.tag == TAG_PREFS:
             print("Prefs button pushed")
             # for iOS8.0+ API which uses Blocks, but rubicon blocks seem buggy so we must do this
-            self.tabController.presentViewController_animated_completion_(self.prefsNav, True, None)
+            self.get_presented_viewcontroller().presentViewController_animated_completion_(self.prefsNav, True, None)
         elif but.tag == TAG_CASHADDR:
             print("CashAddr button pushed.. TODO, implement fully...")
             self.toggle_cashaddr_status_bar()
@@ -925,8 +923,12 @@ class ElectrumGui(PrintError):
         return int( p * x ) if x > 0 else None
     
     def get_presented_viewcontroller(self) -> ObjCInstance:
-        return self.tabController if self.tabController.presentedViewController is None else self.tabController.presentedViewController
-    
+        if self.tabController:
+            return self.tabController if self.tabController.presentedViewController is None else self.tabController.presentedViewController
+        elif self.window and self.window.rootViewController:
+            return self.window.rootViewController
+        return None
+
     def get_current_nav_controller(self) -> ObjCInstance:
         return self.tabController.selectedViewController
     
@@ -1081,6 +1083,9 @@ class ElectrumGui(PrintError):
     @staticmethod
     def prompt_password(prmpt, dummy=0):
         print("prompt_password(%s,%s) thread=%s mainThread?=%s"%(prmpt,str(dummy),NSThread.currentThread.description,str(NSThread.currentThread.isMainThread)))
+        if ElectrumGui.gui:
+            pw = password_dialog.prompt_password_local_runloop(ElectrumGui.gui.get_presented_viewcontroller())
+            print("Got pw: ", str(pw))
         return "bchbch"
     
     def password_dialog(self, msg) -> str:
