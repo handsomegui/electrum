@@ -122,7 +122,7 @@ fi
 
 # Get latest rubicon with all the patches from Github
 echo ""
-echo "Updating rubicon-objc to latest from cculianu repository on github..."
+echo "Updating rubicon-objc to latest from forked repository on github..."
 echo ""
 [ -e scratch ] && rm -fr scratch
 mkdir -v scratch || exit 1
@@ -179,6 +179,16 @@ if [ -n "$resources" ]; then
 	fi
 fi
 
+so_crap=`find iOS/app_packages -iname \*.so -print`
+if [ -n "$so_crap" ]; then
+	echo ""
+	echo "Deleting .so files in app_packages since they don't work anyway on iOS..."
+	echo ""
+	for a in $so_crap; do
+		rm -vf $a
+	done
+fi
+
 echo ''
 echo '**************************************************************************'
 echo '*                                                                        *'
@@ -196,3 +206,12 @@ echo '        time this script is run.  If you intend on modifying the     '
 echo '        program in Xcode, be sure to copy out modifications from iOS/ '
 echo '        manually or by running ./copy_back_changes.sh.'
 echo ''
+echo '  Caveats for App Store & Ad-Hoc distribution:'
+echo '        "Release" builds submitted to the app store fail unless the '
+echo '        following things are done in "Build Settings" in Xcode: '
+echo '            - "Strip Debug Symbols During Copy" = NO '
+echo '            - "Strip Linked Product" = NO '
+echo '            - "Strip Style" = Debugging Symbols '
+echo '            - "Enable Bitcode" = NO '
+echo ''
+
