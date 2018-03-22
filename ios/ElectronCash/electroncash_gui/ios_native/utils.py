@@ -166,7 +166,7 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
 # Useful for doing a "Please wait..." style screen that takes itself offscreen automatically after a delay
 # (may end up using this for some info alerts.. not sure yet)
 def show_timed_alert(vc : ObjCInstance, title : str, message : str,
-                     timeout : float, style : int = UIAlertControllerStyleAlert, animated : bool = True) -> None:
+                     timeout : float, style : int = UIAlertControllerStyleAlert, animated : bool = True) -> ObjCInstance:
     assert NSThread.currentThread.isMainThread
     alert = None
     def completionFunc() -> None:
@@ -174,7 +174,7 @@ def show_timed_alert(vc : ObjCInstance, title : str, message : str,
             vc.dismissViewControllerAnimated_completion_(animated,None)
         call_later(timeout, dismisser)
     alert=show_alert(vc=vc, title=title, message=message, actions=[], style=style, completion=completionFunc)
-    #print("Showing alert with ptr=%d"%int(alert.ptr.value))
+    return alert
 
 ###################################################
 ### Calling callables later or from the main thread
@@ -740,3 +740,42 @@ class PySig:
         self.emit_common(False, *args)
     def emit_sync(self, *args) -> None:
         self.emit_common(True, *args)
+
+class MyNSObs(NSObject):
+    @objc_method
+    def dealloc(self) -> None:
+        #print("MyNSObs dealloc")
+        sig = nspy_pop(self)
+        if sig is not None:
+            #print("MyNSObs -- sig was found...")
+            sig.emit()
+            sig.observer = None
+        else:
+            print("MyNSObs -- sig was None!")
+        send_super(__class__,self,'dealloc')
+
+class NSDeallocObserver(PySig):
+    ''' Provides the ability to observe the destruction of an objective-c object instance, and be notified of said
+        object's destruction on the main thread via our Qt-like 'signal' mechanism. Note sure how useful this really is except
+        for debugging purposes.
+        Note that it is not necessary to keep a reference to this object around as it automatically gets associated with
+        internal data structures and auto-removes itself once the signal is emitted.'''
+    def __init__(self, ns : ObjCInstance):
+        if not isinstance(ns, (ObjCInstance, objc_id)):
+            raise ValueError("Argument for NSDeallocObserver must be an ObjCInstance or objc_id")
+        super().__init__()
+        ptr = ns.ptr if isinstance(ns, ObjCInstance) else ns
+        import rubicon.objc.runtime as rt
+        self.observer = MyNSObs.new().autorelease()
+        rt.libobjc.objc_setAssociatedObject(ptr, self.observer.ptr, self.observer.ptr, 0x301)
+        nspy_put(self.observer, self) # our NSObject keeps a strong reference to us
+
+    '''
+    # This is here for debugging purposes.. Commented out as __del__ is dangerous if it has external dependencies
+    def __del__(self):
+        #print ("NSDeallocObserver __del__")
+        if self.observer:
+            print("NSDeallocObserver __del__: self.observer was not nil!")
+            nspy_pop(self.observer)
+        #super().__del__()
+    '''

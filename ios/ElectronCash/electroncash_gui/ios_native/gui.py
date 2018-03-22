@@ -1259,6 +1259,7 @@ class ElectrumGui(PrintError):
         vc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted(), self.change_password)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
 
+
     def protected(func):
         '''Password request wrapper.  The password is passed to the function
         as the 'password' named argument.  "None" indicates either an
@@ -1300,6 +1301,7 @@ class ElectrumGui(PrintError):
             return
         vc = seed_dialog.Create_SeedDisplayVC(seed, passphrase)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
+        
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
