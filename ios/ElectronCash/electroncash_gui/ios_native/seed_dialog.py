@@ -169,4 +169,5 @@ def seed_warning_msg(seed, passphrase):
 def set_seed_lbl(lbl : ObjCInstance, seed : str) -> None:
     astr = NSMutableAttributedString.alloc().initWithAttributedString_(lbl.attributedText).autorelease()
     astr.replaceCharactersInRange_withString_(NSRange(0,astr.length()), seed)
+    #astr.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleSingle, NSRange(0,astr.length()))
     lbl.attributedText = astr
