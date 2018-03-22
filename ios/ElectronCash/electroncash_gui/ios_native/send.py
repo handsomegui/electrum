@@ -340,7 +340,7 @@ class SendVC(UIViewController):
                 raise Exception("SilentException") # silent error when amount or fee isn't yet specified
             
             previewBut.enabled = False # for now, unimplemented.. #True
-            sendBut.enabled = True
+            sendBut.enabled = True if parent().wallet is not None and not parent().wallet.is_watching_only() else False
             retVal = True
         except Exception as e:
             #print("Exception :" + str(e))

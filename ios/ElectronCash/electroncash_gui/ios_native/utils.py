@@ -686,3 +686,57 @@ def nspy_pop_byname(ns : ObjCInstance, name : str) -> Any:
         ret = m.pop(name,None)
         if not m: nspy_pop(ns) # clean up when dict is empty
     return ret
+
+####################################################################
+# Another take on signals/slots -- Python-only signal/slot mechanism
+####################################################################
+class PySig:
+    def __init__(self):
+        self.clear()
+    def clear(self) -> None:
+        try:
+            del self.slots
+            del self.keys
+        except AttributeError:
+            pass
+        self.slots = set()
+        self.keys = dict()
+    def connect(self, func : Callable, key : Any = None) -> None:
+        ''' Note: the func arg, for now, needs to take explicit args and no *args, **kwags business as it's not yet supported.'''
+        if not callable(func):
+            raise ValueError("Passed-in arg to PySig connect is not a callable!")
+        if key is not None:
+            try:
+                self.slots.remove(self.keys[key])
+            except:
+                pass
+            self.keys[key] = func
+        self.slots.add(func)
+    def disconnect(self, func_or_key : Any = None) -> None:
+        if func_or_key is None:
+            self.clear()
+            return
+        func = None
+        if callable(func_or_key):
+            func = func_or_key
+        else:
+            func = self.keys.pop(func_or_key, None)
+        try:
+            self.slots.remove(func)
+        except KeyError:
+            pass
+    def emit_common(self, require_sync : bool, *args) -> None:
+        # guard against slots requesting themselves to be removed while this loop is iterating
+        slots = self.slots.copy() #if require_sync or NSThread.currentThread.isMainThread else self.slots
+        for slot in slots:
+            sig = signature(slot)
+            #if len(sig.parameters) > len(args):
+            #    raise ValueError('PySig: One of the slots requires more parameters than were passed-in to emit!')
+            if require_sync:
+                do_in_main_thread_sync(slot, *args[:len(sig.parameters)])
+            else:
+                do_in_main_thread(slot,*args[:len(sig.parameters)])
+    def emit(self, *args) -> None:
+        self.emit_common(False, *args)
+    def emit_sync(self, *args) -> None:
+        self.emit_common(True, *args)

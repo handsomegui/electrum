@@ -223,7 +223,7 @@ class ElectrumGui(PrintError):
 
     def createAndShowUI(self):
         self.helper = GuiHelper.alloc().init()
-        
+                
         self.tabController = MyTabBarController.alloc().init().autorelease()
 
         self.historyVC = tbl = history.HistoryTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
@@ -722,10 +722,14 @@ class ElectrumGui(PrintError):
         for i,b in enumerate(buts): # todo: implement send button tracking?
             b.enabled = not self.wallet.is_watching_only()
  
+    def unimplemented(self, componentName : str) -> None:
+        utils.show_timed_alert(self.get_presented_viewcontroller(),
+                               "UNIMPLEMENTED", "%s unimplemented -- coming soon!"%(str(componentName)), 2.0)
+ 
     def on_tool_button(self, but : ObjCInstance) -> None:
         if but.tag == TAG_NETWORK: # status button
             print("Network status button pushed.. TODO, implement...")
-            utils.show_timed_alert(self.tabController,"UNIMPLEMENTED", "Network setup dialog unimplemented -- coming soon!", 2.0)
+            self.unimplemented("Network setup dialog")
         elif but.tag == TAG_PASSWD:
             self.show_change_password()
         elif but.tag == TAG_SEED:
