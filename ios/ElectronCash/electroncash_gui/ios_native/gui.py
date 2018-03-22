@@ -923,9 +923,11 @@ class ElectrumGui(PrintError):
     
     def get_presented_viewcontroller(self) -> ObjCInstance:
         rvc = self.window.rootViewController if self.window else None
-        if rvc is not None and rvc.presentedViewController is not None:
-            return rvc.presentedViewController
-        return rvc
+        pvc = rvc.presentedViewController if rvc is not None else None
+        while pvc is not None and pvc.isBeingDismissed():
+            # keep looking up the view controller hierarchy until we find a modal that is *NOT* being dismissed currently
+            pvc = pvc.presentingViewController
+        return rvc if pvc is None else pvc
 
     def get_current_nav_controller(self) -> ObjCInstance:
         return self.tabController.selectedViewController
@@ -1118,16 +1120,12 @@ class ElectrumGui(PrintError):
 
     @staticmethod
     def prompt_password(prmpt = None, dummy=0):
-        #print("prompt_password(%s,%s) thread=%s mainThread?=%s"%(prmpt,str(dummy),NSThread.currentThread.description,str(NSThread.currentThread.isMainThread)))
         if ElectrumGui.gui:
             pw = password_dialog.prompt_password_local_runloop(vc=ElectrumGui.gui.get_presented_viewcontroller(),
                                                                 prompt=prmpt)
-            print("Got pw: ", str(pw))
             return pw
-        return "bchbch"
     
     def password_dialog(self, msg = None) -> str:
-        #print("PASSWORD_DIALOG UNIMPLEMTNED. TODO: IMPLEMENT ME!!")
         return ElectrumGui.prompt_password(msg)
 
     def generate_wallet(self, path):
@@ -1169,7 +1167,6 @@ class ElectrumGui(PrintError):
                 sys.exit(1)
             wallet.start_threads(self.daemon.network)
             self.daemon.add_wallet(wallet)
-        #print("WALLET=%s synchronizer=%s"%(str(wallet),str(wallet.synchronizer)))
         return wallet
 
     def sign_tx_with_password(self, tx, callback, password):
@@ -1183,7 +1180,7 @@ class ElectrumGui(PrintError):
             if not isinstance(exc_info[1], UserCancelled):
                 if not isinstance(exc_info[1], InvalidPassword):
                     traceback.print_exception(*exc_info)
-                utils.call_later(1.0, self.show_error, str(exc_info[1]))
+                self.show_error(str(exc_info[1]))
         def on_signed(result):
             callback(True)
         def on_failed(exc_info):
@@ -1224,15 +1221,15 @@ class ElectrumGui(PrintError):
                 if status:
                     if tx_desc is not None and tx.is_complete():
                         self.wallet.set_label(tx.txid(), tx_desc)
-                    utils.call_later(1.0, parent.show_message, _('Payment sent.') + '\n' + msg)
+                    parent.show_message(_('Payment sent.') + '\n' + msg)
                     #self.invoice_list.update()
                     self.sendVC.clear()
                 else:
-                    utils.call_later(1.0, parent.show_error, msg)
+                    parent.show_error(msg)
         def on_error(exc_info):
             if not isinstance(exc_info[1], UserCancelled):
                 traceback.print_exception(*exc_info)
-                utils.call_later(1.0, self.show_error, str(exc_info[1]))
+                self.show_error(str(exc_info[1]))
 
         utils.WaitingDialog(self.tabController, _('Broadcasting transaction...'),
                             broadcast_thread, broadcast_done, on_error)
