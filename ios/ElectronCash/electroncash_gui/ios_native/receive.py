@@ -167,9 +167,13 @@ class ReceiveVC(UIViewController):
 
     @objc_method
     def refresh(self) -> None:
-        if self.ui:
-            self.viewWillAppear_(False)
-
+        def inMain() -> None:
+            if self.ui:
+                self.viewWillAppear_(False)
+            self.autorelease()
+        self.retain()
+        utils.do_in_main_thread(inMain)
+        
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         if not self.ui:
@@ -466,5 +470,5 @@ class ReceiveVC(UIViewController):
             #self.addTopLevelItem(item)
             reqs.append(item)
             #print(item)
-        utils.nspy_put_byname(self,'request_list', reqs) # save it to the global cache since objcinstance lacks the ability to store python objects as attributes :/
+        utils.nspy_put_byname(self, reqs, 'request_list') # save it to the global cache since objcinstance lacks the ability to store python objects as attributes :/
         ui['tv'].reloadData()

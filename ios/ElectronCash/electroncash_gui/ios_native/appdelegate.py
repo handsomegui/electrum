@@ -47,7 +47,7 @@ class PythonAppDelegate(UIResponder):
     def application_performFetchWithCompletionHandler_(self, application : ObjCInstance, completionHandler : ObjCInstance) -> None:
         print("Background: WOAH DUDE! AppDelegate fetch handler called! It worked!")
         print("Background: About to call completion handler.. lord have mercy!")
-        ObjCBlock(completionHandler)(UIBackgroundFetchResultNewData)
+        completionHandler(UIBackgroundFetchResultNewData)
     '''
     
     @objc_method

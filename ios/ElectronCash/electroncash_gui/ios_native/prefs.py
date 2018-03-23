@@ -62,11 +62,15 @@ class PrefsVC(UITableViewController):
 
     @objc_method
     def refresh(self):
-        if self.refreshControl: self.refreshControl.endRefreshing()
-        if self.viewIfLoaded is not None:
-            self.updateCurrencies()
-            self.updateExchanges()
-            self.tableView.reloadData()
+        def inMain() -> None:    
+            if self.refreshControl: self.refreshControl.endRefreshing()
+            if self.viewIfLoaded is not None:
+                self.updateCurrencies()
+                self.updateExchanges()
+                self.tableView.reloadData()
+            self.autorelease()
+        self.retain()
+        utils.do_in_main_thread(inMain)
 
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:

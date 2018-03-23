@@ -249,9 +249,11 @@ static long UIButtonBlockKey = 0xb10cb10c;
 
 - (void)handleControlEvent:(UIControlEvents)event withBlock:(ActionBlock)block {
     objc_setAssociatedObject(self, &UIButtonBlockKey, block, OBJC_ASSOCIATION_COPY);
-    [self addTarget:self action:@selector(callActionBlock:) forControlEvents:event];
+    if (block)
+        [self addTarget:self action:@selector(callActionBlock:) forControlEvents:event];
+    else
+        [self removeTarget:self action:@selector(callActionBlock:) forControlEvents:event];
 }
-
 
 @end
 

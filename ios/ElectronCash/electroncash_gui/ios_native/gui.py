@@ -45,6 +45,7 @@ from . import receive
 from . import prefs
 from . import password_dialog
 from . import seed_dialog
+from . import network_dialog
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -200,6 +201,8 @@ class ElectrumGui(PrintError):
         self.addressesVC = None
         self.prefsVC = None
         self.prefsNav = None
+        self.networkVC = None
+        self.networkNav = None
         
         self.decimal_point = config.get('decimal_point', 5)
         self.fee_unit = config.get('fee_unit', 0)
@@ -425,6 +428,8 @@ class ElectrumGui(PrintError):
             self.downloadingNotif_view = None
         if self.prefsVC is not None: self.prefsVC.autorelease()
         if self.prefsNav is not None: self.prefsNav.autorelease()
+        self.networkNav = None
+        self.networkVC = None
         self.prefsVC = None
         self.prefsNav = None
         if self.helperTimer is not None:
@@ -728,8 +733,7 @@ class ElectrumGui(PrintError):
  
     def on_tool_button(self, but : ObjCInstance) -> None:
         if but.tag == TAG_NETWORK: # status button
-            print("Network status button pushed.. TODO, implement...")
-            self.unimplemented("Network setup dialog")
+            self.show_network_dialog()
         elif but.tag == TAG_PASSWD:
             self.show_change_password()
         elif but.tag == TAG_SEED:
@@ -740,6 +744,7 @@ class ElectrumGui(PrintError):
             self.toggle_cashaddr_status_bar()
         else:
             print("Unknown button pushed, tag=%d"%int(but.tag))
+  
             
     def on_modal_close(self, but : ObjCInstance) -> None:
         title = "UNKNOWN View Controller"
@@ -941,31 +946,35 @@ class ElectrumGui(PrintError):
         return self.show_message(message, title, onOk, localRunLoop)
     
     # full stop question for user -- appropriate for send tx dialog
-    def question(self, message, title = _("Question")) -> bool:
+    def question(self, message, title = _("Question"), yesno = False, onOk = None) -> bool:
         ret = False
-        def onOk() -> None:
+        localRunLoop = True if onOk is None else False
+        def local_onOk() -> None:
             nonlocal ret
             ret = True
-        self.show_message(message=message, title=title, onOk=onOk, localRunLoop = True, hasCancel = True)
+        okFun = local_onOk if localRunLoop else onOk
+        extrakwargs = {}
+        if yesno:
+            extrakwargs = { 'cancelButTitle' : _("No"), 'okButTitle' : _("Yes") }
+        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs)
         return ret
     
     # can be called from any thread, always runs in main thread
-    def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False):
+    def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False,
+                     cancelButTitle = _('Cancel'), okButTitle = _('OK')):
         def func() -> None:
             vc = self.get_presented_viewcontroller() 
-            actions = [ [_('OK')] ]
+            actions = [ [str(okButTitle)] ]
             if onOk is not None and callable(onOk): actions[0].append(onOk)
-            cancelTxt = None
             if hasCancel:
-                cancelTxt = _('Cancel')
-                actions.append( [ cancelTxt ] )
+                actions.append( [ str(cancelButTitle) ] )
             utils.show_alert(
                 vc = vc,
                 title = title,
                 message = message,
                 actions = actions,
                 localRunLoop = localRunLoop,
-                cancel = cancelTxt,
+                cancel = cancelButTitle if hasCancel else None,
             )
         if localRunLoop: return utils.do_in_main_thread_sync(func)
         return utils.do_in_main_thread(func)
@@ -1301,6 +1310,25 @@ class ElectrumGui(PrintError):
             return
         vc = seed_dialog.Create_SeedDisplayVC(seed, passphrase)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(vc, True, None)
+
+    def show_network_dialog(self) -> None:
+        ''' Provide this dialog on-demand to save on startup time and/or on memory consumption '''
+        if self.networkNav is not None:
+            utils.NSLog("**** WARNING **** Network Nav is not None!! FIXME!")
+        self.networkVC = network_dialog.NetworkDialogVC.new().autorelease()
+        self.networkVC.title = _("Network")
+        self.networkNav = UINavigationController.alloc().initWithRootViewController_(self.networkVC).autorelease()
+        def doCleanup(oid : objc_id) -> None:
+            if self.networkVC is not None and oid == self.networkVC.ptr:
+                #print("NetworkDialogVC dealloc caught!")
+                self.networkVC = None
+            if self.networkNav is not None and oid == self.networkNav.ptr:
+                #print("Network Nav dealloc caught!")
+                self.networkNav = None
+        utils.NSDeallocObserver(self.networkVC).connect(doCleanup)
+        utils.NSDeallocObserver(self.networkNav).connect(doCleanup)
+        self.add_navigation_bar_close_to_modal_vc(self.networkVC)
+        self.get_presented_viewcontroller().presentViewController_animated_completion_(self.networkNav, True, None)
         
 
     # this method is called by Electron Cash libs to start the GUI

@@ -670,7 +670,7 @@ def nspy_get_byname(ns : ObjCInstance, name : str) -> Any:
     if isinstance(m, dict):
         ret = m.get(name,None)
     return ret
-def nspy_put_byname(ns : ObjCInstance, name : str, py : Any) -> None:
+def nspy_put_byname(ns : ObjCInstance, py : Any, name : str) -> None:
     m = nspy_get(ns)
     needPutBack = False
     if m is None:
@@ -748,7 +748,7 @@ class MyNSObs(NSObject):
         sig = nspy_pop(self)
         if sig is not None:
             #print("MyNSObs -- sig was found...")
-            sig.emit()
+            sig.emit(sig.ptr)
             sig.observer = None
         else:
             print("MyNSObs -- sig was None!")
@@ -759,15 +759,16 @@ class NSDeallocObserver(PySig):
         object's destruction on the main thread via our Qt-like 'signal' mechanism. Note sure how useful this really is except
         for debugging purposes.
         Note that it is not necessary to keep a reference to this object around as it automatically gets associated with
-        internal data structures and auto-removes itself once the signal is emitted.'''
+        internal data structures and auto-removes itself once the signal is emitted. The signal itself has 1 param, the objc_id
+        of the watched object. The watched object may or may not still be alive when the signal is emitted, however.'''
     def __init__(self, ns : ObjCInstance):
         if not isinstance(ns, (ObjCInstance, objc_id)):
             raise ValueError("Argument for NSDeallocObserver must be an ObjCInstance or objc_id")
         super().__init__()
-        ptr = ns.ptr if isinstance(ns, ObjCInstance) else ns
+        self.ptr = ns.ptr if isinstance(ns, ObjCInstance) else ns
         import rubicon.objc.runtime as rt
         self.observer = MyNSObs.new().autorelease()
-        rt.libobjc.objc_setAssociatedObject(ptr, self.observer.ptr, self.observer.ptr, 0x301)
+        rt.libobjc.objc_setAssociatedObject(self.ptr, self.observer.ptr, self.observer.ptr, 0x301)
         nspy_put(self.observer, self) # our NSObject keeps a strong reference to us
 
     '''
