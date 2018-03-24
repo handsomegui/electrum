@@ -206,6 +206,9 @@ class NetworkDialogVC(UIViewController):
         if not parent() or not parent().daemon or not parent().daemon.network:
             utils.NSLog("NetworkDialogVC: No network defined, returning early from doUpdate")
             return
+        if not parent().networkVC or not self.viewIfLoaded:
+            utils.NSLog("NetworkDialogVC: Returning early, view has been deallocated")
+            return
         network = parent().daemon.network
         chains = network.get_blockchains()
         n_chains = len(chains)

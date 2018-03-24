@@ -542,14 +542,18 @@ class SendVC(UIViewController):
     def onPreviewSendBut_(self, but) -> None:
         isPreview = but.tag == 1110
         print ("Clicked %s"%("Preview" if isPreview else "Send"))
-        self.doSend(isPreview)
+        def func() -> None:
+            self.doSend_(isPreview)
+        # this is an ugly hack to work around a bug in iOS UIKit related to modal dialogs that have a local eventloop
+        # (such as out password/confirm dialog in doSend()).  See this issue: https://forums.developer.apple.com/thread/91874
+        utils.call_later(0.01,func)
         
     @objc_method
     def showTransaction_desc_(self, txraw, desc) -> None:
         print("showTransaction unimplemented. desc=%s, raw=%s"%(str(desc),str(txraw)))
             
     @objc_method
-    def doSend(self, preview : bool) -> None:
+    def doSend_(self, preview : bool) -> None:
         #if run_hook('abort_send', self):
         #    return
         r = read_send_form(self)

@@ -207,6 +207,11 @@ def do_in_main_thread_sync(func : Callable, *args) -> Any:
         HelpfulGlue.performBlockInMainThread_sync_(VoidFun, True)
     return None
 
+def do_in_main_thread_async(func : Callable, *args) -> None:
+    def VoidFun() -> None:
+        func(*args)
+    HelpfulGlue.performBlockInMainThread_sync_(VoidFun, False)        
+
 def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
     timer = None
     if not NSThread.currentThread.isMainThread:
