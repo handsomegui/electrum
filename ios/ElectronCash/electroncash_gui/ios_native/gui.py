@@ -259,8 +259,6 @@ class ElectrumGui(PrintError):
         self.prefsNav = UINavigationController.alloc().initWithRootViewController_(self.prefsVC)
         self.add_navigation_bar_close_to_modal_vc(self.prefsVC)
 
-        self.register_network_callbacks()
-
         tbl.refresh()
         
         self.helper.needUpdate()
@@ -278,6 +276,8 @@ class ElectrumGui(PrintError):
         self.window.makeKeyAndVisible()                 
              
         utils.NSLog("UI Created Ok")
+
+        self.register_network_callbacks()
 
         return True
     
