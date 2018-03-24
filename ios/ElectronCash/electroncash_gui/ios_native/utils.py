@@ -90,6 +90,16 @@ def nsattributedstring_from_html(html : str) -> ObjCInstance:
     data = ns_from_py(html.encode('utf-8'))
     return NSMutableAttributedString.alloc().initWithHTML_documentAttributes_(data,None).autorelease()
 
+def uilabel_replace_attributed_text(lbl : ObjCInstance, text : str, template : ObjCInstance = None) -> ObjCInstance:
+    if not isinstance(template, NSAttributedString):
+        template = lbl.attributedText
+    if template is None:
+        template = NSAttrubutedString.new().autorelease()
+    astr = NSMutableAttributedString.alloc().initWithAttributedString_(template).autorelease()
+    astr.replaceCharactersInRange_withString_(NSRange(0,astr.length()), text)
+    lbl.attributedText = astr
+    return lbl
+
 ###################################################
 ### Show modal alert
 ###################################################

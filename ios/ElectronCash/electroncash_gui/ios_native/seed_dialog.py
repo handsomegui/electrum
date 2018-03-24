@@ -96,7 +96,7 @@ class SeedDisplayVC(UIViewController):
         
         self.titLbl.text = _("Your wallet generation seed is:")
         self.msgLbl.attributedText = utils.nsattributedstring_from_html(seed_warning_msg(py_from_ns(self.seed),py_from_ns(self.passphrase)))
-        set_seed_lbl(self.seedLbl, py_from_ns(self.seed))
+        utils.uilabel_replace_attributed_text(self.seedLbl, py_from_ns(self.seed))
         sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,320,350)).autorelease()
         sv.contentSize = CGSizeMake(320,400)
         sv.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.,0.,0.,0.3)
@@ -165,9 +165,3 @@ def seed_warning_msg(seed, passphrase):
         '</p>',
         '</font>',
     ]) % len(seed.split())
-
-def set_seed_lbl(lbl : ObjCInstance, seed : str) -> None:
-    astr = NSMutableAttributedString.alloc().initWithAttributedString_(lbl.attributedText).autorelease()
-    astr.replaceCharactersInRange_withString_(NSRange(0,astr.length()), seed)
-    #astr.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleSingle, NSRange(0,astr.length()))
-    lbl.attributedText = astr

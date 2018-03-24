@@ -287,7 +287,7 @@ class ElectrumGui(PrintError):
             self.daemon.network.register_callback(self.on_history, ['on_history'])
             self.daemon.network.register_callback(self.on_quotes, ['on_quotes'])
             interests = ['updated', 'new_transaction', 'status',
-                         'banner', 'verified', 'fee']
+                         'banner', 'verified', 'fee', 'interfaces']
             # To avoid leaking references to "self" that prevent the
             # window from being GC-ed when closed, callbacks should be
             # methods of this class only, and specifically not be
@@ -485,14 +485,11 @@ class ElectrumGui(PrintError):
     def on_history(self, b):
         utils.NSLog("ON HISTORY (IsMainThread: %s)",str(NSThread.currentThread.isMainThread))
         assert self.historyVC is not None
-        self.historyVC.needUpdate()
-        self.helper.needUpdate()
+        self.refresh_components('history', 'helper')
         
     def on_quotes(self, event, *args):
-        utils.NSLog("ON QUOTES (IsMainThread: %s)",str(NSThread.currentThread.isMainThread))        
-        self.historyVC.needUpdate()
-        self.addressesVC.needUpdate()
-        self.helper.needUpdate()
+        utils.NSLog("ON QUOTES (IsMainThread: %s)",str(NSThread.currentThread.isMainThread))
+        self.refresh_components('history', 'addresses', 'helper')
             
     def on_network(self, event, *args):
         utils.NSLog("ON NETWORK: %s (IsMainThread: %s)",event,str(NSThread.currentThread.isMainThread))
@@ -501,25 +498,23 @@ class ElectrumGui(PrintError):
             return
         assert self.historyVC is not None
         if event == 'updated':
-            self.helper.needUpdate()
+            self.refresh_components('helper', 'network')
         elif event == 'new_transaction':
-            self.historyVC.needUpdate() #enqueue update to main thread
-            self.addressesVC.needUpdate() #enqueue update to main thread
             self.tx_notifications.append(args[0])
-            self.helper.needUpdate()
+            self.refresh_components('history', 'addresses', 'helper')
         elif event == 'banner':
             #todo: handle console stuff here
             pass
         elif event == 'status':
             #todo: handle status update here
-            self.helper.needUpdate()
+            self.refresh_components('helper')
         elif event in ['verified']:
-            self.historyVC.needUpdate() #enqueue update to main thread
-            self.addressesVC.needUpdate()
-            self.helper.needUpdate()
+            self.refresh_components('history', 'addresses', 'helper')
         elif event == 'fee':
             # todo: handle fee stuff here
             pass
+        elif event in ['interfaces']:
+            self.refresh_components('network')
         else:
             self.print_error("unexpected network message:", event, args)
 
@@ -1061,6 +1056,9 @@ class ElectrumGui(PrintError):
             self.prefsVC.refresh()
         if components & {'receive', 'paymentrequests', 'pr', *al}:
             self.receiveVC.refresh()
+        if components & {'network', 'servers','connection', 'interfaces', *al}:
+            if self.networkVC is not None: # networkVC isn't always around, we create it on-demand and delete it when it's done
+                self.networkVC.refresh()
                 
 
     def on_new_daemon(self):
