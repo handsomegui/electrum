@@ -690,3 +690,6 @@ UIFontWeightBlack = c_double.in_dll(uikit, "UIFontWeightBlack").value
 
 # NSDate
 NSDate = ObjCClass('NSDate')
+
+# UINib
+UINib = ObjCClass('UINib')

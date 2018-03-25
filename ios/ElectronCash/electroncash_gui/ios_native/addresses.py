@@ -95,7 +95,7 @@ class AddressesTableVC(UITableViewController):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         #todo: - allow for label editing (popup menu?)
-        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
+        identifier = "%s"%(str(__class__))
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
         if cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()

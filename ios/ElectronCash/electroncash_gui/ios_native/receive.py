@@ -379,7 +379,7 @@ class ReceiveVC(UIViewController):
         reqs = utils.nspy_get_byname(self, 'request_list')
         if not reqs: return None
         assert indexPath.row >= 0 and indexPath.row < len(reqs)
-        identifier = "%s_%s"%(str(__class__) , str(indexPath.row))
+        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
         cell = tv.dequeueReusableCellWithIdentifier_(identifier)
         if cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()        

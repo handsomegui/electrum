@@ -72,6 +72,7 @@ class NetworkDialogVC(UIViewController):
     splitAttrTxtOrig = objc_property()
     protocol = objc_property() # set to 't' for now -- TODO: figure out SSL stuff
     lastPort = objc_property()
+    cellIdentifier = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -88,6 +89,7 @@ class NetworkDialogVC(UIViewController):
         self.splitAttrTxtOrig = None
         self.protocol = None
         self.lastPort = None
+        self.cellIdentifier = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
    
@@ -95,6 +97,8 @@ class NetworkDialogVC(UIViewController):
     @objc_method
     def loadView(self) -> None:
         self.protocol = 't'
+        self.cellIdentifier = "ServerPortCell22px"
+        uinib = UINib.nibWithNibName_bundle_(self.cellIdentifier, None)
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("NetworkDialog",None,None)
         v = objs[0]
         sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,320,580)).autorelease()
@@ -102,9 +106,11 @@ class NetworkDialogVC(UIViewController):
         sv.addSubview_(v)
         
         self.connectedTV = v.viewWithTag_(TAG_CONNECTED_TV)
+        self.connectedTV.registerNib_forCellReuseIdentifier_(uinib, self.cellIdentifier)
         self.connectedTV.dataSource = self
         self.connectedTV.delegate = self
         self.peersTV = v.viewWithTag_(TAG_PEERS_TV)
+        self.peersTV.registerNib_forCellReuseIdentifier_(uinib, self.cellIdentifier)
         self.peersTV.dataSource = self
         self.peersTV.delegate = self
         
@@ -326,12 +332,9 @@ class NetworkDialogVC(UIViewController):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
         cell = None
+        identifier = self.cellIdentifier
         if tv.ptr == self.connectedTV.ptr:
-            identifier = str(__class__) + "ConnectedNode_Height"
-            cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-            if cell is None:
-                objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ServerPortCell22px",None,None)
-                cell = objs[0]
+            cell = tv.dequeueReusableCellWithIdentifier_(identifier) # will always return a valid cell because we registered our nib in loadView
             l1 = cell.viewWithTag_(150)
             l2 = cell.viewWithTag_(160)
 
@@ -346,11 +349,7 @@ class NetworkDialogVC(UIViewController):
                 l2.text = _("Unknown")
             cell.contentView.backgroundColor = UIColor.clearColor if not indexPath.row % 2 else UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.03)
         elif tv.ptr == self.peersTV.ptr:
-            identifier = str(__class__) + "PeerHost_Port"
-            cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-            if cell is None:
-                objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ServerPortCell22px",None,None)
-                cell = objs[0]
+            cell = tv.dequeueReusableCellWithIdentifier_(identifier) # will always return a valid cell because we registered our nib in loadView
             l1 = cell.viewWithTag_(150)
             l2 = cell.viewWithTag_(160)
             
