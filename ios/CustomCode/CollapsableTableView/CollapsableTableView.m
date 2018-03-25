@@ -46,12 +46,12 @@
 
 
 - (void) commonInit {
-    self.headerViewIdentifier = @"MenuSectionHeaderViewID";
+    self.headerViewIdentifier = @"CollapsabeSectionHeaderViewID";
     visibleSections = [NSMutableSet new];
     [visibleSections addObject:[NSNumber numberWithInteger:0]];
     self.singleOpen = NO;
-    UINib *nib = [UINib nibWithNibName:@"MenuSectionHeaderView" bundle:nil];
-    [self registerNib:nib forHeaderFooterViewReuseIdentifier:self.headerViewIdentifier];
+    UINib *nib = [UINib nibWithNibName:@"CollapsableSectionHeaderView" bundle:nil];
+    if (nib) [self registerNib:nib forHeaderFooterViewReuseIdentifier:self.headerViewIdentifier];
 }
 
 - (instancetype) init {

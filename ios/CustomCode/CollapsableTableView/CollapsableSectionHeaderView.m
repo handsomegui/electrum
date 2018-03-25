@@ -6,15 +6,15 @@
 //  Copyright (c) 2015 Robert Nash. All rights reserved.
 //
 
-#import "MenuSectionHeaderView.h"
+#import "CollapsableSectionHeaderView.h"
 
 #define DEGREES_TO_RADIANS(x) (M_PI * (x) / 180.0)
 
-@interface MenuSectionHeaderView ()
+@interface CollapsableSectionHeaderView ()
 @property (weak, nonatomic) IBOutlet UIImageView *imageView;
 @end
 
-@implementation MenuSectionHeaderView {
+@implementation CollapsableSectionHeaderView {
     BOOL isRotating;
 }
 

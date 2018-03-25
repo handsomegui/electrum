@@ -64,4 +64,4 @@ CWNotificationAnimationTypeOverlay = 1
 SVGImageCache = ObjCClass('SVGImageCache')
 
 CollapsableTableView = ObjCClass('CollapsableTableView')
-MenuSectionHeaderView = ObjCClass('MenuSectionHeaderView')
+CollapsableSectionHeaderView = ObjCClass('CollapsableSectionHeaderView')
