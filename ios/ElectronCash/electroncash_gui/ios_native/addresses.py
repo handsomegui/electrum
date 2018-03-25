@@ -9,10 +9,9 @@ from electroncash.address import Address
 import time
 import html
 
-try:
-    from .uikit_bindings import *
-except Exception as e:
-    sys.exit("Error: Could not import iOS libs: %s"%str(e))
+from .uikit_bindings import *
+from .custom_objc import *
+
 
 class AddressDetail(UIViewController):
     addrInfo = objc_property() # an NSArray of stuff to display
@@ -48,11 +47,13 @@ class AddressDetail(UIViewController):
 # Addresses Tab -- shows addresses, etc
 class AddressesTableVC(UITableViewController):
     needsRefresh = objc_property()
+    style = objc_property()
 
     @objc_method
     def initWithStyle_(self, style : int):
         self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
         self.needsRefresh = False
+        self.style = style
         self.title = _("&Addresses").split('&')[1]
                 
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
@@ -63,7 +64,13 @@ class AddressesTableVC(UITableViewController):
     @objc_method
     def dealloc(self) -> None:
         self.needsRefresh = None
+        self.style = None
         send_super(__class__, self, 'dealloc')
+
+    @objc_method
+    def loadView(self) -> None:
+        # frame is pretty much ignored due to autosizie but c'tor needs it...
+        self.tableView = CollapsableTableView.alloc().initWithFrame_style_(CGRectMake(0,0,320,600), self.style)        
 
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -276,10 +283,10 @@ class AddressData:
         if len(self.unspent):
             d[len(d)] = _("Unspent")
         d[len(d)] = _("Receiving")
-        if len(self.change):
-            d[len(d)] = _("Change")
         if len(self.used):
             d[len(d)] = _("Used")
+        if len(self.change):
+            d[len(d)] = _("Change")
         self.sections = d
         return d
 
@@ -290,10 +297,10 @@ class AddressData:
         if len(self.unspent):
             d[len(d)] = self.unspent
         d[len(d)] = self.receiving
-        if len(self.change):
-            d[len(d)] = self.change
         if len(self.used):
             d[len(d)] = self.used
+        if len(self.change):
+            d[len(d)] = self.change
         self.lists_by_section = d
         return d
         
