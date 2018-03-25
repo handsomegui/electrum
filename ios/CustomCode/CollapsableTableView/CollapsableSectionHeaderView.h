@@ -1,9 +1,8 @@
 //
-//  MenuSectionHeaderView.h
-//  Example
+//  CollapsableSectionHeaderView.h
 //
-//  Created by Robert Nash on 08/09/2015.
-//  Copyright (c) 2015 Robert Nash. All rights reserved.
+//  Created by calin on 3/25/18.
+//  Copyright © 2018 Calin Culianu. MIT License.
 //
 
 #import "CollapsableTableView.h"

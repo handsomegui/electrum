@@ -3,7 +3,7 @@
 //  AppVault
 //
 //  Created by calin on 9/29/09.
-//  Copyright 2009 Calin Culianu <calin.culianu@gmail.com>. All rights reserved.
+//  Copyright 2009 Calin Culianu <calin.culianu@gmail.com>. MIT License.
 //
 
 #import "UIKitExtras.h"

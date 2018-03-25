@@ -1,9 +1,8 @@
 //
 //  CollapsableTableView.h
-//  Example
 //
 //  Created by calin on 3/25/18.
-//  Copyright © 2018 Robert Nash. All rights reserved.
+//  Copyright © 2018 Calin Culianu. MIT License.
 //
 
 #ifndef CollapsableTableView_h

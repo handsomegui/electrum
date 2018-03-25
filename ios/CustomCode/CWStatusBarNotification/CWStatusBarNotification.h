@@ -3,7 +3,7 @@
 //  CWNotificationDemo
 //
 //  Created by Cezary Wojcik on 11/15/13.
-//  Copyright (c) 2015 Cezary Wojcik. All rights reserved.
+//  Copyright (c) 2015 Cezary Wojcik. MIT License.
 //
 
 #import <UIKit/UIKit.h>

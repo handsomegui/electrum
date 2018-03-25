@@ -9,6 +9,7 @@
 //  Cleaned up by Bob Monaghan - Glue Tools LLC 6 November 2011
 //  Integrated into PocketSVG 10 August 2012
 //
+// MIT License
 
 #import "PocketSVG.h"
 #import "RaptureXML/RXMLElement.h"
