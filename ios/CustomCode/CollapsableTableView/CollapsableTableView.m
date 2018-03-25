@@ -47,7 +47,7 @@
 
 - (void) commonInit {
     self.headerViewIdentifier = @"CollapsabeSectionHeaderViewID";
-    visibleSections = [NSMutableSet new];
+    visibleSections = [NSMutableSet setWithCapacity:1];
     [visibleSections addObject:[NSNumber numberWithInteger:0]];
     self.singleOpen = NO;
     UINib *nib = [UINib nibWithNibName:@"CollapsableSectionHeaderView" bundle:nil];
@@ -296,9 +296,9 @@
 }
 
 -(NSArray *)indexPathsForSection:(NSInteger)section {
-    NSMutableArray *collector = [NSMutableArray new];
     NSInteger count = self.realDataSource && [self.realDataSource respondsToSelector:@selector(tableView:numberOfRowsInSection:)] ? [self.realDataSource tableView:self numberOfRowsInSection:section] : 0;
     NSIndexPath *indexPath;
+    NSMutableArray *collector = [NSMutableArray arrayWithCapacity:(NSUInteger)count];
     for (NSInteger i = 0; i < count; i++) {
         indexPath = [NSIndexPath indexPathForRow:i inSection:section];
         [collector addObject:indexPath];
