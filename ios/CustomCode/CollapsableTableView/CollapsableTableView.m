@@ -7,7 +7,6 @@
 
 #import <Foundation/Foundation.h>
 #import "CollapsableTableView.h"
-#import "../JGMethodSwizzler/JGMethodSwizzler.h"
 
 @interface CollapsableTableView()<UITableViewDelegate,UITableViewDataSource>
 @property (nonatomic, weak, nullable) id<UITableViewDelegate> realDelegate;
