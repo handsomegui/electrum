@@ -100,7 +100,7 @@ class TxInputsOutputsTVC(NSObject):
                 raise ValueError("tv tag %d is neither input (%d) or output (%d) tag!"%(int(tv.tag),int(self.tagin),int(self.tagout)))
             
             colorExt = UIColor.colorWithRed_green_blue_alpha_(1.0,1.0,1.0,0.0)
-            colorChg = UIColor.colorWithRed_green_blue_alpha_(1.0,0.9,0.3,0.3)
+            colorChg = utils.uicolor_custom('change address')  # UIColor.colorWithRed_green_blue_alpha_(1.0,0.9,0.3,0.3)
             colorMine = UIColor.colorWithRed_green_blue_alpha_(0.0,1.0,0.0,0.1)
 
             cell.backgroundColor = colorExt
@@ -135,6 +135,9 @@ class TxInputsOutputsTVC(NSObject):
                 cell.detailTextLabel.text = ""
                 if v is not None:
                     cell.detailTextLabel.text = format_amount(v)
+
+            cell.textLabel.adjustsFontSizeToFitWidth = True
+            cell.textLabel.minimumScaleFactor = 0.85
 
             if isinstance(addr, Address) and wallet.is_mine(addr):
                 if wallet.is_change(addr):

@@ -808,6 +808,8 @@ class ElectrumGui(PrintError):
         return self.decimal_point
    
     def on_label_edited(self, key, newvalue):
+        if self.wallet is None:
+            return
         self.wallet.set_label(key, newvalue)
         self.wallet.storage.write()
         self.historyVC.needUpdate()
