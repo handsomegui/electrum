@@ -32,7 +32,8 @@ class AddressDetail(UIViewController):
     
     @objc_method
     def loadView(self) -> None:
-        self.view = UIView.alloc().init().autorelease()
+        v = UIView.alloc().init().autorelease()
+        v.autoresizesSubviews = False
         lbl = UILabel.alloc().init().autorelease()
         entry = utils.nspy_get(self)
         if entry:
@@ -42,8 +43,26 @@ class AddressDetail(UIViewController):
         w = UIScreen.mainScreen.bounds.size.width
         rect = CGRectMake(0,100,w,80)
         lbl.frame = rect
-        self.view.addSubview_(lbl)
-
+        v.addSubview_(lbl)
+        
+        but = UIButton.buttonWithType_(UIButtonTypeSystem)
+        but.setTitle_forState_("Freeze" if not entry.is_frozen else "Unfreeze", UIControlStateNormal)
+        
+        rect = CGRectMake(0,200,w,80)
+        but.frame = rect
+        
+        def onToggleFreeze(oid : objc_id) -> None:
+            entry = utils.nspy_get(self)
+            parent = gui.ElectrumGui.gui
+            if parent.wallet:
+                but.setTitle_forState_("Freeze" if entry.is_frozen else "Unfreeze", UIControlStateNormal)
+                parent.wallet.set_frozen_state([entry.address], not entry.is_frozen)
+                parent.wallet.storage.write()
+                parent.refresh_components('addresses')
+        but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onToggleFreeze)
+        v.addSubview_(but)
+        
+        self.view = v
  
 # Addresses Tab -- shows addresses, etc
 class AddressesTableVC(UITableViewController):
@@ -128,13 +147,24 @@ class AddressesTableVC(UITableViewController):
         tf.text = entry.label if entry.label else ""
         tf.placeholder = _("Tap to add a description")
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+
+        xtra = []
+        bgcolor = UIColor.clearColor        
+        if entry.is_frozen:
+            xtra += [_("Frozen")]
+            bgcolor = utils.uicolor_custom('frozen address')            
         if entry.is_change:
-            cell.backgroundColor = utils.uicolor_custom('change address')
+            xtra.insert(0, _("Change"))
+            bgcolor = utils.uicolor_custom('change address')
+
+        cell.backgroundColor = bgcolor
+        if xtra:
             chglbl.setHidden_(False)
-            chglbl.text = _("Change")
+            chglbl.text = ", ".join(xtra)
         else:
-            cell.backgroundColor = UIColor.clearColor
+            chglbl.text = ""
             chglbl.setHidden_(True)
+
         butCpy = cell.viewWithTag_(120)
         butQR = cell.viewWithTag_(130)
         butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
@@ -176,10 +206,11 @@ class AddressesTableVC(UITableViewController):
         if addrData is not None:
             section = addrData.getSections().get(indexPath.section,None)
             if section is not None and indexPath.row < len(section[1]):
-                entry = section[1][indexPath.row]
+                entry = section[1][indexPath.row]                
                 addrDetail = AddressDetail.alloc().init().autorelease()
                 utils.nspy_put(addrDetail, entry)
                 self.navigationController.pushViewController_animated_(addrDetail, True)
+                
     
     @objc_method
     def updateAddressesFromWallet(self):

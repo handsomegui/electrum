@@ -77,6 +77,8 @@ def uicolor_custom(name : str) -> ObjCInstance:
         return UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995, 0.95870447160000005, 0.99979293349999998, 1.0)
     if name in ['change', 'changeaddress', 'change address']:
         return UIColor.colorWithRed_green_blue_alpha_(1.0,0.9,0.3,0.3)
+    if name in ['frozen', 'frozenaddress', 'frozen address']:
+        return UIColor.colorWithRed_green_blue_alpha_(0.0,0.3,0.5,0.075)
     NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
     return UIColor.grayColor
 
