@@ -55,8 +55,12 @@ class AddressDetail(UIViewController):
             entry = utils.nspy_get(self)
             parent = gui.ElectrumGui.gui
             if parent.wallet:
-                but.setTitle_forState_("Freeze" if entry.is_frozen else "Unfreeze", UIControlStateNormal)
-                parent.wallet.set_frozen_state([entry.address], not entry.is_frozen)
+                edict = entry._asdict()
+                edict["is_frozen"] = not edict["is_frozen"]
+                entry = AddressData.Entry(**edict)
+                but.setTitle_forState_("Unfreeze" if entry.is_frozen else "Freeze", UIControlStateNormal)
+                utils.nspy_put(self, entry)
+                parent.wallet.set_frozen_state([entry.address], entry.is_frozen)
                 parent.wallet.storage.write()
                 parent.refresh_components('addresses')
         but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onToggleFreeze)
