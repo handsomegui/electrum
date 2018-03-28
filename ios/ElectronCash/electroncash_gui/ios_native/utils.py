@@ -79,6 +79,8 @@ def uicolor_custom(name : str) -> ObjCInstance:
         return UIColor.colorWithRed_green_blue_alpha_(1.0,0.9,0.3,0.3)
     if name in ['frozen', 'frozenaddress', 'frozen address']:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,0.125)
+    if name in ['frozentext', 'frozen text', 'frozenaddresstext', 'frozen address text']:
+        return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,1.0)
     NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
     return UIColor.grayColor
 
@@ -799,3 +801,16 @@ class NSDeallocObserver(PySig):
             nspy_pop(self.observer)
         #super().__del__()
     '''
+    
+def set_namedtuple_field(nt : object, fieldname : str, newval : Any) -> object:
+    try:
+        d = nt._asdict()
+    except:
+        raise ValueError('set_namedtuple_field, first argument does not appear to be a valid namedtuple!')
+    if not isinstance(fieldname, str):
+         raise ValueError('set_namedtuple_field, fieldname (second arg) must be a string!')
+    if fieldname not in d:
+        raise ValueError('%s is not a field in namedtuple %s'%(str(fieldname),type(nt).__qualname__))
+    else:
+        d[fieldname] = newval
+        return type(nt)(**d)

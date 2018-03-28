@@ -609,6 +609,7 @@ UIApplicationBackgroundFetchIntervalMinimum = c_double.in_dll(uikit, "UIApplicat
 UIApplicationBackgroundFetchIntervalNever = c_double.in_dll(uikit, "UIApplicationBackgroundFetchIntervalNever").value
 
 #UITapGestureRecognizer
+UIGestureRecognizer = ObjCClass('UIGestureRecognizer')
 UITapGestureRecognizer = ObjCClass('UITapGestureRecognizer')
 
 #NSNotificationCenter stuff

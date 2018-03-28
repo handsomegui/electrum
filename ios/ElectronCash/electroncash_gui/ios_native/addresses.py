@@ -1,5 +1,7 @@
 from . import utils
 from . import gui
+from . import history
+from .txdetail import TxDetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 import electroncash.exchange_rate
@@ -16,10 +18,12 @@ from .custom_objc import *
 
 class AddressDetail(UIViewController):
     
+    defaultBG = objc_property()
+    
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
-        self.title = "Address Information"
+        self.title = "Address Details"
         return self
     
     @objc_method
@@ -28,45 +32,238 @@ class AddressDetail(UIViewController):
         utils.nspy_pop(self)
         self.title = None
         self.view = None
+        self.defaultBG = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
     def loadView(self) -> None:
-        v = UIView.alloc().init().autorelease()
-        v.autoresizesSubviews = False
-        lbl = UILabel.alloc().init().autorelease()
-        entry = utils.nspy_get(self)
-        if entry:
-            lbl.text = "Address Detail: " + str(entry.addr_idx) + " " + entry.addr_str + " "
-        lbl.adjustsFontSizeForWidth = True
-        lbl.numberOfLines = 2
-        w = UIScreen.mainScreen.bounds.size.width
-        rect = CGRectMake(0,100,w,80)
-        lbl.frame = rect
-        v.addSubview_(lbl)
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("AddressDetail",None,None)
+        v = None
+        gr = None
         
-        but = UIButton.buttonWithType_(UIButtonTypeSystem)
-        but.setTitle_forState_("Freeze" if not entry.is_frozen else "Unfreeze", UIControlStateNormal)
+        for o in objs:
+            if isinstance(o, UIView):
+                v = o
+            elif isinstance(o, UIGestureRecognizer):
+                gr = o
+        if v is None or gr is None:
+            raise ValueError('AddressDetail XIB is missing either the primary view or the expected gesture recognizer!')
         
-        rect = CGRectMake(0,200,w,80)
-        but.frame = rect
-        
+        gr.addTarget_action_(self, SEL(b'onTapAddress'))
+
+        parent = gui.ElectrumGui.gui
+   
+        entry = utils.nspy_get_byname(self, 'entry')        
+
+        tf = v.viewWithTag_(210)
+        tf.delegate = self
+
+        but = v.viewWithTag_(520)
         def onToggleFreeze(oid : objc_id) -> None:
-            entry = utils.nspy_get(self)
-            parent = gui.ElectrumGui.gui
             if parent.wallet:
-                edict = entry._asdict()
-                edict["is_frozen"] = not edict["is_frozen"]
-                entry = AddressData.Entry(**edict)
-                but.setTitle_forState_("Unfreeze" if entry.is_frozen else "Freeze", UIControlStateNormal)
-                utils.nspy_put(self, entry)
+                entry = utils.nspy_get_byname(self, 'entry')
+                entry = utils.set_namedtuple_field(entry, 'is_frozen', not entry.is_frozen)
+                utils.nspy_put_byname(self, entry, 'entry')
                 parent.wallet.set_frozen_state([entry.address], entry.is_frozen)
                 parent.wallet.storage.write()
                 parent.refresh_components('addresses')
+                self.refresh()
         but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onToggleFreeze)
-        v.addSubview_(but)
+
+        butCpy = v.viewWithTag_(120)
+        butQR = v.viewWithTag_(130)
+        butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
+        butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
+        def onCpy(oid : objc_id) -> None:
+            self.onCpyBut()
+        def onQR(oid : objc_id) -> None:
+            self.onQRBut()
+        butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy) # bind actin to closure 
+        butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)  # bind action to closure
         
+        utils.nspy_put_byname(self, history.get_history([entry.address]), 'history')
+        tv = v.viewWithTag_(1000)
+        tv.delegate = self
+        tv.dataSource = self
+
         self.view = v
+                
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.refresh()
+        
+    @objc_method
+    def refresh(self) -> None:
+        v = self.viewIfLoaded
+        if v is None: return
+        entry = utils.nspy_get_byname(self, 'entry')
+ 
+        lbl = v.viewWithTag_(100)
+        lbl.text = _("Address") + ":"
+        lbl = v.viewWithTag_(110)
+        lbl.text = entry.addr_str
+        bgColor = None
+        if self.defaultBG is None:
+            self.defaultBG = lbl.backgroundColor
+        lbl.textColor = UIColor.blackColor 
+        if entry.is_change:
+            lbl.backgroundColor = utils.uicolor_custom('change address')
+            if entry.is_frozen:
+                lbl.textColor = utils.uicolor_custom('frozen address text')
+        elif entry.is_frozen:
+            lbl.backgroundColor = utils.uicolor_custom('frozen address')
+        else:
+            lbl.backgroundColor = self.defaultBG
+        bgColor = lbl.backgroundColor
+        lbl = v.viewWithTag_(200)
+        lbl.text = _("Description") + ":"
+        tf = v.viewWithTag_(210)
+        tf.placeholder = _("Tap to add a description")
+        tf.text = entry.label
+
+        lbl = v.viewWithTag_(300)
+        lbl.text = _("NumTx") + ":"
+        lbl = v.viewWithTag_(310)
+        lbl.text = str(entry.num_tx)
+        
+        lbl = v.viewWithTag_(400)
+        lbl.text = _("Balance") + ":"
+        lbl = v.viewWithTag_(410)
+        lbl.text = entry.balance_str + ((' (' + entry.fiat_balance_str + ')') if entry.fiat_balance_str else '')
+        
+        lbl = v.viewWithTag_(500)
+        lbl.text = _("Flags") + ":"
+        lbl = v.viewWithTag_(510)
+        flags = []
+        if entry.is_change: flags.append(_("Change"))
+        if entry.is_frozen: flags.append(_("Frozen"))
+        lbl.text = ', '.join(flags)
+        
+        tv = v.viewWithTag_(1000)
+        tv.backgroundColor = bgColor
+        utils.nspy_put_byname(self, history.get_history([entry.address]), 'history')
+        
+        self.refreshButs()
+        tv.reloadData()
+        
+    @objc_method
+    def onTapAddress(self) -> None:
+        entry = utils.nspy_get_byname(self, 'entry')
+        def on_block_explorer() -> None:
+            parent = gui.ElectrumGui.gui
+            parent.view_on_block_explorer(entry.address, 'addr')
+            
+        utils.show_alert(
+            vc = self,
+            title = _("Options"),
+            message = _("Address") + ":" + " " + entry.addr_str[0:12] + "..." + entry.addr_str[-12:],
+            actions = [
+                [ _('Cancel') ],
+                [ _('Copy to clipboard'), lambda: self.onCpyBut() ],
+                [ _('Show as QR code'), lambda: self.onQRBut() ],
+                [ _("View on block explorer"), on_block_explorer ],
+            ],
+            cancel = _('Cancel'),
+            style = UIAlertControllerStyleActionSheet
+        )
+    @objc_method
+    def onCpyBut(self) -> None:
+        entry = utils.nspy_get_byname(self, 'entry')
+        UIPasteboard.generalPasteboard.string = entry.addr_str
+        utils.show_notification(message=_("Text copied to clipboard"))
+    @objc_method
+    def onQRBut(self) -> None:
+        entry = utils.nspy_get_byname(self, 'entry')
+        qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+                                                data=entry.addr_str,
+                                                title = _('QR code'))
+        gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
+        
+    @objc_method
+    def refreshButs(self) -> None:
+        v = self.viewIfLoaded
+        if v is None: return
+        but = v.viewWithTag_(520)
+        entry = utils.nspy_get_byname(self, 'entry')
+        but.setTitle_forState_(_("Freeze") if not entry.is_frozen else _("Unfreeze"), UIControlStateNormal)
+
+    @objc_method
+    def textFieldShouldReturn_(self, tf) -> bool:
+        #print("hit return, value is {}".format(tf.text))
+        tf.resignFirstResponder()
+        return True
+    
+    @objc_method
+    def textFieldDidBeginEditing_(self, tf) -> None:
+        #self.blockRefresh = True # temporarily block refreshing since that kills out keyboard/textfield
+        pass
+
+    @objc_method
+    def textFieldDidEndEditing_(self, tf) -> None:
+        entry = utils.nspy_get_byname(self, 'entry')
+        
+        tf.text = tf.text.strip()
+        new_label = tf.text
+        entry = utils.set_namedtuple_field(entry, 'label', new_label)
+        utils.nspy_put_byname(self, entry, 'entry')
+        print ("new label for address %s = %s"%(entry.address.to_storage_string(), new_label))
+        gui.ElectrumGui.gui.on_label_edited(entry.address, new_label)
+        #self.blockRefresh = False # unblock block refreshing
+        #utils.call_later(0.250, lambda: self.refresh())
+        self.refresh()
+        
+    @objc_method
+    def tableView_numberOfRowsInSection_(self, tv, section : int) -> int:
+        h = utils.nspy_get_byname(self, 'history')
+        return len(h) if h else 0
+    
+    @objc_method
+    def tableView_titleForHeaderInSection_(self, tv, section : int) -> ObjCInstance:
+        return _("Transaction History")
+    
+    @objc_method
+    def numberOfSectionsInTableView_(self, tv) -> int:
+        return 1
+    
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        identifier = str(__class__)
+        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
+        if cell is None:
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+            cell.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,1.0,1.0,0.7)
+        try:
+            cell.opaque = False
+            hentry = utils.nspy_get_byname(self, 'history')[indexPath.row]
+            history.setup_cell_for_history_entry(cell, hentry)
+        except Exception as e:
+            print("exception in AddressDetail.tableView_cellForRowAtIndexPath_: %s"%str(e))
+            cell.textLabel.attributedText = None
+            cell.textLabel.text = "*Error*"
+            cell.detailTextLabel.attributedText = None
+            cell.detailTextLabel.text = None
+            cell.accessoryType = UITableViewCellAccessoryNone
+        return cell
+
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
+        #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
+        parent = gui.ElectrumGui.gui
+        if parent.wallet is None:
+            return
+        try:
+            entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
+        except:
+            return        
+        tx = parent.wallet.transactions.get(entry.tx_hash, None)
+        rawtx = None
+        if tx is not None: rawtx = tx.raw
+        else: return
+        txd = TxDetail.alloc()
+        utils.nspy_put_byname(txd, entry, 'tx_entry')
+        self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
+
  
 # Addresses Tab -- shows addresses, etc
 class AddressesTableVC(UITableViewController):
@@ -212,7 +409,7 @@ class AddressesTableVC(UITableViewController):
             if section is not None and indexPath.row < len(section[1]):
                 entry = section[1][indexPath.row]                
                 addrDetail = AddressDetail.alloc().init().autorelease()
-                utils.nspy_put(addrDetail, entry)
+                utils.nspy_put_byname(addrDetail, entry, 'entry')
                 self.navigationController.pushViewController_animated_(addrDetail, True)
                 
     

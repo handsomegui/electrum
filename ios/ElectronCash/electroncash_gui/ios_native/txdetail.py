@@ -15,7 +15,7 @@ class TxInputsOutputsTVC(NSObject):
     ts = objc_property()
     
     @objc_method
-    def initWithTxRaw_inputTV_outputTV_timestamp_(self, txraw : ObjCInstance, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : int) -> ObjCInstance:
+    def initWithTxRaw_inputTV_outputTV_timestamp_(self, txraw : ObjCInstance, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : float) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self is not None:
             self.txraw = txraw
@@ -51,7 +51,7 @@ class TxInputsOutputsTVC(NSObject):
         
     @objc_classmethod
     def tvcWithTxRaw_inputTV_outputTV_timestamp_(cls, txraw : ObjCInstance, itv : ObjCInstance, otv : ObjCInstance,
-                                                 timestamp : int) -> ObjCInstance:
+                                                 timestamp : float) -> ObjCInstance:
         return __class__.alloc().initWithTxRaw_inputTV_outputTV_timestamp_(txraw,itv,otv,timestamp).autorelease()
     
     @objc_method
@@ -248,7 +248,7 @@ class TxInputsOutputsTVC(NSObject):
 # returns the view itself, plus the copy button and the qrcode button, plus the (sometimes nil!!) UITextField for the editable description
 #  the copy and the qrcode buttons are so that caller may attach event handing to them
 def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (ObjCInstance, ObjCInstance, ObjCInstance, ObjCInstance):
-    entry = txDetailViewController.entry
+    entry = utils.nspy_get_byname(txDetailViewController, 'tx_entry')
     dummy, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
@@ -339,7 +339,7 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
     ff = status_str
     try:
         if int(conf) > 0:
-           ff = "%s %s"%(conf, _('confirmations'))
+           ff = "%s %s"%(str(conf), _('confirmations'))
     except:
         pass        
     statusLbl.text = _(ff)
@@ -347,7 +347,7 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
     if timestamp or exp_n:
         if timestamp:
             dateTit.text = _("Date") + ":"
-            dateLbl.text = date
+            dateLbl.text = str(date)
         elif exp_n:
             dateTit.text = _("Expected confirmation time") + ':'
             dateLbl.text = '%d blocks'%(exp_n) if exp_n > 0 else _('unknown (low fee)')
@@ -387,8 +387,8 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
     if tx.locktime > 0:
         lockLbl.text = str(tx.locktime)
         
-    # refreshes the tableview with data    
-    tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, int(ts))
+    # refreshes the tableview with data
+    tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, float(ts))
     
     #view.translatesAutoresizingMaskIntoConstraints = False
     #view.viewWithTag_(1).translatesAutoresizingMaskIntoConstraints = True
@@ -396,15 +396,12 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
     return (view, copyBut, qrBut, descTf)
 
 class TxDetail(UIViewController):
-    # entry = ('', tx_hash, status_str, label, v_str, balance_str, date_str, conf, status, val, status_uiimage)
-    entry = objc_property()  # an NSArray of basically the history entry
     rawtx = objc_property()  # string of the raw tx data suitable for building a Transaction instance using deserialize.  May be None
 
     @objc_method
-    def initWithEntry_rawTx_(self, entry : ObjCInstance, rawtx : ObjCInstance) -> ObjCInstance:
+    def initWithRawTx_(self, rawtx : ObjCInstance) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
-            self.entry = entry
             self.rawtx = rawtx
             self.title = _("Transaction") + " " + _("Details")
         return self
@@ -412,10 +409,10 @@ class TxDetail(UIViewController):
     @objc_method
     def dealloc(self) -> None:
         print("TxDetail dealloc")
-        self.entry = None
         self.rawtx = None
         self.title = None
         self.view = None
+        utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -427,40 +424,50 @@ class TxDetail(UIViewController):
             descrTF.delegate = self
 
     @objc_method
-    def textFieldShouldReturn_(self, tf) -> bool:
+    def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
         #print("hit return, value is {}".format(tf.text))
-        tx_hash = self.entry[1]
-        tf.text = tf.text.strip()
-        new_label = tf.text
-        gui.ElectrumGui.gui.on_label_edited(tx_hash, new_label)
         tf.resignFirstResponder()
         return True
+    
+    @objc_method
+    def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
+        entry = utils.nspy_get_byname(self, 'tx_entry')
+        tx_hash = entry.tx_hash
+        tf.text = tf.text.strip()
+        new_label = tf.text
+        entry = utils.set_namedtuple_field(entry, 'label', new_label)
+        utils.nspy_put_byname(self, entry, 'tx_entry')
+        gui.ElectrumGui.gui.on_label_edited(tx_hash, new_label)
 
     @objc_method
     def onCopyBut_(self, but) -> None:
-        UIPasteboard.generalPasteboard.string = self.entry[1]
+        entry = utils.nspy_get_byname(self, 'tx_entry')
+        UIPasteboard.generalPasteboard.string = entry.tx_hash
         utils.show_notification(message=_("Text copied to clipboard"))
 
     @objc_method
     def onQRBut_(self, but) -> None:
         #utils.show_notification(message="QR button unimplemented -- coming soon!", duration=2.0, color=(.9,0,0,1.0))
         
+        entry = utils.nspy_get_byname(self, 'tx_entry')
+
         qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
-                                                data=self.entry[1],
+                                                data=entry.tx_hash,
                                                 title = _('QR code'))
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
 
         
     @objc_method
     def onTxLink_(self, gestureRecognizer : ObjCInstance) -> None:
+        entry = utils.nspy_get_byname(self, 'tx_entry')
         def on_block_explorer() -> None:
             parent = gui.ElectrumGui.gui
-            parent.view_on_block_explorer(self.entry[1], 'tx')
+            parent.view_on_block_explorer(entry.tx_hash, 'tx')
             
         utils.show_alert(
             vc = self,
             title = _("Options"),
-            message = _("Transaction ID:") + " " + self.entry[1][:12] + "...",
+            message = _("Transaction ID:") + " " + entry.tx_hash[:12] + "...",
             actions = [
                 [ _('Cancel') ],
                 [ _('Copy to clipboard'), self.onCopyBut_, None ],

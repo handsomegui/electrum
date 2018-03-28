@@ -9,37 +9,18 @@ import html
 from .uikit_bindings import *
 from collections import namedtuple
 
-HistoryEntry =namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
 
 
 # History Tab -- shows tx's, etc
 class HistoryTableVC(UITableViewController):
     needsRefresh = objc_property()
-    statusImages = objc_property()
 
     @objc_method
     def initWithStyle_(self, style : int):
         self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
         self.needsRefresh = False
         self.title = _("History")
-        # setup the status icons array.. cache the images basically
-        tx_icons = [
-            "warning.png",
-            "warning.png",
-            "unconfirmed.png",
-            "unconfirmed.png",
-            "clock1.png",
-            "clock2.png",
-            "clock3.png",
-            "clock4.png",
-            "clock5.png",
-            "confirmed.png",
-        ]
-        self.statusImages = NSMutableArray.arrayWithCapacity_(len(tx_icons))
-        for icon in tx_icons:
-            img = UIImage.imageNamed_(icon)
-            assert img is not None
-            self.statusImages.addObject_(img)
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
 
@@ -48,7 +29,6 @@ class HistoryTableVC(UITableViewController):
     @objc_method
     def dealloc(self) -> None:
         self.needsRefresh = None
-        self.statusImages = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
 
@@ -73,53 +53,7 @@ class HistoryTableVC(UITableViewController):
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
         try:
             entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
-            dummy1, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, val, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, *dummy2 = entry
-
-            ff = str(date)
-            if conf > 0:
-                ff = "%s %s"%(conf, language.gettext('confirmations'))
-            if label is None:
-                label = ''
-            lblColor = "#000000" if val >= 0 else "#993333"
-            lblSep = ' - ' if len(label) else ''
-            title = utils.nsattributedstring_from_html(('<font face="system font,arial,helvetica,verdana" size=2>%s</font>'
-                                                       + '<font face="system font,arial,helvetica,verdana" size=4>%s<font color="%s"><b>%s</b></font></font>')
-                                                       %(html.escape(status_str),
-                                                         lblSep,
-                                                         lblColor,
-                                                         ''+html.escape(label)+'' if len(label)>0 else ''
-                                                         ))
-            pstyle = NSMutableParagraphStyle.alloc().init().autorelease()
-            pstyle.lineBreakMode = NSLineBreakByTruncatingTail
-            title.addAttribute_value_range_(NSParagraphStyleAttributeName, pstyle, NSRange(0,title.length()))
-            detail = utils.nsattributedstring_from_html(('<p align="justify" style="font-family:system font,arial,helvetica,verdana">'
-                                                        + 'Amt: <font face="monaco, menlo, courier" color="%s"><strong>%s%s</strong></font>'
-                                                        + ' - Bal: <font face="monaco, menlo, courier"><strong>%s%s</strong></font>'
-                                                        + ' - <font size=-1 color="#666666"><i>(%s)</i></font>'
-                                                        + '</p>')
-                                                        %(lblColor,html.escape(v_str),
-                                                          (("(" + fiat_amount_str + " " + ccy + ") ") if fiat_amount else ''),
-                                                          html.escape(balance_str),
-                                                          (("(" + fiat_balance_str + " " + ccy + ") ") if fiat_balance else ''),
-                                                          html.escape(ff)))
-            detail.addAttribute_value_range_(NSParagraphStyleAttributeName, pstyle, NSRange(0,detail.length()))
-            if status >= 0 and status < len(self.statusImages):
-                cell.imageView.image = self.statusImages[status]
-            else:
-                cell.imageView.image = None
-            cell.textLabel.text = None
-            cell.textLabel.adjustsFontSizeToFitWidth = False if len(label) > 0 else True
-            cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail# if len(label) > 0 else NSLineBreakByClipping
-            cell.textLabel.numberOfLines = 1 #if len(label) <= 0 else 2
-            cell.textLabel.attributedText = title
-            cell.textLabel.updateConstraintsIfNeeded()
-            cell.detailTextLabel.text = None
-            cell.detailTextLabel.adjustsFontSizeToFitWidth = False
-            cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingTail
-            cell.detailTextLabel.numberOfLines = 1
-            cell.detailTextLabel.attributedText = detail
-            cell.detailTextLabel.updateConstraintsIfNeeded()
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+            setup_cell_for_history_entry(cell, entry)
         except Exception as e:
             print("exception in tableView_cellForRowAtIndexPath_: %s"%str(e))
             cell.textLabel.attributedText = None
@@ -142,61 +76,24 @@ class HistoryTableVC(UITableViewController):
         if parent.wallet is None:
             return
         try:
-            hentry = utils.nspy_get_byname(self, 'history')[indexPath.row]
+            entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
         except:
             return        
-        entry = [str(it) for it in hentry]
-        entry[-1] = self.statusImages[hentry.status]
-        tx = parent.wallet.transactions.get(hentry.tx_hash, None)
+        tx = parent.wallet.transactions.get(entry.tx_hash, None)
         rawtx = None
         if tx is not None: rawtx = tx.raw
-        parent.historyNav.pushViewController_animated_(TxDetail.alloc().initWithEntry_rawTx_(entry, rawtx).autorelease(), True)
+        txd = TxDetail.alloc()
+        utils.nspy_put_byname(txd, entry, 'tx_entry')
+        self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
     
     @objc_method
     def updateHistoryFromWallet(self):
-        parent = gui.ElectrumGui.gui
-        wallet = parent.wallet
-        daemon = parent.daemon
-        if wallet is None or daemon is None:
-            utils.NSLog("updateHistory: wallent and/or daemon was None, returning early")
+        history = get_history()
+        if history is None:
+            # probable backgroundeed and/or wallet is closed
             return
-        h = wallet.get_history()
-        #item = self.currentItem()
-        #current_tx = item.data(0, Qt.UserRole) if item else None
-        #self.clear()
-        fx = daemon.fx if daemon.fx and daemon.fx.show_history() else None
-        #if fx: fx.history_used_spot = False
-        history = list()
-        ccy = ''
-        for h_item in h:
-            tx_hash, height, conf, timestamp, value, balance = h_item
-            status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
-            has_invoice = wallet.invoices.paid.get(tx_hash)
-            #icon = QIcon(":icons/" + TX_ICONS[status])
-            v_str = parent.format_amount(value, True, whitespaces=True)
-            balance_str = parent.format_amount(balance, whitespaces=True)
-            label = wallet.get_label(tx_hash)
-            date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
-            ts = timestamp if conf > 0 else time.time()
-            fiat_amount = fiat_balance = 0
-            fiat_amount_str = fiat_balance_str = ''
-            if fx:
-                if not ccy:
-                    ccy = fx.get_currency()
-                hdate = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
-                hamount = fx.historical_value(value, hdate)
-                htext = fx.historical_value_str(value, hdate) if hamount else ''
-                fiat_amount = hamount if hamount else fiat_amount
-                fiat_amount_str = htext if htext else fiat_amount_str
-                hamount = fx.historical_value(balance, hdate)
-                htext = fx.historical_value_str(balance, hdate) if hamount else ''
-                fiat_balance = hamount if hamount else fiat_balance
-                fiat_balance_str = htext if htext else fiat_balance_str
-            entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, None)
-            history.insert(0,entry) # reverse order
         utils.nspy_put_byname(self, history, 'history')
         print ("fetched %d entries from history"%len(history))
-
 
     @objc_method
     def refresh(self):
@@ -229,3 +126,109 @@ class HistoryTableVC(UITableViewController):
             # the below starts up the table view in the "refreshing" state..
             self.refreshControl.beginRefreshing()
             self.tableView.setContentOffset_animated_(CGPointMake(0, self.tableView.contentOffset.y-self.refreshControl.frame.size.height), True)
+
+#######################################################################
+# HELPER STUFF EXPORTED TO OTHER MODULES ('Addresses' uses these too) #
+#######################################################################
+statusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
+    UIImage.imageNamed_("warning.png").retain(),
+    UIImage.imageNamed_("warning.png").retain(),
+    UIImage.imageNamed_("unconfirmed.png").retain(),
+    UIImage.imageNamed_("unconfirmed.png").retain(),
+    UIImage.imageNamed_("clock1.png").retain(),
+    UIImage.imageNamed_("clock2.png").retain(),
+    UIImage.imageNamed_("clock3.png").retain(),
+    UIImage.imageNamed_("clock4.png").retain(),
+    UIImage.imageNamed_("clock5.png").retain(),
+    UIImage.imageNamed_("confirmed.png").retain(),
+]
+
+def setup_cell_for_history_entry(cell : ObjCInstance, entry : object) -> None:
+    dummy1, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, val, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
+
+    ff = str(date)
+    if conf > 0:
+        ff = "%s %s"%(conf, language.gettext('confirmations'))
+    if label is None:
+        label = ''
+    lblColor = "#000000" if val >= 0 else "#993333"
+    lblSep = ' - ' if len(label) else ''
+    title = utils.nsattributedstring_from_html(('<font face="system font,arial,helvetica,verdana" size=2>%s</font>'
+                                               + '<font face="system font,arial,helvetica,verdana" size=4>%s<font color="%s"><b>%s</b></font></font>')
+                                               %(html.escape(status_str),
+                                                 lblSep,
+                                                 lblColor,
+                                                 ''+html.escape(label)+'' if len(label)>0 else ''
+                                                 ))
+    pstyle = NSMutableParagraphStyle.alloc().init().autorelease()
+    pstyle.lineBreakMode = NSLineBreakByTruncatingTail
+    title.addAttribute_value_range_(NSParagraphStyleAttributeName, pstyle, NSRange(0,title.length()))
+    detail = utils.nsattributedstring_from_html(('<p align="justify" style="font-family:system font,arial,helvetica,verdana">'
+                                                + 'Amt: <font face="monaco, menlo, courier" color="%s"><strong>%s%s</strong></font>'
+                                                + ' - Bal: <font face="monaco, menlo, courier"><strong>%s%s</strong></font>'
+                                                + ' - <font size=-1 color="#666666"><i>(%s)</i></font>'
+                                                + '</p>')
+                                                %(lblColor,html.escape(v_str),
+                                                  (("(" + fiat_amount_str + " " + ccy + ") ") if fiat_amount else ''),
+                                                  html.escape(balance_str),
+                                                  (("(" + fiat_balance_str + " " + ccy + ") ") if fiat_balance else ''),
+                                                  html.escape(ff)))
+    detail.addAttribute_value_range_(NSParagraphStyleAttributeName, pstyle, NSRange(0,detail.length()))
+    cell.imageView.image = img
+    cell.textLabel.text = None
+    cell.textLabel.adjustsFontSizeToFitWidth = False if len(label) > 0 else True
+    cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail# if len(label) > 0 else NSLineBreakByClipping
+    cell.textLabel.numberOfLines = 1 #if len(label) <= 0 else 2
+    cell.textLabel.attributedText = title
+    cell.textLabel.updateConstraintsIfNeeded()
+    cell.detailTextLabel.text = None
+    cell.detailTextLabel.adjustsFontSizeToFitWidth = False
+    cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingTail
+    cell.detailTextLabel.numberOfLines = 1
+    cell.detailTextLabel.attributedText = detail
+    cell.detailTextLabel.updateConstraintsIfNeeded()
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+
+def get_history(domain : list = None) -> list:
+    ''' For a given set of addresses (or None for all addresses), builds a list of
+        HistoryEntry '''
+    parent = gui.ElectrumGui.gui
+    wallet = parent.wallet
+    daemon = parent.daemon
+    if wallet is None or daemon is None:
+        utils.NSLog("get_history: wallent and/or daemon was None, returning early")
+        return None
+    h = wallet.get_history(domain)
+    fx = daemon.fx if daemon.fx and daemon.fx.show_history() else None
+    history = list()
+    ccy = ''
+    for h_item in h:
+        tx_hash, height, conf, timestamp, value, balance = h_item
+        status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
+        has_invoice = wallet.invoices.paid.get(tx_hash)
+        v_str = parent.format_amount(value, True, whitespaces=True)
+        balance_str = parent.format_amount(balance, whitespaces=True)
+        label = wallet.get_label(tx_hash)
+        date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
+        ts = timestamp if conf > 0 else time.time()
+        fiat_amount = fiat_balance = 0
+        fiat_amount_str = fiat_balance_str = ''
+        if fx:
+            if not ccy:
+                ccy = fx.get_currency()
+            hdate = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
+            hamount = fx.historical_value(value, hdate)
+            htext = fx.historical_value_str(value, hdate) if hamount else ''
+            fiat_amount = hamount if hamount else fiat_amount
+            fiat_amount_str = htext if htext else fiat_amount_str
+            hamount = fx.historical_value(balance, hdate)
+            htext = fx.historical_value_str(balance, hdate) if hamount else ''
+            fiat_balance = hamount if hamount else fiat_balance
+            fiat_balance_str = htext if htext else fiat_balance_str
+        if status >= 0 and status < len(statusImages):
+            img = statusImages[status]
+        else:
+            img = None
+        entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)
+        history.insert(0,entry) # reverse order
+    return history
