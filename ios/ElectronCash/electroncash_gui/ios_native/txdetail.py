@@ -422,6 +422,14 @@ class TxDetail(UIViewController):
         butQR.addTarget_action_forControlEvents_(self, SEL(b'onQRBut:'), UIControlEventPrimaryActionTriggered)
         if descrTF is not None:
             descrTF.delegate = self
+            
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        entry = utils.nspy_get_byname(txDetailViewController, 'tx_entry')
+        descTf = self.view.viewWithTag_(210)
+        descTf.text = entry.label
+        #todo update this stuff in realtime?
 
     @objc_method
     def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
