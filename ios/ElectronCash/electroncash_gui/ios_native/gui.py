@@ -211,7 +211,6 @@ class ElectrumGui(PrintError):
         
         Address.show_cashaddr(self.prefs_get_use_cashaddr())
 
-        self.history = []
         self.tx_notifications = []
         self.helper = None
         self.helperTimer = None

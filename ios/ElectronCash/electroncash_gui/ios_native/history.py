@@ -7,7 +7,11 @@ from electroncash.i18n import _, language
 import time
 import html
 from .uikit_bindings import *
- 
+from collections import namedtuple
+
+HistoryEntry =namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+
+
 # History Tab -- shows tx's, etc
 class HistoryTableVC(UITableViewController):
     needsRefresh = objc_property()
@@ -45,6 +49,7 @@ class HistoryTableVC(UITableViewController):
     def dealloc(self) -> None:
         self.needsRefresh = None
         self.statusImages = None
+        utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
 
     @objc_method
@@ -54,8 +59,8 @@ class HistoryTableVC(UITableViewController):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         try:
-            parent = gui.ElectrumGui.gui
-            return len(parent.history)
+            history = utils.nspy_get_byname(self, 'history')
+            return len(history)
         except:
             print("Error, no history")
             return 0
@@ -67,9 +72,8 @@ class HistoryTableVC(UITableViewController):
         if cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
         try:
-            parent = gui.ElectrumGui.gui
-            entry = parent.history[indexPath.row]
-            _, tx_hash, status_str, label, v_str, balance_str, date, conf, status, val, *_ = entry
+            entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
+            dummy1, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, val, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, *dummy2 = entry
 
             ff = str(date)
             if conf > 0:
@@ -89,11 +93,15 @@ class HistoryTableVC(UITableViewController):
             pstyle.lineBreakMode = NSLineBreakByTruncatingTail
             title.addAttribute_value_range_(NSParagraphStyleAttributeName, pstyle, NSRange(0,title.length()))
             detail = utils.nsattributedstring_from_html(('<p align="justify" style="font-family:system font,arial,helvetica,verdana">'
-                                                        + 'Amt: <font face="monaco, menlo, courier" color="%s"><strong>%s</strong></font>'
-                                                        + ' - Bal: <font face="monaco, menlo, courier"><strong>%s</strong></font>'
+                                                        + 'Amt: <font face="monaco, menlo, courier" color="%s"><strong>%s%s</strong></font>'
+                                                        + ' - Bal: <font face="monaco, menlo, courier"><strong>%s%s</strong></font>'
                                                         + ' - <font size=-1 color="#666666"><i>(%s)</i></font>'
                                                         + '</p>')
-                                                        %(lblColor,html.escape(v_str),html.escape(balance_str),html.escape(ff)))
+                                                        %(lblColor,html.escape(v_str),
+                                                          (("(" + fiat_amount_str + " " + ccy + ") ") if fiat_amount else ''),
+                                                          html.escape(balance_str),
+                                                          (("(" + fiat_balance_str + " " + ccy + ") ") if fiat_balance else ''),
+                                                          html.escape(ff)))
             detail.addAttribute_value_range_(NSParagraphStyleAttributeName, pstyle, NSRange(0,detail.length()))
             if status >= 0 and status < len(self.statusImages):
                 cell.imageView.image = self.statusImages[status]
@@ -118,7 +126,7 @@ class HistoryTableVC(UITableViewController):
             cell.textLabel.text = "*Error*"
             cell.detailTextLabel.attributedText = None
             cell.detailTextLabel.text = None
-            cell.accessoryType = None
+            cell.accessoryType = UITableViewCellAccessoryNone
         return cell
     
     # Below 2 methods conform to UITableViewDelegate protocol
@@ -131,10 +139,15 @@ class HistoryTableVC(UITableViewController):
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
         #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
         parent = gui.ElectrumGui.gui
-        hentry = parent.history[indexPath.row]
+        if parent.wallet is None:
+            return
+        try:
+            hentry = utils.nspy_get_byname(self, 'history')[indexPath.row]
+        except:
+            return        
         entry = [str(it) for it in hentry]
-        entry.append(self.statusImages[hentry[8]])
-        tx = parent.wallet.transactions.get(hentry[1], None)
+        entry[-1] = self.statusImages[hentry.status]
+        tx = parent.wallet.transactions.get(hentry.tx_hash, None)
         rawtx = None
         if tx is not None: rawtx = tx.raw
         parent.historyNav.pushViewController_animated_(TxDetail.alloc().initWithEntry_rawTx_(entry, rawtx).autorelease(), True)
@@ -143,13 +156,18 @@ class HistoryTableVC(UITableViewController):
     def updateHistoryFromWallet(self):
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
+        daemon = parent.daemon
+        if wallet is None or daemon is None:
+            utils.NSLog("updateHistory: wallent and/or daemon was None, returning early")
+            return
         h = wallet.get_history()
         #item = self.currentItem()
         #current_tx = item.data(0, Qt.UserRole) if item else None
         #self.clear()
-        #fx = parent.fx
+        fx = daemon.fx if daemon.fx and daemon.fx.show_history() else None
         #if fx: fx.history_used_spot = False
-        parent.history = []
+        history = list()
+        ccy = ''
         for h_item in h:
             tx_hash, height, conf, timestamp, value, balance = h_item
             status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
@@ -159,33 +177,25 @@ class HistoryTableVC(UITableViewController):
             balance_str = parent.format_amount(balance, whitespaces=True)
             label = wallet.get_label(tx_hash)
             date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
-            entry = ('', tx_hash, status_str, label, v_str, balance_str, date, conf, status, value)
-            parent.history.insert(0,entry) # reverse order
-            #if fx and fx.show_history():
-            #    date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
-            #    for amount in [value, balance]:
-            #        text = fx.historical_value_str(amount, date)
-            #        entry.append(text)
-            #item = SortableTreeWidgetItem(entry)
-            #item.setIcon(0, icon)
-            #item.setToolTip(0, str(conf) + " confirmation" + ("s" if conf != 1 else ""))
-            #item.setData(0, SortableTreeWidgetItem.DataRole, (status, conf))
-            #if has_invoice:
-            #    item.setIcon(3, QIcon(":icons/seal"))
-            #for i in range(len(entry)):
-            #    if i>3:
-            #        item.setTextAlignment(i, Qt.AlignRight)
-            #    if i!=2:
-            #        item.setFont(i, QFont(MONOSPACE_FONT))
-            #if value and value < 0:
-            #    item.setForeground(3, QBrush(QColor("#BC1E1E")))
-            #    item.setForeground(4, QBrush(QColor("#BC1E1E")))
-            #if tx_hash:
-            #    item.setData(0, Qt.UserRole, tx_hash)
-            #self.insertTopLevelItem(0, item)
-            #if current_tx == tx_hash:
-            #    self.setCurrentItem(item)
-        print ("fetched %d entries from history"%len(parent.history))
+            ts = timestamp if conf > 0 else time.time()
+            fiat_amount = fiat_balance = 0
+            fiat_amount_str = fiat_balance_str = ''
+            if fx:
+                if not ccy:
+                    ccy = fx.get_currency()
+                hdate = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
+                hamount = fx.historical_value(value, hdate)
+                htext = fx.historical_value_str(value, hdate) if hamount else ''
+                fiat_amount = hamount if hamount else fiat_amount
+                fiat_amount_str = htext if htext else fiat_amount_str
+                hamount = fx.historical_value(balance, hdate)
+                htext = fx.historical_value_str(balance, hdate) if hamount else ''
+                fiat_balance = hamount if hamount else fiat_balance
+                fiat_balance_str = htext if htext else fiat_balance_str
+            entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, None)
+            history.insert(0,entry) # reverse order
+        utils.nspy_put_byname(self, history, 'history')
+        print ("fetched %d entries from history"%len(history))
 
 
     @objc_method

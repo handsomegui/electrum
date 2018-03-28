@@ -4,6 +4,7 @@ from . import gui
 from .uikit_bindings import *
 from electroncash.transaction import Transaction
 from electroncash.address import Address, PublicKey
+from electroncash.util import timestamp_to_datetime
 
 # ViewController used for the TxDetail view's "Inputs" and "Outputs" tables.. not exposed.. managed internally
 class TxInputsOutputsTVC(NSObject):
@@ -11,9 +12,10 @@ class TxInputsOutputsTVC(NSObject):
     txraw = objc_property()
     tagin = objc_property()
     tagout = objc_property()
+    ts = objc_property()
     
     @objc_method
-    def initWithTxRaw_inputTV_outputTV_(self, txraw : ObjCInstance, inputTV : ObjCInstance, outputTV : ObjCInstance) -> ObjCInstance:
+    def initWithTxRaw_inputTV_outputTV_timestamp_(self, txraw : ObjCInstance, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : int) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self is not None:
             self.txraw = txraw
@@ -23,6 +25,7 @@ class TxInputsOutputsTVC(NSObject):
             if outputTV.tag == 0:
                 outputTV.tag = self.tagin + 1
             self.tagout = outputTV.tag
+            self.ts = ts
             
             if self.tagin == self.tagout or inputTV.ptr.value == outputTV.ptr.value:
                 raise ValueError("The input and output table views must be different and have different tags!")
@@ -43,11 +46,13 @@ class TxInputsOutputsTVC(NSObject):
         self.txraw = None
         self.tagin = None
         self.tagout = None
+        self.ts = None
         send_super(__class__, self, 'dealloc')
         
     @objc_classmethod
-    def tvcWithTxRaw_inputTV_outputTV_(cls, txraw, itv, otv) -> ObjCInstance:
-        return __class__.alloc().initWithTxRaw_inputTV_outputTV_(txraw,itv,otv).autorelease()
+    def tvcWithTxRaw_inputTV_outputTV_timestamp_(cls, txraw : ObjCInstance, itv : ObjCInstance, otv : ObjCInstance,
+                                                 timestamp : int) -> ObjCInstance:
+        return __class__.alloc().initWithTxRaw_inputTV_outputTV_timestamp_(txraw,itv,otv,timestamp).autorelease()
     
     @objc_method
     def numberOfSectionsInTableView_(self, tv) -> int:
@@ -81,6 +86,9 @@ class TxInputsOutputsTVC(NSObject):
         
         def format_amount(amt):
             return parent.format_amount(amt, whitespaces = True)
+        
+        def fx():
+            return parent.daemon.fx if parent.daemon and parent.daemon.fx and parent.daemon.fx.show_history() else None
 
         if cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
@@ -115,7 +123,7 @@ class TxInputsOutputsTVC(NSObject):
                     prevout_n = x.get('prevout_n')
                     mytxt = ""
                     mytxt += prevout_hash[0:8] + '...'
-                    mytxt += prevout_hash[-8:] + ":%-4d " % prevout_n
+                    mytxt += prevout_hash[-8:] + (":%-4d " % prevout_n)
                     addr = x['address']
                     if isinstance(addr, PublicKey):
                         addr = addr.toAddress()
@@ -124,8 +132,10 @@ class TxInputsOutputsTVC(NSObject):
                     else:
                         addr_text = addr.to_ui_string()
                     cell.textLabel.text = addr_text
-                    if x.get('value'):
-                        mytxt += format_amount(x['value'])
+                    if x.get('value') is not None:
+                        v_in = x['value']
+                        mytxt += format_amount(v_in)
+                        if fx(): mytxt += ' (' + fx().historical_value_str(v_in,timestamp_to_datetime(self.ts)) + " " + fx().get_currency() + ')'
                     cell.detailTextLabel.text = mytxt
             else:
                 colorMine = UIColor.colorWithRed_green_blue_alpha_(1.0,0.0,1.0,0.1)
@@ -134,7 +144,7 @@ class TxInputsOutputsTVC(NSObject):
                 cell.textLabel.text = addr.to_ui_string()
                 cell.detailTextLabel.text = ""
                 if v is not None:
-                    cell.detailTextLabel.text = format_amount(v)
+                    cell.detailTextLabel.text = format_amount(v) + ((' (' + fx().historical_value_str(v,timestamp_to_datetime(self.ts)) + " " + fx().get_currency() + ')') if fx() else '')
 
             cell.textLabel.adjustsFontSizeToFitWidth = True
             cell.textLabel.minimumScaleFactor = 0.85
@@ -152,7 +162,7 @@ class TxInputsOutputsTVC(NSObject):
             cell.textLabel.text = "*Error*"
             cell.detailTextLabel.attributedText = None
             cell.detailTextLabel.text = None
-            cell.accessoryType = None
+            cell.accessoryType = UITableViewCellAccessoryNone
         return cell
     
     # Below 2 methods conform to UITableViewDelegate protocol
@@ -239,7 +249,7 @@ class TxInputsOutputsTVC(NSObject):
 #  the copy and the qrcode buttons are so that caller may attach event handing to them
 def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (ObjCInstance, ObjCInstance, ObjCInstance, ObjCInstance):
     entry = txDetailViewController.entry
-    dummy, tx_hash, status_str, label, v_str, balance_str, date, conf, status, value, img, *dummy2 = entry
+    dummy, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     base_unit = parent.base_unit()
@@ -353,10 +363,14 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
         amtLbl.text = _("Transaction unrelated to your wallet")
     elif amount > 0:
         amtTit.text = _("Amount received:")
-        amtLbl.text = ('%s'%(format_amount(amount))) + ' ' + base_unit
+        amtLbl.text = ('%s %s%s'%(format_amount(amount),base_unit,
+                                  (" (" + fiat_amount_str + " " + ccy + ")") if fiat_amount_str else '',
+                                  ))
     else:
         amtTit.text = _("Amount sent:") 
-        amtLbl.text = ('%s'%(format_amount(-amount))) + ' ' + base_unit
+        amtLbl.text = ('%s %s%s'%(format_amount(-amount),base_unit,
+                                  (" (" + fiat_amount_str.replace('-','') + " " + ccy + ")") if fiat_amount_str else '',
+                                  ))
 
     sizeTit.text = _("Size:")
     if size:
@@ -374,7 +388,7 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
         lockLbl.text = str(tx.locktime)
         
     # refreshes the tableview with data    
-    tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_(tx.raw, inputsTV, outputsTV)
+    tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, int(ts))
     
     #view.translatesAutoresizingMaskIntoConstraints = False
     #view.viewWithTag_(1).translatesAutoresizingMaskIntoConstraints = True

@@ -27,10 +27,10 @@
                         <nil key="textColor"/>
                         <nil key="highlightedColor"/>
                     </label>
-                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="254" verticalHuggingPriority="251" text="bal:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5IX-Lh-CVC">
-                        <rect key="frame" x="24" y="61" width="23.5" height="17"/>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" verticalHuggingPriority="251" text="bal:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5IX-Lh-CVC">
+                        <rect key="frame" x="24" y="61" width="24" height="17"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="23.5" id="l46-jX-wTo"/>
+                            <constraint firstAttribute="width" constant="24" id="l46-jX-wTo"/>
                         </constraints>
                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                         <color key="textColor" red="0.041741655760000003" green="0.02862485465" blue="0.018553865249999999" alpha="0.66342531029999996" colorSpace="calibratedRGB"/>
@@ -43,8 +43,8 @@
                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                         <textInputTraits key="textInputTraits"/>
                     </textField>
-                    <label opaque="NO" userInteractionEnabled="NO" tag="20" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0.000" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="ncH-vY-xmK">
-                        <rect key="frame" x="51.5" y="59.5" width="215" height="20"/>
+                    <label opaque="NO" userInteractionEnabled="NO" tag="20" contentMode="left" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="0.000" lineBreakMode="tailTruncation" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="ncH-vY-xmK">
+                        <rect key="frame" x="52" y="59.5" width="214.5" height="20"/>
                         <constraints>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="100" id="bPH-fb-ZyS"/>
                         </constraints>
@@ -52,7 +52,7 @@
                         <nil key="textColor"/>
                         <nil key="highlightedColor"/>
                     </label>
-                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="253" verticalHuggingPriority="251" horizontalCompressionResistancePriority="752" text="numtx:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1bq-au-FRK">
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="255" verticalHuggingPriority="251" horizontalCompressionResistancePriority="250" text="numtx:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1bq-au-FRK">
                         <rect key="frame" x="274.5" y="61" width="44.5" height="17"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="44.5" id="Wrd-R0-xQo"/>
@@ -61,7 +61,7 @@
                         <color key="textColor" red="0.041741655760000003" green="0.02862485465" blue="0.018553865249999999" alpha="0.66342531029999996" colorSpace="calibratedRGB"/>
                         <nil key="highlightedColor"/>
                     </label>
-                    <label opaque="NO" userInteractionEnabled="NO" tag="30" contentMode="left" horizontalHuggingPriority="254" verticalHuggingPriority="251" horizontalCompressionResistancePriority="753" text="0" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="HLh-27-Vuv">
+                    <label opaque="NO" userInteractionEnabled="NO" tag="30" contentMode="left" verticalHuggingPriority="251" horizontalCompressionResistancePriority="753" text="0" textAlignment="natural" lineBreakMode="tailTruncation" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="HLh-27-Vuv">
                         <rect key="frame" x="323" y="59.5" width="40" height="20"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="40" id="vIU-ZN-mvL"/>

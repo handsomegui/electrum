@@ -142,7 +142,7 @@ class AddressesTableVC(UITableViewController):
         chglbl = cell.viewWithTag_(15)
         addrlbl.text = entry.addr_str
         ballbl = cell.viewWithTag_(20)
-        ballbl.text = entry.balance_str + ( ('(' + entry.fiat_balance_str + ')') if addrData.show_fx else '')
+        ballbl.text = entry.balance_str + ( (' (' + entry.fiat_balance_str + ')') if addrData.show_fx else '')
         ballbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(UIFont.labelFontSize(), UIFontWeightLight if not entry.balance else UIFontWeightSemibold )
         numlbl = cell.viewWithTag_(30)
         numlbl.text = str(entry.num_tx)
@@ -328,7 +328,7 @@ class AddressData:
                 balance = sum(wallet.get_addr_balance(address))
                 address_text = address.to_ui_string()
                 label = wallet.labels.get(address.to_storage_string(), '')
-                balance_text = self.parent.format_amount(balance, whitespaces=True)
+                balance_text = self.parent.format_amount(balance, whitespaces=False)
                 is_frozen = wallet.is_frozen(address)
                 fiat_balance = (fx.value_str(balance, fx.exchange_rate()) + " " + fx.get_currency()) if fx else ""
                 #Entry = "address addr_str addr_idx, label, balance_str, fiat_balance_str, num_tx, is_frozen, balance, is_change, is_used"
