@@ -712,7 +712,7 @@ BOOL deswizzleGlobal(void) {
         OSSpinLockUnlock(&lock);
         BOOL ok = [NSClassFromString(classKey) deswizzleAllMethods];
         OSSpinLockLock(&lock);
-        if (!success == ok) {
+        if ((!success) == ok) {
             success = YES;
         }
     }
@@ -722,7 +722,7 @@ BOOL deswizzleGlobal(void) {
         OSSpinLockUnlock(&lock);
         BOOL ok = [NSClassFromString(classKey) deswizzleAllMethods];
         OSSpinLockLock(&lock);
-        if (!success == ok) {
+        if ((!success) == ok) {
             success = YES;
         }
     }
