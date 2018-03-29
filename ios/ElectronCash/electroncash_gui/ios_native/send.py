@@ -27,6 +27,12 @@ def config():
 
 def wallet():
     return parent().wallet
+
+def fx():
+    p = parent()
+    if p and p.daemon and p.daemon.fx:
+        return p.daemon.fx
+    return None
   
 class SendVC(UIViewController):
     stuff = objc_property() # an NSArray of stuff to display
@@ -123,15 +129,45 @@ class SendVC(UIViewController):
         # Input amount text field
         tedit = self.view.viewWithTag_(210)
         tedit.delegate = self # Amount
+        btcedit = tedit
+        fiatedit = self.view.viewWithTag_(260)
+        font = tedit.font
+        tedit.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
         def onAmount(t : ObjCInstance) -> None:
             #print("On Amount %s, %s satoshis"%(str(t.text),str(t.getAmount())))
             self.amountSats = t.getAmount()
+            if fx() and fx().is_enabled():
+                rate = fx().exchange_rate()
+                if rate:
+                    amtfiat = int(round(float((Decimal(self.amountSats) * Decimal(100.0) * Decimal(rate)) / Decimal(1e8)))) if self.amountSats is not None else None
+                    fiatedit.setAmount_(amtfiat)
             if t.isModified():  self.updateFee()
             else: self.chkOk()
         utils.add_callback(tedit, 'textChanged', onAmount)
         def onEdit(t : ObjCInstance) -> None:
             self.isMax = False
         utils.add_callback(tedit, 'edited', onEdit)
+        
+        # Amount (Fiat) label
+        lbl = self.view.viewWithTag_(250)
+        # Input Fiat text field
+        tedit = self.view.viewWithTag_(260)
+        font = tedit.font
+        tedit.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
+        tedit.delegate = self
+        def onAmountFiat(t : ObjCInstance) -> None:
+            #print("On Amount %s, %s %s"%(str(t.text),str(t.getAmount()),str(t.baseUnit())))
+            if not t.isModified() or not fx() or not fx().is_enabled():
+                return
+            rate = fx().exchange_rate()
+            if not rate: return
+            amtSats = int(round(float( (Decimal(t.getAmount())*Decimal(1e6)) / Decimal(rate) ))) if t.getAmount() is not None else None
+            btcedit.setAmount_(amtSats)
+        utils.add_callback(tedit, 'textChanged', onAmountFiat)
+        def onEditFiat(t : ObjCInstance) -> None:
+            self.isMax = False
+        utils.add_callback(tedit, 'edited', onEditFiat)
+        
         
         lbl = self.view.viewWithTag_(220)
         lbl.text = _("Description")
@@ -161,6 +197,8 @@ class SendVC(UIViewController):
         lbl.text = _("Fee")
 
         tedit = self.view.viewWithTag_(330)
+        font = tedit.font
+        tedit.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
         fee_e = tedit
         tedit.placeholder = _("Fee manual edit")
         tedit.delegate = self
@@ -182,7 +220,9 @@ class SendVC(UIViewController):
         but = self.view.viewWithTag_(150)
         but.addTarget_action_forControlEvents_(self, SEL(b'onQRBut:'), UIControlEventPrimaryActionTriggered)
    
-        feelbl = self.view.viewWithTag_(320)  
+        feelbl = self.view.viewWithTag_(320)
+        font = feelbl.font
+        feelbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
         slider = self.view.viewWithTag_(310)
         def sliderCB(dyn : bool, pos : int, fee_rate : int) -> None:
             txt = " ".join(str(slider.getToolTip(pos,fee_rate)).split("\n"))
@@ -236,6 +276,23 @@ class SendVC(UIViewController):
             tedit.alpha = .5
             lbl.alpha = .5
 
+        # set fiat lbl/tedit based on prefs settings
+        doFX = fx() and fx().is_enabled()
+        ccy = fx().get_currency() if doFX else None
+        fiatlbl = self.view.viewWithTag_(250)
+        fiatlbl.setHidden_(not doFX)
+        if doFX:
+            fiatlbl.text = _("Amount") + (" ({})").format(ccy)
+        fiatte = self.view.viewWithTag_(260)
+        fiatte.setHidden_(not doFX)
+        if doFX:
+            fiatte.placeholder = _("Input amount") + (" ({})").format(ccy)
+        feelbl = self.view.viewWithTag_(300)
+        cs = feelbl.superview().constraints()
+        for c in cs:
+            if c.identifier == "FEE_TOP":
+                c.constant = 60.0 if doFX else 24.0
+
         #lbl.text = "{} {}".format(parent.format_amount(self.feeSats),parent.base_unit())
         self.chkOk()
         #self.onPayTo_message_amount_(None,None,None) # does some validation
@@ -267,7 +324,15 @@ class SendVC(UIViewController):
 
     @objc_method
     def textFieldDidBeginEditing_(self, tf) -> None:
-        self.view.viewWithTag_(404).text = ""
+        sv = self.view
+        sv.viewWithTag_(404).text = ""
+        if isinstance(sv, UIScrollView) and UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone: # fee manual edit, make sure it's visible
+            # try and center the text fields on the screen.. this is an ugly HACK.
+            # todo: fixme!
+            frame = tf.frame
+            frame.origin.y += 150
+            sv.scrollRectToVisible_animated_(frame, True)
+ 
 
     @objc_method
     def textFieldShouldEndEditing_(self, tf : ObjCInstance) -> bool:

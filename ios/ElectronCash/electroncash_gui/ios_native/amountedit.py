@@ -143,7 +143,7 @@ class FiatAmountEdit(BTCAmountEdit):
     
     @objc_method
     def baseUnit(self) -> ObjCInstance:
-        return ns_from_py(parent().daemon.fx.get_currency() if parent().daemon.fx.is_enabled() else "USD")
+        return ns_from_py(parent().daemon.fx.get_currency() if parent().daemon and parent().daemon.fx and parent().daemon.fx.is_enabled() else "USD")
     
     @objc_method
     def decimalPoint(self) -> int:
