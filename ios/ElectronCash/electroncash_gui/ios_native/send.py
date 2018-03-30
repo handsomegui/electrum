@@ -35,7 +35,6 @@ def fx():
     return None
   
 class SendVC(UIViewController):
-    stuff = objc_property() # an NSArray of stuff to display
     qr = objc_property()
     qrvc = objc_property()
     qrScanErr = objc_property()
@@ -49,7 +48,6 @@ class SendVC(UIViewController):
     @objc_method
     def init(self):
         self = ObjCInstance(send_super(__class__, self, 'init'))
-        self.stuff = []
         self.title = _("Send")
         self.qrScanErr = False
         self.amountSats = None # None ok on this one       
@@ -62,7 +60,6 @@ class SendVC(UIViewController):
     
     @objc_method
     def dealloc(self) -> None:
-        self.stuff = None
         self.view = None
         self.qrScanErr = None
         self.amountSats = None
@@ -72,6 +69,7 @@ class SendVC(UIViewController):
         if self.timer: self.timer.invalidate()  # kill a timer if it hasn't fired yet
         self.timer = None
         self.excessiveFee = None
+        utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
 
     @objc_method
@@ -114,8 +112,6 @@ class SendVC(UIViewController):
         contentView = self.view.viewWithTag_(100)
         
         # Apply translations and other stuff to UI text...
-        parent = gui.ElectrumGui.gui
-
         lbl = self.view.viewWithTag_(110)
         lbl.text = _("Pay to")
         
@@ -238,12 +234,11 @@ class SendVC(UIViewController):
         
     @objc_method
     def viewDidLoad(self) -> None:
-        self.clear()
+        self.clearAllExceptPayToSpendFrom()
 
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
-        parent = gui.ElectrumGui.gui
 
         # redo amount label if prefs changed
         lbl = self.view.viewWithTag_(200)
@@ -265,9 +260,9 @@ class SendVC(UIViewController):
         tedit.modified = wasModified
         # fee manual edit unit
         lbl = self.view.viewWithTag_(340)
-        lbl.text = (parent.base_unit())
+        lbl.text = (parent().base_unit())
         # set manual fee edit to be enabled/disabled based on prefs settings
-        if parent.prefs_get_show_fee():
+        if parent().prefs_get_show_fee():
             tedit.userInteractionEnabled = True
             tedit.alpha = 1.0
             lbl.alpha = 1.0
@@ -293,20 +288,47 @@ class SendVC(UIViewController):
             if c.identifier == "FEE_TOP":
                 c.constant = 60.0 if doFX else 24.0
 
-        #lbl.text = "{} {}".format(parent.format_amount(self.feeSats),parent.base_unit())
+        parent().cash_addr_sig.connect(lambda: self.reformatSpendFrom(), self.ptr.value)
+        self.reformatSpendFrom()
+
         self.chkOk()
-        #self.onPayTo_message_amount_(None,None,None) # does some validation
+
+
+    @objc_method
+    def reformatSpendFrom(self) -> None:
+        # Do the "spend from" stuff
+        coins = utils.nspy_get_byname(self, 'spend_from')
+        lbl = self.view.viewWithTag_(2000)
+        lbl.text = _("Spend From")
+        tv = self.view.viewWithTag_(2010)
+        lbl.setHidden_(not bool(coins))
+        tv.setHidden_(not bool(coins))
+        if coins:
+            font = tv.font
+            tv.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
+            def format(x):
+                h = x['prevout_hash']
+                return '- {}...{}:{:d}  {}'.format(h[0:10], h[-10:],
+                                                 x['prevout_n'], x['address'])
+            txt = ""
+            for c in coins:
+                txt += format(c) + '  ' + parent().format_amount(c['value']) + '\n'
+            tv.text = txt
+        else:
+            tv.text = ""
+
         
     @objc_method
     def viewWillDisappear_(self, animated: bool) -> None:
         send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
-        parent = gui.ElectrumGui.gui
         # Manual edit .. cache the feeSats in case they change stuff in prefs affecting this
         tedit = self.view.viewWithTag_(330)
         self.feeSats = tedit.getAmount()
         # Amount edit --  cache the amountSats in case they change stuff in the prefs affecting this 
         tedit = self.view.viewWithTag_(210)
         self.amountSats = tedit.getAmount()
+        parent().cash_addr_sig.disconnect(self.ptr.value)
+
         
 
     @objc_method
@@ -418,9 +440,9 @@ class SendVC(UIViewController):
     def spendMax(self) -> None:
         self.isMax = True
         self.updateFee()  # schedule update
-        
+
     @objc_method
-    def clear(self) -> None:
+    def clearAllExceptPayToSpendFrom(self) -> None:
         self.isMax = False
         self.notEnoughFunds = False
         self.excessiveFee = False
@@ -445,6 +467,12 @@ class SendVC(UIViewController):
         self.feeSats = None
         self.view.viewWithTag_(404).text = ""  # clear errors
         self.chkOk()
+       
+    @objc_method
+    def clear(self) -> None:
+        utils.nspy_pop_byname(self, 'spend_from')
+        self.reformatSpendFrom()
+        self.clearAllExceptPayToSpendFrom()
         
     @objc_method
     def checkQRData_(self, text) -> None:
@@ -578,7 +606,7 @@ class SendVC(UIViewController):
                 _type, addr = get_dummy()
                 outputs = [(_type, addr, amount)]
             try:
-                tx = wallet().make_unsigned_transaction(get_coins(), outputs, config(), fee)
+                tx = wallet().make_unsigned_transaction(get_coins(self), outputs, config(), fee)
             except NotEnoughFunds:
                 self.notEnoughFunds = True
                 if not freeze_fee:
@@ -689,11 +717,9 @@ class SendVC(UIViewController):
         parent().sign_tx_with_password(tx, sign_done, password)
 
 
-def get_coins():
-    # TODO: Implement pay_from
-    #if self.pay_from:
-    #    return self.pay_from
-    #else:
+def get_coins(sendvc : ObjCInstance) -> list:
+    coins = utils.nspy_get_byname(sendvc, 'spend_from')
+    if coins: return coins
     return wallet().get_spendable_coins(None, config())
            
 def read_send_form(send : ObjCInstance) -> tuple:
@@ -741,7 +767,7 @@ def read_send_form(send : ObjCInstance) -> tuple:
 
     freeze_fee = fee_e.isModified() and fee_e.getAmount()#self.fee_e.isVisible() and self.fee_e.isModified() and (self.fee_e.text() or self.fee_e.hasFocus())
     fee = fee_e.getAmount() if freeze_fee else None
-    coins = get_coins()
+    coins = get_coins(send)
     return outputs, fee, label, coins
 
 

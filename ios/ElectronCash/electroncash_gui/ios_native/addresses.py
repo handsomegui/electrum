@@ -59,16 +59,9 @@ class AddressDetail(UIViewController):
         tf.delegate = self
 
         but = v.viewWithTag_(520)
-        def onToggleFreeze(oid : objc_id) -> None:
-            if parent.wallet:
-                entry = utils.nspy_get_byname(self, 'entry')
-                entry = utils.set_namedtuple_field(entry, 'is_frozen', not entry.is_frozen)
-                utils.nspy_put_byname(self, entry, 'entry')
-                parent.wallet.set_frozen_state([entry.address], entry.is_frozen)
-                parent.wallet.storage.write()
-                parent.refresh_components('addresses')
-                self.refresh()
-        but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onToggleFreeze)
+        def toggleFreeze(oid : objc_id) -> None:
+            self.onToggleFreeze()
+        but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, toggleFreeze)
 
         butCpy = v.viewWithTag_(120)
         butQR = v.viewWithTag_(130)
@@ -153,17 +146,21 @@ class AddressDetail(UIViewController):
         def on_block_explorer() -> None:
             parent = gui.ElectrumGui.gui
             parent.view_on_block_explorer(entry.address, 'addr')
+        actions = [
+                [ _('Cancel') ],
+                [ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: self.onToggleFreeze() ],
+                [ _('Copy to clipboard'), lambda: self.onCpyBut() ],
+                [ _('Show as QR code'), lambda: self.onQRBut() ],
+                [ _("View on block explorer"), on_block_explorer ],
+            ]
+        if not entry.is_frozen and entry.balance > 0:
+            actions.insert(1, [ _('Spend from this Address'), lambda: self.doSpendFrom() ] )
             
         utils.show_alert(
             vc = self,
             title = _("Options"),
             message = _("Address") + ":" + " " + entry.addr_str[0:12] + "..." + entry.addr_str[-12:],
-            actions = [
-                [ _('Cancel') ],
-                [ _('Copy to clipboard'), lambda: self.onCpyBut() ],
-                [ _('Show as QR code'), lambda: self.onQRBut() ],
-                [ _("View on block explorer"), on_block_explorer ],
-            ],
+            actions = actions,
             cancel = _('Cancel'),
             style = UIAlertControllerStyleActionSheet
         )
@@ -179,6 +176,27 @@ class AddressDetail(UIViewController):
                                                 data=entry.addr_str,
                                                 title = _('QR code'))
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
+
+    @objc_method
+    def onToggleFreeze(self) -> None:
+        parent = gui.ElectrumGui.gui
+        if parent.wallet:
+            entry = utils.nspy_get_byname(self, 'entry')
+            entry = utils.set_namedtuple_field(entry, 'is_frozen', not entry.is_frozen)
+            utils.nspy_put_byname(self, entry, 'entry')
+            parent.wallet.set_frozen_state([entry.address], entry.is_frozen)
+            parent.wallet.storage.write()
+            parent.refresh_components('addresses')
+            self.refresh()
+
+    @objc_method
+    def doSpendFrom(self) -> None:
+        parent = gui.ElectrumGui.gui
+        if parent.wallet:
+            entry = utils.nspy_get_byname(self, 'entry')
+            coins = parent.wallet.get_spendable_coins([entry.address], parent.config)
+            if coins:
+                parent.jump_to_send_with_spend_from(coins)
         
     @objc_method
     def refreshButs(self) -> None:

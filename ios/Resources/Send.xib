@@ -169,6 +169,23 @@
                             <fontDescription key="fontDescription" name="Menlo-Regular" family="Menlo" pointSize="13"/>
                             <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" keyboardType="numbersAndPunctuation" returnKeyType="continue"/>
                         </textField>
+                        <label opaque="NO" userInteractionEnabled="NO" tag="2000" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Spend From" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="KSf-pb-DFK">
+                            <rect key="frame" x="8" y="394" width="304" height="21"/>
+                            <color key="backgroundColor" red="0.19349084790000001" green="0.16306261720000001" blue="0.1424835324" alpha="0.10012249199999999" colorSpace="calibratedRGB"/>
+                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" tag="2010" contentMode="scaleToFill" editable="NO" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Oay-ld-2UX">
+                            <rect key="frame" x="8" y="415" width="304" height="150"/>
+                            <color key="backgroundColor" red="0.38692051170000002" green="0.42574831839999999" blue="0.41460564729999999" alpha="0.078604294480000003" colorSpace="calibratedRGB"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="150" id="G3f-hr-yDF"/>
+                            </constraints>
+                            <string key="text">Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.</string>
+                            <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                            <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                        </textView>
                     </subviews>
                     <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <constraints>
@@ -186,16 +203,19 @@
                         <constraint firstItem="TUB-fe-ZLf" firstAttribute="top" secondItem="bfH-Zw-ELf" secondAttribute="bottom" constant="8" id="CfC-L8-jci"/>
                         <constraint firstItem="j1b-rK-qmj" firstAttribute="centerY" secondItem="l6u-7I-2R7" secondAttribute="centerY" id="FKU-Gg-7Le"/>
                         <constraint firstItem="TUB-fe-ZLf" firstAttribute="centerY" secondItem="bOO-8Z-aO7" secondAttribute="centerY" id="GkY-0r-gPg"/>
+                        <constraint firstAttribute="trailing" secondItem="KSf-pb-DFK" secondAttribute="trailing" constant="8" id="Hra-Vf-DKf"/>
                         <constraint firstItem="p3X-R7-5S3" firstAttribute="top" secondItem="bfH-Zw-ELf" secondAttribute="bottom" constant="60" identifier="FEE_TOP" id="Kaw-dM-Y7n"/>
                         <constraint firstAttribute="trailing" secondItem="DIP-SW-ID7" secondAttribute="trailing" constant="9" id="L5o-h7-V54"/>
                         <constraint firstItem="Sws-3w-ut5" firstAttribute="trailing" secondItem="bfH-Zw-ELf" secondAttribute="trailing" id="OgY-xM-peF"/>
                         <constraint firstItem="bfH-Zw-ELf" firstAttribute="centerY" secondItem="E7N-nC-teV" secondAttribute="centerY" id="QP9-sb-L0W"/>
                         <constraint firstItem="WGL-Di-B5n" firstAttribute="centerY" secondItem="bfH-Zw-ELf" secondAttribute="centerY" id="SnL-rY-i0J"/>
                         <constraint firstAttribute="trailing" secondItem="xYv-i9-QAj" secondAttribute="trailing" constant="36" id="VGl-zZ-uaI"/>
+                        <constraint firstItem="KSf-pb-DFK" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="VRr-XH-o9N"/>
                         <constraint firstItem="xYv-i9-QAj" firstAttribute="top" secondItem="Oxq-xj-JGe" secondAttribute="bottom" constant="8" id="Xrq-aB-eq1"/>
                         <constraint firstItem="yLP-HX-QzQ" firstAttribute="top" secondItem="LyY-II-L8e" secondAttribute="top" id="ZMg-72-Rzy"/>
                         <constraint firstItem="Oxq-xj-JGe" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="bgA-Oa-SMD"/>
                         <constraint firstItem="E7N-nC-teV" firstAttribute="top" secondItem="DIP-SW-ID7" secondAttribute="bottom" constant="24" id="d1z-ot-S7a"/>
+                        <constraint firstItem="Oay-ld-2UX" firstAttribute="top" secondItem="KSf-pb-DFK" secondAttribute="bottom" id="eqX-JY-qd6"/>
                         <constraint firstItem="yLP-HX-QzQ" firstAttribute="centerY" secondItem="LyY-II-L8e" secondAttribute="centerY" id="fY9-kf-F8d"/>
                         <constraint firstItem="LyY-II-L8e" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="26" id="fZC-ko-f3R"/>
                         <constraint firstItem="Rxy-0n-zPj" firstAttribute="leading" secondItem="yLP-HX-QzQ" secondAttribute="trailing" constant="5" id="hKv-fJ-LOF"/>
@@ -207,6 +227,9 @@
                         <constraint firstItem="LyY-II-L8e" firstAttribute="top" secondItem="Sws-3w-ut5" secondAttribute="bottom" constant="8" id="jSl-pI-3Gg"/>
                         <constraint firstItem="TUB-fe-ZLf" firstAttribute="leading" secondItem="bOO-8Z-aO7" secondAttribute="trailing" constant="8" id="jxx-mx-mwx"/>
                         <constraint firstAttribute="trailing" secondItem="j7K-4S-lZ9" secondAttribute="trailing" id="mT4-RP-Upx"/>
+                        <constraint firstItem="KSf-pb-DFK" firstAttribute="top" secondItem="MlF-KI-I4b" secondAttribute="bottom" constant="8" id="nfl-vx-o3g"/>
+                        <constraint firstItem="Oay-ld-2UX" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="nlv-Bv-7Oi"/>
+                        <constraint firstAttribute="trailing" secondItem="Oay-ld-2UX" secondAttribute="trailing" constant="8" id="oRZ-u6-Jtb"/>
                         <constraint firstItem="j7K-4S-lZ9" firstAttribute="top" secondItem="xYv-i9-QAj" secondAttribute="bottom" constant="24" id="oXR-Rg-8ES"/>
                         <constraint firstItem="bOO-8Z-aO7" firstAttribute="width" secondItem="E7N-nC-teV" secondAttribute="width" id="qPs-ev-JG7"/>
                         <constraint firstItem="p3X-R7-5S3" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="rMp-4O-FSF"/>
@@ -234,7 +257,7 @@
                 <constraint firstAttribute="bottom" secondItem="iN0-l3-epB" secondAttribute="bottom" id="pLS-qM-Qdi"/>
                 <constraint firstItem="iN0-l3-epB" firstAttribute="leading" secondItem="rs4-A6-TkR" secondAttribute="leading" id="rGq-LA-Hpn"/>
             </constraints>
-            <point key="canvasLocation" x="33.5" y="143.5"/>
+            <point key="canvasLocation" x="33" y="143"/>
         </scrollView>
     </objects>
     <resources>

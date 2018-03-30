@@ -701,7 +701,7 @@ def nspy_put_byname(ns : ObjCInstance, py : Any, name : str) -> None:
         m[name] = py
     if needPutBack:  nspy_put(ns, m)
 def nspy_pop_byname(ns : ObjCInstance, name : str) -> Any:
-    m = nspy_get_byname(ns, name)
+    m = nspy_get(ns)
     ret = None
     if m and isinstance(m, dict):
         ret = m.pop(name,None)

@@ -210,6 +210,8 @@ class ElectrumGui(PrintError):
         self.alias_info = None # TODO: IMPLEMENT alias stuff
         
         Address.show_cashaddr(self.prefs_get_use_cashaddr())
+        
+        self.cash_addr_sig = utils.PySig()
 
         self.tx_notifications = []
         self.helper = None
@@ -450,6 +452,8 @@ class ElectrumGui(PrintError):
         self.window = None
         if self.helper is not None: self.helper.release()
         self.helper = None
+        self.cash_addr_sig.clear()
+        self.cash_addr_sig = None
     
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
         #update status bar label width
@@ -775,6 +779,7 @@ class ElectrumGui(PrintError):
         self.update_cashaddr_icon()
         Address.show_cashaddr(on)
         self.refresh_all()
+        self.cash_addr_sig.emit(on)
                   
     def format_amount(self, x, is_diff=False, whitespaces=False):
         return format_satoshis(x, is_diff, self.num_zeros, self.decimal_point, whitespaces)
@@ -1328,7 +1333,17 @@ class ElectrumGui(PrintError):
         utils.NSDeallocObserver(self.networkNav).connect(doCleanup)
         self.add_navigation_bar_close_to_modal_vc(self.networkVC)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(self.networkNav, True, None)
+     
+    def show_send_tab(self) -> None:
+        if not self.tabController or not self.sendNav: return
+        self.tabController.selectedViewController = self.sendNav
         
+    def jump_to_send_with_spend_from(self, coins) -> None:
+        if not self.sendVC: return
+        self.sendVC.clear()
+        utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
+        self.sendVC.reformatSpendFrom()
+        self.show_send_tab()
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
