@@ -1,5 +1,6 @@
 from . import utils
 from . import gui
+from . import addresses
 from .amountedit import BTCAmountEdit, FiatAmountEdit, BTCkBEdit  # Makes sure ObjC classes are imported into ObjC runtime
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime, format_time
@@ -184,7 +185,13 @@ class ReceiveVC(UIViewController):
         ui['amtFiatLbl'].text = ui['amtFiat'].baseUnit()
         # Placeholder for amount
         ui['amt'].placeholder = (_("Input amount") + " ({})").format(ui['amt'].baseUnit())
+        font = ui['amt'].font
+        ui['amt'].font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
+
         ui['amtFiat'].placeholder = (_("Input amount") + " ({})").format(ui['amtFiat'].baseUnit())
+        font = ui['amtFiat'].font
+        ui['amtFiat'].font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
+
         ui['amt'].setAmount_(ui['amt'].getAmount()) # redoes decimal point placement
         
         if not self.addr:
@@ -217,7 +224,14 @@ class ReceiveVC(UIViewController):
     @objc_method
     def onAddressTap_(self, uigr : ObjCInstance) -> None:
         lbl = uigr.view
-        print("UNIMPLEMENTED lbl=%s"%lbl.text)
+        avc = addresses.AddressesTableVC.alloc().initWithMode_(addresses.AddressesTableVCModePicker).autorelease()
+        nav = UINavigationController.alloc().initWithRootViewController_(avc).autorelease()
+        def pickedAddress(entry) -> None:
+            self.addr = str(entry.address)
+            nav.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+        utils.add_callback(avc, 'on_picked', pickedAddress)
+        parent().add_navigation_bar_close_to_modal_vc(avc)
+        parent().get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)
 
     @objc_method
     def onCopyBut(self) -> None:
@@ -427,7 +441,7 @@ class ReceiveVC(UIViewController):
         
         # update the receive address if necessary
         current_address = Address.from_string(self.addr)
-        domain = wallet.get_receiving_addresses()
+        domain = wallet.get_addresses()
         addr = wallet.get_unused_address()
         if not current_address in domain and addr:
             self.setReceiveAddress_(addr.to_ui_string())

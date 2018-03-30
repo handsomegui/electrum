@@ -237,7 +237,7 @@ class ElectrumGui(PrintError):
         
         self.receiveVC = rcv = receive.ReceiveVC.alloc().init().autorelease()
         
-        self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
+        self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.AddressesTableVCModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
         self.historyNav = nav = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
@@ -1337,14 +1337,20 @@ class ElectrumGui(PrintError):
     def show_send_tab(self) -> None:
         if not self.tabController or not self.sendNav: return
         self.tabController.selectedViewController = self.sendNav
+     
+    def show_receive_tab(self) -> None:
+        if not self.tabController or not self.receiveNav: return
+        self.tabController.selectedViewController = self.receiveNav
         
     def jump_to_send_with_spend_from(self, coins) -> None:
         if not self.sendVC: return
-        #self.sendVC.clear()
         utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
-        #if self.tabController and self.tabController.selectedViewController.ptr != self.sendNav.ptr:
-        #    self.sendVC.reformatSpendFrom()
         self.show_send_tab()
+        
+    def jump_to_receive_with_address(self, address) -> None:
+        if not self.receiveVC or not isinstance(address, (Address, str)): return
+        self.receiveVC.addr = (str(address))
+        self.show_receive_tab()
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):

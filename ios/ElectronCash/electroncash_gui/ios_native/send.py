@@ -232,9 +232,15 @@ class SendVC(UIViewController):
             #print("testcb: %d %d %d.. tt='%s'"%(int(dyn), pos, fee_rate,txt))
         utils.add_callback(slider, 'callback', sliderCB)
         
+        utils.nspy_put_byname(self, 'dummy', '_last_spend_from') # trigger the clear
+        
+        but = self.view.viewWithTag_(2020)
+        but.addTarget_action_forControlEvents_(self, SEL(b'clearSpendFrom'), UIControlEventPrimaryActionTriggered)
+        
+        
     @objc_method
     def viewDidLoad(self) -> None:
-        self.clearAllExceptPayToSpendFrom()
+        self.clearAllExceptSpendFrom()
 
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -298,11 +304,15 @@ class SendVC(UIViewController):
     def reformatSpendFrom(self) -> None:
         # Do the "spend from" stuff
         coins = utils.nspy_get_byname(self, 'spend_from')
+        if utils.nspy_get_byname(self, '_last_spend_from') == coins:
+            return
         lbl = self.view.viewWithTag_(2000)
         lbl.text = _("Spend From")
         tv = self.view.viewWithTag_(2010)
+        but = self.view.viewWithTag_(2020)
         lbl.setHidden_(not bool(coins))
         tv.setHidden_(not bool(coins))
+        but.setHidden_(not bool(coins))
         if coins:
             font = tv.font
             tv.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
@@ -316,7 +326,8 @@ class SendVC(UIViewController):
             tv.text = txt
         else:
             tv.text = ""
-
+        utils.nspy_put_byname(self, coins, '_last_spend_from')
+        self.updateFee()
         
     @objc_method
     def viewWillDisappear_(self, animated: bool) -> None:
@@ -442,7 +453,7 @@ class SendVC(UIViewController):
         self.updateFee()  # schedule update
 
     @objc_method
-    def clearAllExceptPayToSpendFrom(self) -> None:
+    def clearAllExceptSpendFrom(self) -> None:
         self.isMax = False
         self.notEnoughFunds = False
         self.excessiveFee = False
@@ -467,12 +478,17 @@ class SendVC(UIViewController):
         self.feeSats = None
         self.view.viewWithTag_(404).text = ""  # clear errors
         self.chkOk()
+
+    @objc_method
+    def clearSpendFrom(self) -> None:
+        utils.nspy_pop_byname(self, 'spend_from')
+        utils.nspy_put_byname(self, 'dummy', '_last_spend_from')
+        self.reformatSpendFrom()
        
     @objc_method
     def clear(self) -> None:
-        utils.nspy_pop_byname(self, 'spend_from')
-        self.reformatSpendFrom()
-        self.clearAllExceptPayToSpendFrom()
+        self.clearAllExceptSpendFrom()
+        self.clearSpendFrom()
         
     @objc_method
     def checkQRData_(self, text) -> None:

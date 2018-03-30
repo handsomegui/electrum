@@ -62,6 +62,11 @@ class AddressDetail(UIViewController):
         def toggleFreeze(oid : objc_id) -> None:
             self.onToggleFreeze()
         but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, toggleFreeze)
+        
+        butMore = v.viewWithTag_(150)
+        def onButMore(oid : objc_id) -> None:
+            self.onTapAddress()
+        butMore.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onButMore)
 
         butCpy = v.viewWithTag_(120)
         butQR = v.viewWithTag_(130)
@@ -93,7 +98,7 @@ class AddressDetail(UIViewController):
         entry = utils.nspy_get_byname(self, 'entry')
  
         lbl = v.viewWithTag_(100)
-        lbl.text = _("Address") + ":"
+        lbl.text = _("Address") + ":"        
         lbl = v.viewWithTag_(110)
         lbl.text = entry.addr_str
         bgColor = None
@@ -143,18 +148,22 @@ class AddressDetail(UIViewController):
     @objc_method
     def onTapAddress(self) -> None:
         entry = utils.nspy_get_byname(self, 'entry')
+        parent = gui.ElectrumGui.gui
         def on_block_explorer() -> None:
-            parent = gui.ElectrumGui.gui
             parent.view_on_block_explorer(entry.address, 'addr')
+        def on_request_payment() -> None:
+            parent.jump_to_receive_with_address(entry.address)
+            
         actions = [
                 [ _('Cancel') ],
-                [ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: self.onToggleFreeze() ],
-                [ _('Copy to clipboard'), lambda: self.onCpyBut() ],
-                [ _('Show as QR code'), lambda: self.onQRBut() ],
+                #[ _('Copy to clipboard'), lambda: self.onCpyBut() ],
+                #[ _('Show as QR code'), lambda: self.onQRBut() ],
                 [ _("View on block explorer"), on_block_explorer ],
+                [ _("Request payment"), on_request_payment ],
+                [ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: self.onToggleFreeze() ],
             ]
         if not entry.is_frozen and entry.balance > 0:
-            actions.insert(1, [ _('Spend from this Address'), lambda: self.doSpendFrom() ] )
+            actions.append([ _('Spend from this Address'), lambda: self.doSpendFrom() ] )
             
         utils.show_alert(
             vc = self,
@@ -205,6 +214,10 @@ class AddressDetail(UIViewController):
         but = v.viewWithTag_(520)
         entry = utils.nspy_get_byname(self, 'entry')
         but.setTitle_forState_(_("Freeze") if not entry.is_frozen else _("Unfreeze"), UIControlStateNormal)
+
+        but = v.viewWithTag_(150)
+        but.setTitle_forState_(_("Options") + "...", UIControlStateNormal)
+        
 
     @objc_method
     def textFieldShouldReturn_(self, tf) -> bool:
@@ -282,40 +295,49 @@ class AddressDetail(UIViewController):
         utils.nspy_put_byname(txd, entry, 'tx_entry')
         self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
 
- 
+AddressesTableVCModeNormal = 0
+AddressesTableVCModePicker = 1
+
 # Addresses Tab -- shows addresses, etc
 class AddressesTableVC(UITableViewController):
     needsRefresh = objc_property()
     blockRefresh = objc_property()
-    style = objc_property()
+    mode = objc_property()
 
     @objc_method
-    def initWithStyle_(self, style : int):
-        self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
+    def initWithMode_(self, mode : int):
+        self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', UITableViewStylePlain, argtypes=[c_int]))
         self.needsRefresh = False
         self.blockRefresh = False
-        self.style = style
-        self.title = _("&Addresses").split('&')[1]
-                
-        self.refreshControl = UIRefreshControl.alloc().init().autorelease()
+        self.mode = int(mode)
+        self.title = _("&Addresses").split('&')[1] if self.mode == AddressesTableVCModeNormal else _("Choose Address")
+
+        self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
         self.updateAddressesFromWallet()
+        
+        if self.mode == AddressesTableVCModePicker:
+            def onRefreshCtl() -> None:
+                self.refresh()
+            self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
         
         return self
 
     @objc_method
     def dealloc(self) -> None:
         self.needsRefresh = None
-        self.style = None
+        self.mode = None
         self.blockRefresh = None
         utils.nspy_pop(self)
+        utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
 
     @objc_method
     def loadView(self) -> None:
         # frame is pretty much ignored due to autosizie but c'tor needs it...
-        self.tableView = CollapsableTableView.alloc().initWithFrame_style_(CGRectMake(0,0,320,600), self.style).autorelease()
-        uinib = UINib.nibWithNibName_bundle_("AddressListCell", None)
-        self.tableView.registerNib_forCellReuseIdentifier_(uinib, str(__class__))
+        self.tableView = CollapsableTableView.alloc().initWithFrame_style_(CGRectMake(0,0,320,600), UITableViewStylePlain).autorelease()
+        if self.mode == AddressesTableVCModeNormal:
+            uinib = UINib.nibWithNibName_bundle_("AddressListCell", None)
+            self.tableView.registerNib_forCellReuseIdentifier_(uinib, str(__class__))
 
 
     @objc_method
@@ -345,72 +367,97 @@ class AddressesTableVC(UITableViewController):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         #todo: - allow for label editing (popup menu?)
-        identifier = str(__class__)
+        identifier = str(__class__) if self.mode == AddressesTableVCModeNormal else "Cell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+        newCell = False
+        if self.mode == AddressesTableVCModePicker and cell is None:
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle,identifier).autorelease()
+            newCell = True
         assert cell is not None
 
         addrData = utils.nspy_get_byname(self, 'addrData')
         entries = addrData.getSections().get(indexPath.section,(None,[]))[1]
         assert indexPath.row < len(entries)
         entry = entries[indexPath.row]
-        addrlbl = cell.viewWithTag_(10)
-        chglbl = cell.viewWithTag_(15)
-        addrlbl.text = entry.addr_str
-        ballbl = cell.viewWithTag_(20)
-        ballbl.text = entry.balance_str + ( (' (' + entry.fiat_balance_str + ')') if addrData.show_fx else '')
-        ballbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(UIFont.labelFontSize(), UIFontWeightLight if not entry.balance else UIFontWeightSemibold )
-        numlbl = cell.viewWithTag_(30)
-        numlbl.text = str(entry.num_tx)
-        numlbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(UIFont.labelFontSize(), UIFontWeightLight if not entry.num_tx else UIFontWeightSemibold)
-        tf = cell.viewWithTag_(40)
-        tf.text = entry.label if entry.label else ""
-        tf.placeholder = _("Tap to add a description")
-        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
-
-        xtra = []
-        bgcolor = UIColor.clearColor        
-        if entry.is_frozen:
-            xtra += [_("Frozen")]
-            bgcolor = utils.uicolor_custom('frozen address')            
-        if entry.is_change:
-            xtra.insert(0, _("Change"))
-            bgcolor = utils.uicolor_custom('change address')
-
-        cell.backgroundColor = bgcolor
-        if xtra:
-            chglbl.setHidden_(False)
-            chglbl.text = ", ".join(xtra)
-        else:
-            chglbl.text = ""
-            chglbl.setHidden_(True)
-
-        butCpy = cell.viewWithTag_(120)
-        butQR = cell.viewWithTag_(130)
-        butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
-        butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
-        closure_address = entry.addr_str
-        def onCpy(oid : objc_id) -> None:
-            UIPasteboard.generalPasteboard.string = closure_address
-            utils.show_notification(message=_("Text copied to clipboard"))
-        def onQR(oid : objc_id) -> None:
-            qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
-                                                    data=closure_address,
-                                                    title = _('QR code'))
-            gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
-        butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy) # bind actin to closure 
-        butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)  # bind action to closure
-
-        tf.delegate = self
-        d = utils.nspy_get_byname(self, 'tf_dict')
-        d = d if d else dict()
-        d[tf.ptr.value] = entry.address
-        utils.nspy_put_byname(self, d, 'tf_dict')
+        if self.mode == AddressesTableVCModeNormal:
+            addrlbl = cell.viewWithTag_(10)
+            chglbl = cell.viewWithTag_(15)
+            addrlbl.text = entry.addr_str
+            ballbl = cell.viewWithTag_(20)
+            ballbl.text = entry.balance_str + ( (' (' + entry.fiat_balance_str + ')') if addrData.show_fx else '')
+            ballbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(UIFont.labelFontSize(), UIFontWeightLight if not entry.balance else UIFontWeightSemibold )
+            numlbl = cell.viewWithTag_(30)
+            numlbl.text = str(entry.num_tx)
+            numlbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(UIFont.labelFontSize(), UIFontWeightLight if not entry.num_tx else UIFontWeightSemibold)
+            tf = cell.viewWithTag_(40)
+            tf.text = entry.label if entry.label else ""
+            tf.placeholder = _("Tap to add a description")
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+    
+            xtra = []
+            bgcolor = UIColor.clearColor        
+            if entry.is_frozen:
+                xtra += [_("Frozen")]
+                bgcolor = utils.uicolor_custom('frozen address')            
+            if entry.is_change:
+                xtra.insert(0, _("Change"))
+                bgcolor = utils.uicolor_custom('change address')
+    
+            cell.backgroundColor = bgcolor
+            if xtra:
+                chglbl.setHidden_(False)
+                chglbl.text = ", ".join(xtra)
+            else:
+                chglbl.text = ""
+                chglbl.setHidden_(True)
+    
+            butCpy = cell.viewWithTag_(120)
+            butQR = cell.viewWithTag_(130)
+            butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
+            butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
+            closure_address = entry.addr_str
+            def onCpy(oid : objc_id) -> None:
+                UIPasteboard.generalPasteboard.string = closure_address
+                utils.show_notification(message=_("Text copied to clipboard"))
+            def onQR(oid : objc_id) -> None:
+                qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+                                                        data=closure_address,
+                                                        title = _('QR code'))
+                gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
+            butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy) # bind actin to closure 
+            butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)  # bind action to closure
+    
+            tf.delegate = self
+            d = utils.nspy_get_byname(self, 'tf_dict')
+            d = d if d else dict()
+            d[tf.ptr.value] = entry.address
+            utils.nspy_put_byname(self, d, 'tf_dict')
+        else: # picker mode
+            if newCell: 
+                cell.accessoryType = UITableViewCellAccessoryNone
+                cell.textLabel.adjustsFontSizeToFitWidth = True
+                cell.textLabel.minimumScaleFactor = 0.9
+                font = cell.textLabel.font
+                cell.textLabel.font = UIFont.boldSystemFontOfSize_(font.pointSize)
+                cell.detailTextLabel.adjustsFontSizeToFitWidth = True
+                cell.detailTextLabel.minimumScaleFactor = 0.75
+            cell.textLabel.text = str(entry.address)
+            cell.detailTextLabel.text = "bal: " + entry.balance_str + ( (' (' + entry.fiat_balance_str + ')') if addrData.show_fx else '') + " numtx: " + str(entry.num_tx) + ((" - " + entry.label) if entry.label else "")
+            cell.backgroundColor = tableView.backgroundColor
+            cell.textLabel.textColor = UIColor.darkTextColor
+            if entry.is_frozen:
+                cell.backgroundColor = utils.uicolor_custom('frozen address')
+                cell.textLabel.textColor = utils.uicolor_custom('frozen address text')
+            if entry.is_change:
+                cell.backgroundColor = utils.uicolor_custom('change address')                
 
         return cell
     
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
-        return 126.0
+        if self.mode == AddressesTableVCModeNormal:
+            return 126.0
+        return 44.0
     
     # Below 2 methods conform to UITableViewDelegate protocol
     @objc_method
@@ -425,11 +472,14 @@ class AddressesTableVC(UITableViewController):
         if addrData is not None:
             section = addrData.getSections().get(indexPath.section,None)
             if section is not None and indexPath.row < len(section[1]):
-                entry = section[1][indexPath.row]                
-                addrDetail = AddressDetail.alloc().init().autorelease()
-                utils.nspy_put_byname(addrDetail, entry, 'entry')
-                self.navigationController.pushViewController_animated_(addrDetail, True)
-                
+                entry = section[1][indexPath.row]
+                if self.mode == AddressesTableVCModeNormal:
+                    addrDetail = AddressDetail.alloc().init().autorelease()
+                    utils.nspy_put_byname(addrDetail, entry, 'entry')
+                    self.navigationController.pushViewController_animated_(addrDetail, True)
+                else:
+                    cb = utils.get_callback(self, 'on_picked')
+                    if callable(cb): cb(entry)
     
     @objc_method
     def updateAddressesFromWallet(self):
