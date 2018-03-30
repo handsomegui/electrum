@@ -263,3 +263,32 @@ def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title 
         uiTextFieldHandlers = [tfConfigHandler]
     )
     return retPW
+
+def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = None, title : str = None) -> ObjCInstance:
+    title =  _("Enter Password") if not title else title
+    prompt = _("Enter your password to proceed") if not prompt else prompt
+    tf = None
+    retPW = None
+    def tfConfigHandler(oid : objc_id) -> None:
+        nonlocal tf
+        tf = ObjCInstance(oid)
+        tf.adjustsFontSizeToFitWidth = True
+        tf.minimumFontSize = 9
+        tf.placeholder = _("Enter Password")
+        tf.backgroundColor = utils.uicolor_custom('password')
+        tf.borderStyle = UITextBorderStyleBezel
+        tf.clearButtonMode = UITextFieldViewModeWhileEditing
+        tf.secureTextEntry = True
+    def MyOnOk() -> None:
+        if callable(onOk): onOk(tf.text)
+
+    alert = utils.show_alert(
+        vc = vc,
+        title = title,
+        message = prompt,
+        actions = [ [ _("OK"), MyOnOk ], [_("Cancel")] ],
+        cancel = _("Cancel"),
+        localRunLoop = False,
+        uiTextFieldHandlers = [tfConfigHandler]
+    )
+    return alert

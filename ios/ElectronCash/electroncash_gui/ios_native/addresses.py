@@ -1,6 +1,7 @@
 from . import utils
 from . import gui
 from . import history
+from . import private_key_dialog
 from .txdetail import TxDetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
@@ -153,6 +154,21 @@ class AddressDetail(UIViewController):
             parent.view_on_block_explorer(entry.address, 'addr')
         def on_request_payment() -> None:
             parent.jump_to_receive_with_address(entry.address)
+        def on_private_key() -> None:
+            def onPw(password : str) -> None:
+                # present the private key view controller here.
+                pk = None
+                try:
+                    pk = parent.wallet.export_private_key(entry.address, password) if parent.wallet else None
+                except Exception as e:
+                    parent.show_error(str(e))
+                    return
+                if pk:
+                    vc = private_key_dialog.PrivateKeyDialog.alloc().init().autorelease()
+                    pkentry = private_key_dialog.PrivateKeyEntry(entry.address, pk, entry.is_frozen, entry.is_change)
+                    utils.nspy_put_byname(vc, pkentry, 'entry')
+                    self.navigationController.pushViewController_animated_(vc, True)
+            parent.prompt_password_if_needed_asynch(onPw)
             
         actions = [
                 [ _('Cancel') ],
@@ -160,10 +176,18 @@ class AddressDetail(UIViewController):
                 #[ _('Show as QR code'), lambda: self.onQRBut() ],
                 [ _("View on block explorer"), on_block_explorer ],
                 [ _("Request payment"), on_request_payment ],
-                [ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: self.onToggleFreeze() ],
             ]
-        if not entry.is_frozen and entry.balance > 0:
+        
+        watch_only = False if parent.wallet and not parent.wallet.is_watching_only() else True
+
+        if not watch_only:
+            actions.append([ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: self.onToggleFreeze() ])
+
+        if not watch_only and not entry.is_frozen and entry.balance > 0:
             actions.append([ _('Spend from this Address'), lambda: self.doSpendFrom() ] )
+
+        if not watch_only :
+            actions.append([ _('Private key'), on_private_key ] )
             
         utils.show_alert(
             vc = self,
@@ -211,9 +235,12 @@ class AddressDetail(UIViewController):
     def refreshButs(self) -> None:
         v = self.viewIfLoaded
         if v is None: return
+        parent = gui.ElectrumGui.gui
+        watch_only = False if parent.wallet and not parent.wallet.is_watching_only() else True
         but = v.viewWithTag_(520)
         entry = utils.nspy_get_byname(self, 'entry')
         but.setTitle_forState_(_("Freeze") if not entry.is_frozen else _("Unfreeze"), UIControlStateNormal)
+        but.setHidden_(watch_only)
 
         but = v.viewWithTag_(150)
         but.setTitle_forState_(_("Options") + "...", UIControlStateNormal)

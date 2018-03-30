@@ -1144,6 +1144,21 @@ class ElectrumGui(PrintError):
     
     def password_dialog(self, msg = None) -> str:
         return ElectrumGui.prompt_password(msg)
+    
+    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None) -> ObjCInstance:
+        if self.wallet is None: return None
+        if not self.wallet.has_password():
+            callBack(None)
+            return
+        def cb(pw : str) -> None:
+            try:
+                if not self.wallet:
+                    return # cancel
+                self.wallet.check_password(pw)
+                callBack(pw)
+            except Exception as e:
+                self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack, prompt, title))
+        return password_dialog.prompt_password_asynch(self.get_presented_viewcontroller(), cb, prompt, title)
 
     def generate_wallet(self, path):
         with open(path, "wb") as fdesc:

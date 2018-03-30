@@ -426,7 +426,7 @@ class TxDetail(UIViewController):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
-        entry = utils.nspy_get_byname(txDetailViewController, 'tx_entry')
+        entry = utils.nspy_get_byname(self, 'tx_entry')
         descTf = self.view.viewWithTag_(210)
         descTf.text = entry.label
         #todo update this stuff in realtime?
