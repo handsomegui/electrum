@@ -1340,9 +1340,10 @@ class ElectrumGui(PrintError):
         
     def jump_to_send_with_spend_from(self, coins) -> None:
         if not self.sendVC: return
-        self.sendVC.clear()
+        #self.sendVC.clear()
         utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
-        self.sendVC.reformatSpendFrom()
+        #if self.tabController and self.tabController.selectedViewController.ptr != self.sendNav.ptr:
+        #    self.sendVC.reformatSpendFrom()
         self.show_send_tab()
 
     # this method is called by Electron Cash libs to start the GUI
