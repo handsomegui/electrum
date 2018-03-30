@@ -440,7 +440,7 @@ class AddressesTableVC(UITableViewController):
                 font = cell.textLabel.font
                 cell.textLabel.font = UIFont.boldSystemFontOfSize_(font.pointSize)
                 cell.detailTextLabel.adjustsFontSizeToFitWidth = True
-                cell.detailTextLabel.minimumScaleFactor = 0.75
+                cell.detailTextLabel.minimumScaleFactor = 0.85
             cell.textLabel.text = str(entry.address)
             cell.detailTextLabel.text = "bal: " + entry.balance_str + ( (' (' + entry.fiat_balance_str + ')') if addrData.show_fx else '') + " numtx: " + str(entry.num_tx) + ((" - " + entry.label) if entry.label else "")
             cell.backgroundColor = tableView.backgroundColor
