@@ -40,7 +40,7 @@ class HistoryTableVC(UITableViewController):
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         try:
             history = utils.nspy_get_byname(self, 'history')
-            return len(history)
+            return len(history) if history else 1
         except:
             print("Error, no history")
             return 0
@@ -52,15 +52,15 @@ class HistoryTableVC(UITableViewController):
         if cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
         try:
-            entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
-            setup_cell_for_history_entry(cell, entry)
+            history = utils.nspy_get_byname(self, 'history')
+            if not history:
+                empty_cell(cell,_("No transactions"),True)
+            else:
+                entry = history[indexPath.row]
+                setup_cell_for_history_entry(cell, entry)
         except Exception as e:
             print("exception in tableView_cellForRowAtIndexPath_: %s"%str(e))
-            cell.textLabel.attributedText = None
-            cell.textLabel.text = "*Error*"
-            cell.detailTextLabel.attributedText = None
-            cell.detailTextLabel.text = None
-            cell.accessoryType = UITableViewCellAccessoryNone
+            empty_cell(cell)
         return cell
     
     # Below 2 methods conform to UITableViewDelegate protocol
@@ -78,6 +78,7 @@ class HistoryTableVC(UITableViewController):
         try:
             entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
         except:
+            tv.deselectRowAtIndexPath_animated_(indexPath,True)
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
         rawtx = None
@@ -232,3 +233,15 @@ def get_history(domain : list = None) -> list:
         entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)
         history.insert(0,entry) # reverse order
     return history
+
+def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False) -> ObjCInstance:
+    cell.textLabel.attributedText = None
+    cell.textLabel.text = txt
+    if italic:
+        cell.textLabel.font = UIFont.italicSystemFontOfSize_(cell.textLabel.font.pointSize)
+    else:
+        cell.textLabel.font = UIFont.systemFontOfSize_(cell.textLabel.font.pointSize)
+    cell.detailTextLabel.attributedText = None
+    cell.detailTextLabel.text = None
+    cell.accessoryType = UITableViewCellAccessoryNone
+    return cell

@@ -274,7 +274,7 @@ class AddressDetail(UIViewController):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tv, section : int) -> int:
         h = utils.nspy_get_byname(self, 'history')
-        return len(h) if h else 0
+        return len(h) if h else 1
     
     @objc_method
     def tableView_titleForHeaderInSection_(self, tv, section : int) -> ObjCInstance:
@@ -292,16 +292,16 @@ class AddressDetail(UIViewController):
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
             cell.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,1.0,1.0,0.7)
         try:
-            cell.opaque = False
-            hentry = utils.nspy_get_byname(self, 'history')[indexPath.row]
-            history.setup_cell_for_history_entry(cell, hentry)
+            hstry = utils.nspy_get_byname(self, 'history')
+            if hstry and len(hstry):
+                cell.opaque = False
+                hentry = hstry[indexPath.row]
+                history.setup_cell_for_history_entry(cell, hentry)
+            else:
+                history.empty_cell(cell, _("No transactions"), True)
         except Exception as e:
             print("exception in AddressDetail.tableView_cellForRowAtIndexPath_: %s"%str(e))
-            cell.textLabel.attributedText = None
-            cell.textLabel.text = "*Error*"
-            cell.detailTextLabel.attributedText = None
-            cell.detailTextLabel.text = None
-            cell.accessoryType = UITableViewCellAccessoryNone
+            history.empty_cell(cell)
         return cell
 
     @objc_method
@@ -313,6 +313,7 @@ class AddressDetail(UIViewController):
         try:
             entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
         except:
+            tv.deselectRowAtIndexPath_animated_(indexPath,True)
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
         rawtx = None
