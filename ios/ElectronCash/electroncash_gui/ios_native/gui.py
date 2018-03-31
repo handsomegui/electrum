@@ -1083,7 +1083,8 @@ class ElectrumGui(PrintError):
     def stop_daemon(self):
         if not self.daemon_is_running(): return
         self.unregister_network_callbacks()
-        self.daemon.stop_wallet(self.wallet.storage.path)
+        if self.wallet and self.wallet.storage:
+            self.daemon.stop_wallet(self.wallet.storage.path)
         self.daemon.stop()
         self.wallet = None
         self.daemon = None
