@@ -224,14 +224,10 @@ class ReceiveVC(UIViewController):
     @objc_method
     def onAddressTap_(self, uigr : ObjCInstance) -> None:
         lbl = uigr.view
-        avc = addresses.AddressesTableVC.alloc().initWithMode_(addresses.AddressesTableVCModePicker).autorelease()
-        nav = UINavigationController.alloc().initWithRootViewController_(avc).autorelease()
         def pickedAddress(entry) -> None:
             self.addr = str(entry.address)
-            nav.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
-        utils.add_callback(avc, 'on_picked', pickedAddress)
-        parent().add_navigation_bar_close_to_modal_vc(avc)
-        parent().get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)
+            # refresh of view will be done as a result of viewWillAppear which will be called after this returns
+        addresses.present_modal_address_picker(pickedAddress)
 
     @objc_method
     def onCopyBut(self) -> None:

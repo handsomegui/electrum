@@ -579,7 +579,7 @@ class TaskThread:
             if self.worker.is_alive():
                 NSLog("TaskThread worker was running, force cancel...")
                 self.stop()
-                self.wait()
+                #self.wait()
             self.worker = None
 
     def start(self):
@@ -603,7 +603,7 @@ class TaskThread:
                 do_in_main_thread(self.on_done, result, task.cb_done, task.cb_success)
             except:
                 do_in_main_thread(self.on_done, sys.exc_info(), task.cb_done, task.cb_error)
-        #NSLog("Exiting worker thread...")
+        NSLog("Exiting TaskThread worker thread...")
                 
     def on_done(self, result, cb_done, cb):
         # This runs in the main thread.

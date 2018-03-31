@@ -2,6 +2,7 @@ from . import utils
 from . import gui
 from . import history
 from . import private_key_dialog
+from . import sign_decrypt_dialog
 from .txdetail import TxDetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
@@ -11,6 +12,7 @@ from electroncash.address import Address
 
 import time
 import html
+import sys
 from collections import namedtuple
 
 from .uikit_bindings import *
@@ -169,7 +171,24 @@ class AddressDetail(UIViewController):
                     utils.nspy_put_byname(vc, pkentry, 'entry')
                     self.navigationController.pushViewController_animated_(vc, True)
             parent.prompt_password_if_needed_asynch(onPw)
-            
+        def on_sign_verify() -> None:
+            vc = sign_decrypt_dialog.Create_SignVerify_VC(entry.address)
+            self.navigationController.pushViewController_animated_(vc, True)
+
+        def on_encrypt_decrypt() -> None:
+            if not parent.wallet: return
+            try:
+                pubkey = parent.wallet.get_public_key(entry.address)
+            except:
+                print("exception extracting public key:",str(sys.exc_info()[1]))
+                return
+            if pubkey is not None and not isinstance(pubkey, str):
+                pubkey = pubkey.to_ui_string()
+            if not pubkey:
+                return
+            vc = sign_decrypt_dialog.Create_EncryptDecrypt_VC(entry.address, pubkey)
+            self.navigationController.pushViewController_animated_(vc, True)
+
         actions = [
                 [ _('Cancel') ],
                 #[ _('Copy to clipboard'), lambda: self.onCpyBut() ],
@@ -186,8 +205,12 @@ class AddressDetail(UIViewController):
         if not watch_only and not entry.is_frozen and entry.balance > 0:
             actions.append([ _('Spend from this Address'), lambda: self.doSpendFrom() ] )
 
-        if not watch_only :
+        if not watch_only:
             actions.append([ _('Private key'), on_private_key ] )
+            
+        if not watch_only and entry.address.kind == entry.address.ADDR_P2PKH:
+            actions.append([ _('Sign/verify Message'), on_sign_verify ] )
+            actions.append([ _('Encrypt/decrypt Message'), on_encrypt_decrypt ] )
             
         utils.show_alert(
             vc = self,
@@ -657,3 +680,16 @@ class AddressData:
             d[len(d)] = (_("Change"), self.change)
         self.sections = d
         return d
+
+
+def present_modal_address_picker(callback) -> None:
+    parent = gui.ElectrumGui.gui
+    avc = AddressesTableVC.alloc().initWithMode_(AddressesTableVCModePicker).autorelease()
+    nav = UINavigationController.alloc().initWithRootViewController_(avc).autorelease()
+    def pickedAddress(entry) -> None:
+        if callable(callback):
+            callback(entry)
+        nav.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+    utils.add_callback(avc, 'on_picked', pickedAddress)
+    parent.add_navigation_bar_close_to_modal_vc(avc)
+    parent.get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)

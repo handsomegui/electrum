@@ -227,6 +227,8 @@ UIButtonTypeContactAdd = 5
 UIButtonTypeRoundedRect = UIButtonTypeSystem #   // Deprecated, use UIButtonTypeSystem instead
 
 
+UIToolbar = ObjCClass('UIToolbar')
+
 # UIBarButtonItem.h
 UIBarButtonItem = ObjCClass('UIBarButtonItem')
 
