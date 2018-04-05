@@ -177,6 +177,24 @@ class GuiHelper(NSObject):
         is_hidden = True if len(nav.viewControllers) > depth else False
         #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
         nav.setToolbarHidden_animated_(is_hidden, True)
+        
+class MoreTableCellMogrifier(ForwardingDelegate):
+    @objc_rawmethod
+    def tableView_willDisplayCell_forRowAtIndexPath_(self, cmd, tableView, cell, indexPath) -> None:
+        #print("More Mogrifier invoked!!")
+        tableView = ObjCInstance(tableView)
+        self = ObjCInstance(self)
+        cell = ObjCInstance(cell)
+        indexPath = ObjCInstance(indexPath)
+        if self.fwdDelegate is not None and self.fwdDelegate.respondsToSelector_(cmd): 
+            self.fwdDelegate.tableView_willDisplayCell_forRowAtIndexPath_(tableView, cell, indexPath)
+
+        parent = ElectrumGui.gui
+        
+        if cell and cell.imageView and parent:
+            img = parent.get_image_for_tab_index(indexPath.row + 4)
+            if img: cell.imageView.image = img
+
 
 class UnimplementedVC(UIViewController):
     ''' Proxy view controller for as-yet unimplemented tabs.  TODO: get rid of this and implement all tabs! '''
@@ -240,6 +258,7 @@ class ElectrumGui(PrintError):
 
         self.tx_notifications = []
         self.helper = None
+        self.moreMogrifier = None
         self.helperTimer = None
         self.lowMemoryToken = None
         self.downloadingNotif = None
@@ -290,6 +309,12 @@ class ElectrumGui(PrintError):
         self.tabs = theTabs
         self.tabController.viewControllers = theTabs
         self.helper.moreTabPtr = ns_from_py(self.tabController.moreNavigationController.ptr.value)
+        
+        # this sets up polishing the icons for the more table view since the defaults look terrible
+        moreTableView = self.tabController.moreNavigationController.topViewController.view
+        if isinstance(moreTableView, UITableView):
+            self.moreMogrifier = MoreTableCellMogrifier.alloc().initWithDelegate_(moreTableView.delegate)
+            moreTableView.delegate = self.moreMogrifier
 
         self.setup_toolbar()
         
@@ -432,7 +457,13 @@ class ElectrumGui(PrintError):
         self.helper.butsSeed = butsSeed
         self.helper.butsCashaddr = butsCashaddr
         self.helper.butsPrefs = butsPrefs
-    
+        
+    def get_image_for_tab_index(self, index) -> ObjCInstance:
+        if not self.tabController: return None
+        vcs = self.tabController.viewControllers
+        if index < 0 or index >= len(vcs): return None
+        return vcs[index].tabBarItem.image
+        
     def setup_downloading_notif(self):
         if self.downloadingNotif is not None: return
         self.downloadingNotif = CWStatusBarNotification.new()
@@ -499,6 +530,8 @@ class ElectrumGui(PrintError):
         self.helper = None
         self.cash_addr_sig.clear()
         self.cash_addr_sig = None
+        if self.moreMogrifier is not None: self.moreMogrifier.release()
+        self.moreMogrifier = None
     
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
         #update status bar label width

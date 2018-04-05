@@ -272,4 +272,26 @@ static long UIButtonBlockKey = 0xb10cb10c;
 @end
 
 
+@implementation ForwardingDelegate
+@synthesize fwdDelegate;
+- (instancetype) initWithDelegate:(id<NSObject>)fwd {
+    if (self = [super init]) {
+        self.fwdDelegate = fwd;
+    }
+    return self;
+}
+- (BOOL)respondsToSelector:(SEL)aSelector
+{
+    if ([[self class] instancesRespondToSelector:aSelector]) {
+        return YES;
+    }
+    return [self.fwdDelegate respondsToSelector:aSelector];
+}
+
+- (id)forwardingTargetForSelector:(SEL)aSelector
+{
+    return self.fwdDelegate;
+}
+@end
+
 

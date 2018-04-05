@@ -37,3 +37,9 @@ typedef void(^ActionBlock)(UIControl *);
 @interface UIView (ViewRecursion)
 - (NSArray *) allSubviewsRecursively;
 @end
+
+@interface ForwardingDelegate : NSObject
+@property (nonatomic, weak) id<NSObject> fwdDelegate;
+- (instancetype) initWithDelegate:(id<NSObject>)fwd;
+@end
+
