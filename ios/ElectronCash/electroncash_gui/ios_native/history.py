@@ -21,6 +21,7 @@ class HistoryTableVC(UITableViewController):
         self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
         self.needsRefresh = False
         self.title = _("History")
+        self.tabBarItem.image = UIImage.imageNamed_("tab_history.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
 

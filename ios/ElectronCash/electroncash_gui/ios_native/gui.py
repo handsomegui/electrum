@@ -98,6 +98,7 @@ class GuiHelper(NSObject):
     butsSeed = objc_property()
     butsPrefs = objc_property()
     butsSend = objc_property()
+    moreTabPtr = objc_property()
     
     @objc_method
     def init(self):
@@ -110,6 +111,7 @@ class GuiHelper(NSObject):
         self.butsSeed = []
         self.butsPrefs = []
         self.butsSend = []
+        self.moreTabPtr = None
         return self
     
     @objc_method
@@ -122,6 +124,7 @@ class GuiHelper(NSObject):
         self.butsSeed = None
         self.butsPrefs = None
         self.butsSend = None
+        self.moreTabPtr = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -168,10 +171,30 @@ class GuiHelper(NSObject):
         
     @objc_method
     def navigationController_willShowViewController_animated_(self, nav, vc, anim : bool) -> None:
-        is_hidden = True if len(nav.viewControllers) and vc.ptr.value != nav.viewControllers[0].ptr.value else False
-        #print("SetToolBarHidden=%s"%str(is_hidden))
+        depth = 1
+        if self.moreTabPtr is not None and nav.ptr.value == self.moreTabPtr:
+            depth = 2
+        is_hidden = True if len(nav.viewControllers) > depth else False
+        #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
         nav.setToolbarHidden_animated_(is_hidden, True)
-    
+
+class UnimplementedVC(UIViewController):
+    ''' Proxy view controller for as-yet unimplemented tabs.  TODO: get rid of this and implement all tabs! '''
+    @objc_method
+    def initWithTitle_image_(self, title : ObjCInstance, img : ObjCInstance) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'init'))
+        if self is not None:
+            self.title = title
+            if not isinstance(img, UIImage):
+                img = UIImage.imageNamed_(img).imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
+            self.tabBarItem.image = img
+        return self
+    @objc_method
+    def loadView(self) -> None:
+        l = UILabel.new().autorelease()
+        l.text = self.title + " UNIMPLEMENTED"
+        self.view = l
+   
 
 # Manages the GUI. Part of the ElectronCash API so you can't rename this class easily.
 class ElectrumGui(PrintError):
@@ -191,6 +214,8 @@ class ElectrumGui(PrintError):
         self.wallet = None
         self.window = None
         self.tabController = None
+        self.rootVCs = None
+        self.tabs = None
         self.historyNav = None
         self.historyVC = None
         self.sendVC = None
@@ -240,19 +265,31 @@ class ElectrumGui(PrintError):
         self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.AddressesTableVCModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
-        self.historyNav = nav = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
+        self.historyNav = nav1 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
 
         self.sendNav = nav2 = UINavigationController.alloc().initWithRootViewController_(snd).autorelease()
         self.receiveNav = nav3 = UINavigationController.alloc().initWithRootViewController_(rcv).autorelease()
         self.addressesNav = nav4 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
 
-        self.tabController.viewControllers = [nav, nav2, nav3, nav4]
-        tabitems = self.tabController.tabBar.items
-        tabitems[0].image = UIImage.imageNamed_("tab_history.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
-        tabitems[1].image = UIImage.imageNamed_("tab_send.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
-        tabitems[2].image = UIImage.imageNamed_("tab_receive.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
-        tabitems[3].image = UIImage.imageNamed_("tab_addresses.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
+        unimplemented_navs = []
+        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Coins"),"tab_coins.png").autorelease()).autorelease())
+        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Contacts"), "tab_contacts.png").autorelease()).autorelease())
+        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Addr Conv"), "tab_converter.png").autorelease()).autorelease())
+        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
+        theTabs = [nav1, nav2, nav3, nav4, *unimplemented_navs]
+        self.rootVCs = dict()
+        for i,nav in enumerate(theTabs):
+            vc = nav.viewControllers[0]
+            nav.tabBarItem.title = vc.tabBarItem.title
+            nav.tabBarItem.image = vc.tabBarItem.image
+            nav.tabBarItem.tag = i
+            nav.viewControllers[0].tabBarItem.tag = i
+            self.rootVCs[nav.ptr.value] = vc
+
+        self.tabs = theTabs
+        self.tabController.viewControllers = theTabs
+        self.helper.moreTabPtr = ns_from_py(self.tabController.moreNavigationController.ptr.value)
 
         self.setup_toolbar()
         
@@ -310,7 +347,10 @@ class ElectrumGui(PrintError):
         butsSeed = []
         butsCashaddr = []
         butsPrefs = []
-        for nav in self.tabController.viewControllers:
+        vcs = self.tabs
+        vcs.append(self.tabController.moreNavigationController)
+        for i,nav in enumerate(vcs):
+            # TODO: fix this to work with all vcs!
             itemsThisNav = []
             # status label
             l = UILabel.alloc().initWithFrame_(CGRectMake(0,0,UIScreen.mainScreen.bounds.size.width-100,50)).autorelease()
@@ -375,9 +415,12 @@ class ElectrumGui(PrintError):
             butsStatus.append(b)
             itemsThisNav.append(b)
             
-            root = nav.viewControllers[0] # get root viewcontroller
             itemsThisNav.sort(key=lambda x: x.tag)
-            root.setToolbarItems_animated_(itemsThisNav, True)
+            try:
+                root = nav.viewControllers[0] # get root viewcontroller -- may fail for the 'moreNavigationController'
+                root.setToolbarItems_animated_(itemsThisNav, True)
+            except IndexError:
+                pass
             nav.setToolbarHidden_animated_(False, True)
             # below two cause problems because of our 'persistent toolbar', so disable
             #nav.hidesBarsWhenKeyboardAppears = True
@@ -450,6 +493,8 @@ class ElectrumGui(PrintError):
         self.tabController = None
         self.window.release()
         self.window = None
+        self.rootVCs = None
+        self.tabs = None
         if self.helper is not None: self.helper.release()
         self.helper = None
         self.cash_addr_sig.clear()
@@ -689,18 +734,27 @@ class ElectrumGui(PrintError):
         buts = self.helper.butsPasswd
         for b in buts:
             b.setImage_(img)
-        
+    
+    def get_root_vc(self, nav : ObjCInstance) -> ObjCInstance:
+        ret = self.rootVCs.get(nav.ptr.value, None)
+        if ret is None and isinstance(nav, UINavigationController) and len(nav.viewControllers):
+            ret = nav.viewControllers[0]
+        return ret
 
     def update_buttons_on_seed(self):
+        tabs = self.tabs
+        tabs.append(self.tabController.moreNavigationController)
         def removeBut(but,vcidx):
-            nav = self.tabController.viewControllers[vcidx]
-            root = nav.viewControllers[0]
+            nav = tabs[vcidx]
+            root = self.get_root_vc(nav) #nav.viewControllers[0]
+            if not root: return
             itemsThisNav = root.toolbarItems
             itemsThisNav = [x for x in itemsThisNav if x.tag != but.tag]
             root.setToolbarItems_animated_(itemsThisNav, True)
         def addBut(but,vcidx):
-            nav = self.tabController.viewControllers[vcidx]
-            root = nav.viewControllers[0]
+            nav = tabs[vcidx]
+            root = self.get_root_vc(nav) #nav.viewControllers[0]
+            if not root: return
             itemsThisNav = root.toolbarItems
             if but not in itemsThisNav:
                 itemsThisNav.insert(but.tag,but)
@@ -1012,11 +1066,7 @@ class ElectrumGui(PrintError):
 
       
     def show_send_tab(self):
-        vcs = self.tabController.viewControllers
-        for i,vc in enumerate(vcs):
-            if vc.ptr.value == self.sendVC.ptr.value:
-                if self.tabController.selectedIndex != i: self.tabController.selectedIndex = i
-                return
+        self.tabController.selectedViewController = self.sendNav
 
     def pay_to_URI(self, URI, errFunc : callable = None):
         utils.NSLog("PayTo URI: %s", str(URI))

@@ -362,6 +362,8 @@ class AddressesTableVC(UITableViewController):
         self.blockRefresh = False
         self.mode = int(mode)
         self.title = _("&Addresses").split('&')[1] if self.mode == AddressesTableVCModeNormal else _("Choose Address")
+        if self.mode == AddressesTableVCModeNormal:
+            self.tabBarItem.image = UIImage.imageNamed_("tab_addresses.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
 
         self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
         self.updateAddressesFromWallet()
