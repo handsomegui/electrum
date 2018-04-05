@@ -178,6 +178,12 @@ class GuiHelper(NSObject):
         #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
         nav.setToolbarHidden_animated_(is_hidden, True)
         
+    @objc_method
+    def tabBarController_didEndCustomizingViewControllers_changed_(self, tabController, viewControllers, changed : bool) -> None:
+        parent = ElectrumGui.gui
+        if not parent or not changed: return
+        parent.save_tabs_order(py_from_ns(viewControllers))
+        
 class MoreTableCellMogrifier(ForwardingDelegate):
     @objc_rawmethod
     def tableView_willDisplayCell_forRowAtIndexPath_(self, cmd, tableView, cell, indexPath) -> None:
@@ -296,9 +302,9 @@ class ElectrumGui(PrintError):
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Addr Conv"), "tab_converter.png").autorelease()).autorelease())
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
-        theTabs = [nav1, nav2, nav3, nav4, *unimplemented_navs]
+        self.tabs = [nav1, nav2, nav3, nav4, *unimplemented_navs]
         self.rootVCs = dict()
-        for i,nav in enumerate(theTabs):
+        for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
             nav.tabBarItem.title = vc.tabBarItem.title
             nav.tabBarItem.image = vc.tabBarItem.image
@@ -306,8 +312,7 @@ class ElectrumGui(PrintError):
             nav.viewControllers[0].tabBarItem.tag = i
             self.rootVCs[nav.ptr.value] = vc
 
-        self.tabs = theTabs
-        self.tabController.viewControllers = theTabs
+        self.tabController.viewControllers = self.get_tabs_ordered_from_config()
         self.helper.moreTabPtr = ns_from_py(self.tabController.moreNavigationController.ptr.value)
         
         # this sets up polishing the icons for the more table view since the defaults look terrible
@@ -315,6 +320,7 @@ class ElectrumGui(PrintError):
         if isinstance(moreTableView, UITableView):
             self.moreMogrifier = MoreTableCellMogrifier.alloc().initWithDelegate_(moreTableView.delegate)
             moreTableView.delegate = self.moreMogrifier
+        self.tabController.delegate = self.helper # for notification when user edits tab order
 
         self.setup_toolbar()
         
@@ -1450,6 +1456,34 @@ class ElectrumGui(PrintError):
         if not self.receiveVC or not isinstance(address, (Address, str)): return
         self.receiveVC.addr = (str(address))
         self.show_receive_tab()
+
+    def save_tabs_order(self, vcs : list = None) -> None:
+        if not self.tabController or not self.config: return
+        vcs = py_from_ns(self.tabController.viewControllers) if not vcs else vcs
+        order = list()
+        for vc in vcs:
+            for i,tab in enumerate(self.tabs):
+                if vc.ptr.value == tab.ptr.value:
+                    order.append(str(i))
+                    #print("%s = %d"%(vc.title,i))
+        self.config.set_key('tab_order', ','.join(order), True)
+        
+    def get_tabs_ordered_from_config(self) -> list:
+        if not self.tabs or not self.config: return
+        order = self.config.get('tab_order', None)
+        defaultOrder = list(range(0,len(self.tabs)))
+        try:
+            order = order.split(',')
+            order = [int(x) for x in order]
+            if len(order) != len(self.tabs) or set(order) != set(defaultOrder):
+                raise Exception('DummyException')
+        except:
+            order = defaultOrder
+        ret = list()
+        for n in order:
+            ret.append(self.tabs[n])
+            #print("%s = %d"%(ret[-1].title,n))
+        return ret
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
