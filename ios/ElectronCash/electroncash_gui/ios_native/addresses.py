@@ -218,7 +218,8 @@ class AddressDetail(UIViewController):
             message = _("Address") + ":" + " " + entry.addr_str[0:12] + "..." + entry.addr_str[-12:],
             actions = actions,
             cancel = _('Cancel'),
-            style = UIAlertControllerStyleActionSheet
+            style = UIAlertControllerStyleActionSheet,
+            ipadAnchor =  self.view.viewWithTag_(150).frame
         )
     @objc_method
     def onCpyBut(self) -> None:

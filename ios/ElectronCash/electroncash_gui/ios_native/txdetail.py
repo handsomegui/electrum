@@ -242,7 +242,9 @@ class TxInputsOutputsTVC(NSObject):
                          message = message,
                          actions = actions,
                          cancel = _("Cancel"),
-                         style = UIAlertControllerStyleActionSheet)
+                         style = UIAlertControllerStyleActionSheet,
+                         ipadAnchor = tv.convertRect_toView_(tv.rectForRowAtIndexPath_(indexPath), vc.view)
+                         )
     
 
 # returns the view itself, plus the copy button and the qrcode button, plus the (sometimes nil!!) UITextField for the editable description
@@ -483,5 +485,6 @@ class TxDetail(UIViewController):
                 [ _("View on block explorer"), on_block_explorer ],
             ],
             cancel = _('Cancel'),
-            style = UIAlertControllerStyleActionSheet
+            style = UIAlertControllerStyleActionSheet,
+            ipadAnchor = gestureRecognizer.view.frame
         )

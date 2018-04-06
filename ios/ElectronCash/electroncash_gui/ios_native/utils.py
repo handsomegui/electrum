@@ -49,6 +49,12 @@ bundle_short_name = bundle_domain + ".ElectronCash"
 def is_2x_screen() -> bool:
     return True if UIScreen.mainScreen.scale > 1.0 else False
 
+def is_iphone() -> bool:
+    return bool(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
+
+def is_ipad() -> bool:
+    return not is_iphone()
+
 def get_fn_and_ext(fileName: str) -> tuple:
     *p1, ext = fileName.split('.')
     fn=''
@@ -121,7 +127,8 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
                completion: Callable[[],None] = None, # optional completion function that gets called when alert is presented
                animated: bool = True, # whether or not to animate the alert
                localRunLoop: bool = False, # whether or not to create a local event loop and block until dialog finishes.. useful for full stop error messages and/or password dialogs
-               uiTextFieldHandlers : list = None # if you want to create custom UITextFields in this alert, and the alert'ss type is UIAlertControllerStyleAlert, pass a list of fully annotated callbacks taking an objc_id as arg and returning None, one for each desired text fields you want to create
+               uiTextFieldHandlers : list = None, # if you want to create custom UITextFields in this alert, and the alert'ss type is UIAlertControllerStyleAlert, pass a list of fully annotated callbacks taking an objc_id as arg and returning None, one for each desired text fields you want to create
+               ipadAnchor : object = None # A CGRect -- use this on ipad to specify an anchor if using UIAlertControllerStyleActionSheet
                ) -> ObjCInstance:
     if not NSThread.currentThread.isMainThread:
         raise Exception('utils.show_alert can only be called from the main thread!')
@@ -172,6 +179,15 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
         if completion is not None:
             #print("Calling completion callback..")
             completion()
+    if is_ipad() and alert.preferredStyle == UIAlertControllerStyleActionSheet:
+        popover = alert.popoverPresentationController()
+        popover.sourceView = vc.view
+        if isinstance(ipadAnchor, CGRect):
+            rect = ipadAnchor
+        else:
+            rect = vc.view.frame
+            rect = CGRectMake(rect.size.width/2.0,rect.size.height/4.0,0.0,0.0)
+        popover.sourceRect = rect
     vc.presentViewController_animated_completion_(alert,animated,onCompletion)
     if localRunLoop:
         while not got_callback:

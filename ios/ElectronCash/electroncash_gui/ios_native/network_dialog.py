@@ -423,7 +423,7 @@ class NetworkDialogVC(UIViewController):
             
     @objc_method
     def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
-        if UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPhone:  return
+        if not utils.is_iphone():  return
         # try and center the text fields on the screen.. this is an ugly HACK.
         # todo: fixme!
         sv = self.viewIfLoaded 

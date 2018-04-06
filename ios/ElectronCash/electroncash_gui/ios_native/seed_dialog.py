@@ -133,6 +133,10 @@ class SeedDisplayVC(UIViewController):
 
     @objc_method
     def onSeedLblTap_(self, uigr : ObjCInstance) -> None:
+        ipadAnchor = None
+        if utils.is_ipad():
+            ipadAnchor = self.seedLbl.bounds
+            ipadAnchor = self.seedLbl.convertRect_toView_(ipadAnchor, self.view)
         utils.show_alert(
             vc = self,
             title = _("Options"),
@@ -143,7 +147,8 @@ class SeedDisplayVC(UIViewController):
                 [ _('Show as QR code'), self.onQRBut_, None ],
             ],
             cancel = _('Cancel'),
-            style = UIAlertControllerStyleActionSheet
+            style = UIAlertControllerStyleActionSheet,
+            ipadAnchor = ipadAnchor
         )
 
 def seed_warning_msg(seed, passphrase):

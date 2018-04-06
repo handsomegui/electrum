@@ -178,7 +178,7 @@ class SignDecryptVC(UIViewController):
     @objc_method
     def textViewDidBeginEditing_(self, tv : ObjCInstance) -> None:
         sv = self.view
-        if isinstance(sv, UIScrollView) and UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone: # fee manual edit, make sure it's visible
+        if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
             # try and center the text fields on the screen.. this is an ugly HACK.
             # todo: fixme!
             frame = tv.frame

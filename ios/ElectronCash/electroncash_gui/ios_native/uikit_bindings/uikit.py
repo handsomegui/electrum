@@ -696,3 +696,14 @@ NSDate = ObjCClass('NSDate')
 
 # UINib
 UINib = ObjCClass('UINib')
+
+NSUIntegerMax = ~0
+
+# UIPopoverController
+UIPopoverController = ObjCClass('UIPopoverController')
+UIPopoverArrowDirectionUp = 1 << 0
+UIPopoverArrowDirectionDown = 1 << 1
+UIPopoverArrowDirectionLeft = 1 << 2
+UIPopoverArrowDirectionRight = 1 << 3
+UIPopoverArrowDirectionAny = UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown | UIPopoverArrowDirectionLeft | UIPopoverArrowDirectionRight,
+UIPopoverArrowDirectionUnknown = NSUIntegerMax

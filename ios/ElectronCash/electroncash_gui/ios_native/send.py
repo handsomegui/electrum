@@ -360,7 +360,7 @@ class SendVC(UIViewController):
     def textFieldDidBeginEditing_(self, tf) -> None:
         sv = self.view
         sv.viewWithTag_(404).text = ""
-        if isinstance(sv, UIScrollView) and UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone: # fee manual edit, make sure it's visible
+        if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
             # try and center the text fields on the screen.. this is an ugly HACK.
             # todo: fixme!
             frame = tf.frame

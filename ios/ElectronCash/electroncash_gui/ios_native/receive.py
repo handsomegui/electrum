@@ -251,12 +251,19 @@ class ReceiveVC(UIViewController):
             self.setExpiresByIndex_(idx)
         actions = list(map(lambda x,y: [ _(x[0]), onSelect, y ], expiresList, range(0,len(expiresList))))
         actions.append([_('Cancel')])
-        alertvc = utils.show_alert(vc = parent().get_presented_viewcontroller(),
+        vc = parent().get_presented_viewcontroller()
+        ipadAnchor = None
+        if utils.is_ipad():
+            ipadAnchor = but.convertRect_toView_(but.bounds, vc.view)
+            ipadAnchor.size = CGSizeMake(60,ipadAnchor.size.height)
+        alertvc = utils.show_alert(vc = vc,
                                    title = ui['expiresTit'].text,
                                    message = _("Select when the payment request should expire"),
                                    actions = actions,
                                    cancel = _('Cancel'),
-                                   style = UIAlertControllerStyleActionSheet)    
+                                   style = UIAlertControllerStyleActionSheet,
+                                   ipadAnchor = ipadAnchor
+                                   )    
         
     @objc_method
     def updateFXFromAmt(self) -> None:

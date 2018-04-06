@@ -100,6 +100,15 @@ if [ -f "${infoplist}" ]; then
 			exit 1
 		fi
 	fi
+	# UILaunchStoryboardName -- this is required to get proper iOS screen sizes due to iOS being quirky AF
+	if [ -e "iOS/Resources/LaunchScreen.storyboard" ]; then 
+		plutil -insert "UILaunchStoryboardName" -string "LaunchScreen" -- ${infoplist}
+		if [ "$?" != "0" ]; then
+			echo "Encountered an error adding LaunchScreen to Info.plist!"
+			exit 1
+		fi
+	fi
+	# Camera Usage key -- required!
 	plutil -insert "NSCameraUsageDescription" -string "The camera is needed to scan QR codes" -- ${infoplist}
 fi
 
