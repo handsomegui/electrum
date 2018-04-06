@@ -101,7 +101,7 @@ if [ -f "${infoplist}" ]; then
 		fi
 	fi
 	# UILaunchStoryboardName -- this is required to get proper iOS screen sizes due to iOS being quirky AF
-	if [ -e "iOS/Resources/LaunchScreen.storyboard" ]; then 
+	if [ -e "Resources/LaunchScreen.storyboard" ]; then 
 		plutil -insert "UILaunchStoryboardName" -string "LaunchScreen" -- ${infoplist}
 		if [ "$?" != "0" ]; then
 			echo "Encountered an error adding LaunchScreen to Info.plist!"
