@@ -296,6 +296,12 @@ UITableViewCellAccessoryDetailDisclosureButton = 2 # info button w/ chevron. tra
 UITableViewCellAccessoryCheckmark = 3 # checkmark. doesn't track
 UITableViewCellAccessoryDetailButton = 4 # info button. tracks
 
+UITableViewScrollPositionNone = 0
+UITableViewScrollPositionTop = 1
+UITableViewScrollPositionMiddle = 2
+UITableViewScrollPositionBottom = 3
+
+
 NSIndexPath = ObjCClass('NSIndexPath')
 
 UITableViewRowAnimationFade = 0

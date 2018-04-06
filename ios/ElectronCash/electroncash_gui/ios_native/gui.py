@@ -1447,6 +1447,10 @@ class ElectrumGui(PrintError):
         if not self.tabController or not self.receiveNav: return
         self.tabController.selectedViewController = self.receiveNav
         
+    def show_addresses_tab(self) -> None:
+        if not self.tabController or not self.addressesNav: return
+        self.tabController.selectedViewController = self.addressesNav
+        
     def jump_to_send_with_spend_from(self, coins) -> None:
         if not self.sendVC: return
         utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
@@ -1456,6 +1460,11 @@ class ElectrumGui(PrintError):
         if not self.receiveVC or not isinstance(address, (Address, str)): return
         self.receiveVC.addr = (str(address))
         self.show_receive_tab()
+        
+    def jump_to_addresses_with_address(self, address) -> None:
+        if not isinstance(address, Address) or not self.addressesNav or not self.wallet or not self.wallet.is_mine(address): return
+        self.show_addresses_tab()
+        self.addressesVC.focusAddress_(address.to_ui_string())
 
     def save_tabs_order(self, vcs : list = None) -> None:
         if not self.tabController or not self.config: return

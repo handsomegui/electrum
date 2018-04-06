@@ -602,6 +602,44 @@ class AddressesTableVC(UITableViewController):
         # need to enqueue a call to "doRefreshIfNeeded" because it's possible the user tapped another text field in which case we
         # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
         utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
+        
+    @objc_method
+    def focusAddress_(self, address : ObjCInstance) -> None:
+        address = str(address)
+        #print("FocusAddress called", address)
+        tv = self.tableView
+        address = Address.from_string(address)
+        # find the address
+        addrData = utils.nspy_get_byname(self, 'addrData')
+        if not tv or not addrData: return
+        d = addrData.getSections()
+        for section in d.keys():
+            title, entries = d[section]
+            for row,entry in enumerate(entries):
+                if str(entry.address) == str(address):
+                    #print("Found address at ",section,row)
+                    if isinstance(tv, CollapsableTableView) and not tv.isSectionVisible_(section):
+                        #print("IS collapsible table view, section was not visible, setting section visible...")
+                        tv.setSection_visible_(section,True)
+                        tv.reloadData()
+                    def doScroll() -> None:
+                        #print("doScroll called...")
+                        tv.scrollToRowAtIndexPath_atScrollPosition_animated_(NSIndexPath.indexPathForRow_inSection_(row,section),
+                                                                             UITableViewScrollPositionTop,
+                                                                             True)
+                    if self.navigationController and self.navigationController.topViewController.ptr.value != self.ptr.value:
+                        self.navigationController.popToViewController_animated_(self, True)
+                    if self.presentedViewController:
+                        self.dismissViewControllerAnimated_completion_(True, doScroll)
+                    else:
+                        #print("doing doScroll after delay...")
+                        utils.call_later(0.100, doScroll)
+                        #print("calling doScroll now..")
+                        #doScroll()
+                    return
+
+        utils.NSLog("AddressesTableVC.focusAddress: Did not find address!")
+
 
 class AddressData:
     

@@ -236,6 +236,16 @@ class TxInputsOutputsTVC(NSObject):
         if not isInput:
             actions.pop(2)
             actions.pop(2)
+            
+        addy = getData(x, True, isInput)
+        if addy and not isinstance(addy, Address):
+            try:
+                addy = Address.from_string(addy)
+            except:
+                addy = None
+        if addy and parent.wallet and parent.wallet.is_mine(addy):
+            actions.insert(0, [ _("Show in Addresses Tab"), parent.jump_to_addresses_with_address, addy ] )
+            
         
         utils.show_alert(vc = vc,
                          title = title,
