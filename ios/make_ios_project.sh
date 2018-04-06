@@ -119,6 +119,14 @@ if [ -d overrides/ ]; then
 	(cd overrides && cp -fpvR * ../iOS/ && cd ..)
 fi
 
+stupid_launch_image_grr="iOS/ElectronCash/Images.xcassets/LaunchImage.launchimage"
+if [ -d "${stupid_launch_image_grr}" ]; then
+	echo ""
+	echo "Removing deprecated LaunchImage stuff..."
+	echo ""
+	rm -fvr "${stupid_launch_image_grr}"
+fi
+
 patches=patches/*.patch
 if [ -n "$patches" ]; then
 	echo ""
