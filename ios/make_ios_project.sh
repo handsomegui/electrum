@@ -176,7 +176,7 @@ if [ -n "$resources" ]; then
 	echo "Adding Resurces/ and CustomCode/ to project..."
 	echo ""
 	cp -fRav Resources CustomCode iOS/
-	(cd iOS && python3 -m pbxproj folder -r "${xcode_file}" Resources)
+	(cd iOS && python3 -m pbxproj folder -r -i "${xcode_file}" Resources)
 	if [ "$?" != 0 ]; then
 		echo "Error adding Resources to iOS/$xcode_file... aborting."
 		exit 1
