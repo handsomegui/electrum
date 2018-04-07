@@ -43,6 +43,7 @@ class CoinsTableVC(UITableViewController):
         send_super(__class__, self, 'viewDidLoad')
         nib = UINib.nibWithNibName_bundle_("CoinsCellLarge", None)
         self.tableView.registerNib_forCellReuseIdentifier_(nib, CellIdentifiers[0])
+        self.refresh()
         
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
