@@ -83,7 +83,7 @@ class HistoryTableVC(UITableViewController):
             else:
                 empty_cell(cell,_("No transactions"),True)
         except Exception as e:
-            print("exception in History tableView_cellForRowAtIndexPath_: %s"%str(e))
+            utils.NSLog("exception in History tableView_cellForRowAtIndexPath_: %s",str(e))
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
             empty_cell(cell)
         return cell
@@ -125,7 +125,7 @@ class HistoryTableVC(UITableViewController):
             # probable backgroundeed and/or wallet is closed
             return
         utils.nspy_put_byname(self, history, 'history')
-        print ("fetched %d entries from history"%len(history))
+        utils.NSLog("fetched %d entries from history",len(history))
 
     @objc_method
     def refresh(self):

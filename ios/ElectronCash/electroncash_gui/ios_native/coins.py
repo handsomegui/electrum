@@ -19,13 +19,27 @@ class CoinsTableVC(UITableViewController):
     ''' Coins Tab -- shows utxos
     '''
     needsRefresh = objc_property()
+    selected = objc_property() # NSArray of entry.name strings
+    clearBut = objc_property()
+    spendBut = objc_property()
 
     @objc_method
     def initWithStyle_(self, style : int) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
         self.needsRefresh = False
         self.title = _("Coins")
+        self.selected = []
         self.tabBarItem.image = UIImage.imageNamed_("tab_coins.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
+      
+        buts = [
+            UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Spend"), UIBarButtonItemStyleDone, self, SEL(b'spendFromSelection')).autorelease(),
+            UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Clear"), UIBarButtonItemStylePlain, self, SEL(b'clearSelection')).autorelease(),
+        ]
+        self.spendBut = buts[0]
+        self.clearBut = buts[1]
+        self.spendBut.enabled = False
+        self.clearBut.enabled = False
+        self.navigationItem.rightBarButtonItems = buts
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
 
@@ -34,6 +48,9 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def dealloc(self) -> None:
         self.needsRefresh = None
+        self.selected = None
+        self.clearBut = None
+        self.spendBut = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
@@ -64,6 +81,7 @@ class CoinsTableVC(UITableViewController):
             coins = utils.nspy_get_byname(self, 'coins')
             identifier = CellIdentifiers[0 if coins else -1]
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+            parent = gui.ElectrumGui.gui
             if cell is None:
                 cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
             if coins:
@@ -83,11 +101,16 @@ class CoinsTableVC(UITableViewController):
                 cell.addressGr.addTarget_action_(self,SEL(b'onOptions:'))
                 if not cell.optionsBut.actionsForTarget_forControlEvent_(self,UIControlEventPrimaryActionTriggered):
                     cell.optionsBut.addTarget_action_forControlEvents_(self, SEL(b'onOptions:'), UIControlEventPrimaryActionTriggered)
-                
+                cell.accessoryType = UITableViewCellAccessoryCheckmark if self.isIndexSelected_(indexPath.row) and parent.wallet and not parent.wallet.is_watching_only() and not entry.is_frozen else UITableViewCellAccessoryDisclosureIndicator
+                if cell.accessoryType == UITableViewCellAccessoryCheckmark:
+                    cell.accessoryView = None
+                else:
+                    cell.accessoryView = get_circle_imageview()
+                    
             else:
                 empty_cell(cell,_("No coins"),True)
         except Exception as e:
-            print("exception in Coins tableView_cellForRowAtIndexPath_: %s"%str(e))
+            utils.NSLog("exception in Coins tableView_cellForRowAtIndexPath_: %s",str(e))
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
             empty_cell(cell)
         return cell
@@ -99,17 +122,17 @@ class CoinsTableVC(UITableViewController):
         pass
     
     @objc_method
-    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
-        #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
+    def showTxDetailForIndex_(self, index : int) -> None:
         parent = gui.ElectrumGui.gui
         if parent.wallet is None:
             return
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[indexPath.row]
+            entry = utils.nspy_get_byname(self, 'coins')[index]
             hentry = parent.get_history_entry(entry.tx_hash)
             if hentry is None: raise Exception("NoHEntry")
         except:
-            tv.deselectRowAtIndexPath_animated_(indexPath,True)
+            import sys
+            utils.NSLog("CoinsTableVC.showTxDetailForIndex got exception: %s",str(sys.exc_info()[1]))
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
         rawtx = None
@@ -117,6 +140,34 @@ class CoinsTableVC(UITableViewController):
         txd = TxDetail.alloc()
         utils.nspy_put_byname(txd, hentry, 'tx_entry')
         self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
+    
+    
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
+        #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
+        tv.deselectRowAtIndexPath_animated_(indexPath,False)
+        cell = tv.cellForRowAtIndexPath_(indexPath)
+
+        parent = gui.ElectrumGui.gui
+        no_good = parent.wallet is None or parent.wallet.is_watching_only()
+        try:
+            entry = utils.nspy_get_byname(self, 'coins')[indexPath.row]
+            if entry.is_frozen:
+                no_good = True
+        except:
+            no_good = True
+        
+        if cell.accessoryType == UITableViewCellAccessoryCheckmark or no_good:
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+            cell.accessoryView = get_circle_imageview()
+            self.setIndex_selected_(indexPath.row, False)
+        else:
+            cell.accessoryType = UITableViewCellAccessoryCheckmark
+            cell.accessoryView = None
+            self.setIndex_selected_(indexPath.row, True)
+            
+        self.updateSelectionButtons()
+        
  
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
@@ -130,12 +181,13 @@ class CoinsTableVC(UITableViewController):
             # probable backgroundeed and/or wallet is closed
             return
         utils.nspy_put_byname(self, coins, 'coins')
-        print ("fetched %d utxo entries from wallet (coins)"%len(coins))
+        utils.NSLog("fetched %d utxo entries from wallet (coins)",len(coins))
 
     @objc_method
     def refresh(self):
         self.updateCoinsFromWallet()
         if self.refreshControl: self.refreshControl.endRefreshing()
+        self.updateSelectionButtons()
         if self.tableView:
             self.tableView.reloadData()
         self.needsRefresh = False
@@ -224,11 +276,19 @@ class CoinsTableVC(UITableViewController):
                     addrDetail = AddressDetail.alloc().init().autorelease()
                     utils.nspy_put_byname(addrDetail, aentry, 'entry')
                     self.navigationController.pushViewController_animated_(addrDetail, True)
+            def spend_from2(utxos : list) -> None:
+                validSels = list(self.updateSelectionButtons())
+                coins = utils.nspy_get_byname(self, 'coins')
+                for entry in coins:
+                    if entry.name in validSels and entry.utxo not in utxos:
+                        utxos.append(entry.utxo)
+                if utxos:
+                    spend_from(utxos)
     
             actions = [
                     [ _('Cancel') ],
                     [ _("Address Details"), on_address_details ],
-                    [ _("Transaction Details"), lambda: self.tableView_didSelectRowAtIndexPath_(self.tableView,NSIndexPath.indexPathForRow_inSection_(obj.tag,0))],
+                    [ _("Transaction Details"), lambda: self.showTxDetailForIndex_(obj.tag)],
                     [ _("View on block explorer"), on_block_explorer ],
                     [ _("Request payment"), on_request_payment ],
                 ]
@@ -239,7 +299,10 @@ class CoinsTableVC(UITableViewController):
                 actions.append([ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: toggle_freeze(entry) ])
     
             if not watch_only and not entry.is_frozen:
-                actions.append([ _('Spend from this UTXO'), lambda: spend_from(entry) ] )
+                actions.append([ _('Spend from this UTXO'), lambda: spend_from([entry.utxo]) ] )
+                if len(list(self.updateSelectionButtons())):
+                    actions.append([ _('Spend from this UTXO + Selected'), lambda: spend_from2([entry.utxo]) ] )
+                    
                     
             utils.show_alert(
                 vc = self,
@@ -254,7 +317,65 @@ class CoinsTableVC(UITableViewController):
         except:
             import sys
             utils.NSLog("Exception during 'onOptions': %s",str(sys.exc_info()[1]))
-    
+
+    @objc_method
+    def isIndexSelected_(self, index : int) -> bool:
+        try:
+            entry = utils.nspy_get_byname(self, 'coins')[index]
+            sels = set(list(self.selected))
+            return bool(entry.name in sels)
+        except:
+            import sys
+            utils.NSLog("Exception during 'isIndexSelected': %s",str(sys.exc_info()[1]))
+        return False
+
+    @objc_method
+    def setIndex_selected_(self, index : int, b : bool) -> None:
+        try:
+            entry = utils.nspy_get_byname(self, 'coins')[index]
+            sels = set(list(self.selected))
+            if not b: sels.discard(entry.name)
+            else: sels.add(entry.name)
+            self.selected = list(sels)
+        except:
+            import sys
+            utils.NSLog("Exception during 'setIndex_selected_': %s",str(sys.exc_info()[1]))
+
+    @objc_method
+    def clearSelection(self) -> None:
+        self.selected = []
+        self.refresh()
+        
+    @objc_method
+    def spendFromSelection(self) -> None:
+        #print ("spend selected...")
+        validSels = list(self.updateSelectionButtons())
+        #print("valid selections:",*validSels)
+        coins = utils.nspy_get_byname(self, 'coins')
+        utxos = []
+        for entry in coins:
+            if entry.name in validSels:
+                utxos.append(entry.utxo)
+        if utxos:
+            spend_from(utxos)
+        
+    @objc_method
+    def updateSelectionButtons(self) -> ObjCInstance:
+        parent = gui.ElectrumGui.gui
+        newSels = set()
+        self.clearBut.enabled = False
+        self.spendBut.enabled = False
+        if parent.wallet and not parent.wallet.is_watching_only():
+            sels = set(list(self.selected))
+            coins = utils.nspy_get_byname(self, 'coins')
+            for coin in coins:
+                if not coin.is_frozen and coin.name in sels:
+                    newSels.add(coin.name)
+            if len(newSels):
+                self.spendBut.enabled = True
+            if len(sels):
+                self.clearBut.enabled = True
+        return ns_from_py(list(newSels))
 
 
 def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
@@ -297,6 +418,7 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     #cell.utxo.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
     
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+    cell.accessoryView = get_circle_imageview()
        
 
 def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool = False, confirmed_only : bool = False) -> list:
@@ -352,6 +474,7 @@ def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False
         cell.detailTextLabel.attributedText = None
         cell.detailTextLabel.text = None
     cell.accessoryType = UITableViewCellAccessoryNone
+    cell.accessoryView = None
     return cell
 
 
@@ -363,8 +486,14 @@ def toggle_freeze(entry) -> None:
         parent.wallet.storage.write()
         parent.refresh_components('addresses')
 
-def spend_from(entry) -> None:
-    print("SpendFrom: ",entry.name)
+def spend_from(coins: list) -> None:
+    #print("SpendFrom")
     parent = gui.ElectrumGui.gui
     if parent.wallet:
-        parent.jump_to_send_with_spend_from([entry.utxo])
+        parent.jump_to_send_with_spend_from(coins)
+
+def get_circle_imageview() -> ObjCInstance:
+    iv = UIImageView.alloc().initWithImage_(UIImage.imageNamed_("circle.png")).autorelease()
+    iv.frame = CGRectMake(0,0,24,24)
+    iv.contentMode = UIViewContentModeScaleAspectFit
+    return iv
