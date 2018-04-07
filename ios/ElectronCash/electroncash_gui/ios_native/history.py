@@ -83,7 +83,7 @@ class HistoryTableVC(UITableViewController):
             else:
                 empty_cell(cell,_("No transactions"),True)
         except Exception as e:
-            print("exception in tableView_cellForRowAtIndexPath_: %s"%str(e))
+            print("exception in History tableView_cellForRowAtIndexPath_: %s"%str(e))
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
             empty_cell(cell)
         return cell
@@ -225,8 +225,11 @@ def setup_large_cell_for_history_entry(cell : ObjCInstance, entry : object) -> N
         
     lblColor = UIColor.blackColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(153.0/255.0,51.0/255.0,51.0/255.0,1.0) #"#993333"
     #bgColor = UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995,0.95870447160000005,0.99979293349999998,1.0) if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
-    bgColor = cell.bal.backgroundColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
-    
+    #bgColor = cell.bal.backgroundColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
+    bgColor = UIColor.clearColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
+
+    cell.backgroundColor = bgColor
+
     cell.status1.text = status_str
     cell.descTf.placeholder = _("Description")
     cell.descTf.text = label
@@ -235,7 +238,7 @@ def setup_large_cell_for_history_entry(cell : ObjCInstance, entry : object) -> N
     cell.status2.text = ff
     cell.amt.text = v_str + (("(" + fiat_amount_str + " " + ccy + ") ") if fiat_amount else '')
     cell.amt.textColor = lblColor
-    cell.amt.backgroundColor = bgColor
+    #cell.amt.backgroundColor = bgColor
     cell.bal.text = balance_str + (("(" + fiat_balance_str + " " + ccy + ") ") if fiat_balance else '')
 
     #cell.amt.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)

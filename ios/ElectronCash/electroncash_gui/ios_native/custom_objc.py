@@ -68,4 +68,6 @@ CollapsableSectionHeaderView = ObjCClass('CollapsableSectionHeaderView')
 
 ForwardingDelegate = ObjCClass('ForwardingDelegate')
 
+# The below are found in ViewForIB.h
 HistoryCellLarge = ObjCClass('HistoryCellLarge')
+CoinsCellLarge = ObjCClass('CoinsCellLarge')

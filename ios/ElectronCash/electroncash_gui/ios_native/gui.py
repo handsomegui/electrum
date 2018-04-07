@@ -46,6 +46,7 @@ from . import prefs
 from . import password_dialog
 from . import seed_dialog
 from . import network_dialog
+from . import coins
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -246,6 +247,8 @@ class ElectrumGui(PrintError):
         self.receiveNav = None
         self.addressesNav = None
         self.addressesVC = None
+        self.coinsNav = None
+        self.coinsVC = None
         self.prefsVC = None
         self.prefsNav = None
         self.networkVC = None
@@ -290,19 +293,22 @@ class ElectrumGui(PrintError):
         self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.AddressesTableVCModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
+        self.coinsVC = cns = coins.CoinsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
+        self.helper.bindRefreshControl_(self.coinsVC.refreshControl)
+        
         self.historyNav = nav1 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
 
         self.sendNav = nav2 = UINavigationController.alloc().initWithRootViewController_(snd).autorelease()
         self.receiveNav = nav3 = UINavigationController.alloc().initWithRootViewController_(rcv).autorelease()
         self.addressesNav = nav4 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
+        self.coinsNav = nav5 = UINavigationController.alloc().initWithRootViewController_(cns).autorelease()
 
         unimplemented_navs = []
-        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Coins"),"tab_coins.png").autorelease()).autorelease())
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Contacts"), "tab_contacts.png").autorelease()).autorelease())
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Addr Conv"), "tab_converter.png").autorelease()).autorelease())
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
-        self.tabs = [nav1, nav2, nav3, nav4, *unimplemented_navs]
+        self.tabs = [nav1, nav2, nav3, nav4, nav5, *unimplemented_navs]
         self.rootVCs = dict()
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
@@ -531,6 +537,8 @@ class ElectrumGui(PrintError):
         self.receiveNav = None
         self.addressesNav = None
         self.addressesVC = None
+        self.coinsVC = None
+        self.coinsNav = None
         self.window.rootViewController = None
         self.tabController = None
         self.window.release()
@@ -917,8 +925,7 @@ class ElectrumGui(PrintError):
             return
         self.wallet.set_label(key, newvalue)
         self.wallet.storage.write()
-        self.historyVC.needUpdate()
-        self.addressesVC.needUpdate()
+        self.refresh_components("addresses", "history")
 
 
     def set_language(self):
@@ -1153,8 +1160,10 @@ class ElectrumGui(PrintError):
             self.helper.needUpdate()
         if components & {'history', *al}:
             self.historyVC.needUpdate()
+            self.coinsVC.needUpdate()
         if components & {'address', 'addresses', *al}:
             self.addressesVC.needUpdate()
+            self.coinsVC.needUpdate()
         if components & {'prefs', 'preferences', 'settings', *al}:
             self.prefsVC.refresh()
         if components & {'receive', 'paymentrequests', 'pr', *al}:
@@ -1501,6 +1510,29 @@ class ElectrumGui(PrintError):
             ret.append(self.tabs[n])
             #print("%s = %d"%(ret[-1].title,n))
         return ret
+    
+    def get_history_entry(self, tx_hash) -> tuple:
+        ''' returns a history.HistoryEntry namedtuple instance if tx_hash exists in history, or None if not found '''
+        history = utils.nspy_get_byname(self.historyVC, 'history')
+        if history:
+            for entry in history:
+                if entry.tx_hash == tx_hash:
+                    return entry
+        return None
+    
+    def get_address_entry(self, address) -> tuple:
+        ''' returns an addresses.AddrData.Entry namedtuple or None if not found. Accepts either a string or an Address instance'''
+        if isinstance(address, str):
+            address = Address.from_string(address)
+        addrData = utils.nspy_get_byname(self.addressesVC, 'addrData')
+        sdict = addrData.getSections() if addrData else dict()
+        for k in sdict.keys():
+            section = sdict[k]
+            for entry in section[1]: # first 'entry' in array is a section name, second element is the list of addresses
+                if address == entry.address:
+                    return entry
+        return None
+            
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
