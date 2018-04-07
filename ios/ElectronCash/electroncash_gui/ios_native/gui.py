@@ -281,6 +281,8 @@ class ElectrumGui(PrintError):
         self.tabController = MyTabBarController.alloc().init().autorelease()
 
         self.historyVC = tbl = history.HistoryTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
+        self.historyVC.setCompactMode_(bool(self.config.get('history_compact_mode', False)))
+        utils.add_callback(self.historyVC, 'on_change_compact_mode', lambda x: self.config.set_key('history_compact_mode',x,True))
         self.helper.bindRefreshControl_(self.historyVC.refreshControl)
 
         self.sendVC = snd = send.SendVC.alloc().init().autorelease()

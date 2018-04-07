@@ -7,14 +7,21 @@ from electroncash.i18n import _, language
 import time
 import html
 from .uikit_bindings import *
+from .custom_objc import *
 from collections import namedtuple
 
 HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
 
 
-# History Tab -- shows tx's, etc
 class HistoryTableVC(UITableViewController):
+    ''' History Tab -- shows tx's, etc
+
+        Possible 'add_callback'-style callbacks:
+    
+           'on_change_compact_mode' -- get notified when the tableview goes from compact to expanded mode. Takes 1 bool arg.
+    '''
     needsRefresh = objc_property()
+    compact = objc_property()
 
     @objc_method
     def initWithStyle_(self, style : int):
@@ -25,13 +32,22 @@ class HistoryTableVC(UITableViewController):
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
 
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem.alloc().init().autorelease()
+        self.setCompactMode_(True)
         return self
 
     @objc_method
     def dealloc(self) -> None:
         self.needsRefresh = None
+        self.compact = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
+
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        nib = UINib.nibWithNibName_bundle_("HistoryCellLarge", None)
+        self.tableView.registerNib_forCellReuseIdentifier_(nib, "HistoryCellLarge")
 
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -48,17 +64,26 @@ class HistoryTableVC(UITableViewController):
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
-        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
+        identifier = "HistoryCellCompact" if self.compact else "HistoryCellLarge"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
         if cell is None:
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+            if self.compact:
+                cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+            else:
+                cell = NSBundle.mainBundle.loadNibNamed_owner_options_("HistoryCellLarge",None,None)[0]
         try:
             history = utils.nspy_get_byname(self, 'history')
             if not history:
+                cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "NoTXs").autorelease()
                 empty_cell(cell,_("No transactions"),True)
             else:
                 entry = history[indexPath.row]
-                setup_cell_for_history_entry(cell, entry)
+                if self.compact:
+                    setup_cell_for_history_entry(cell, entry)
+                else:
+                    setup_large_cell_for_history_entry(cell, entry)
+                    cell.descTf.delegate = self
+                    cell.descTf.tag = indexPath.row
         except Exception as e:
             print("exception in tableView_cellForRowAtIndexPath_: %s"%str(e))
             empty_cell(cell)
@@ -87,7 +112,13 @@ class HistoryTableVC(UITableViewController):
         txd = TxDetail.alloc()
         utils.nspy_put_byname(txd, entry, 'tx_entry')
         self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
-    
+ 
+    @objc_method
+    def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
+        if not self.compact:
+            return 130.0
+        return 44.0
+   
     @objc_method
     def updateHistoryFromWallet(self):
         history = get_history()
@@ -128,7 +159,43 @@ class HistoryTableVC(UITableViewController):
             # the below starts up the table view in the "refreshing" state..
             self.refreshControl.beginRefreshing()
             self.tableView.setContentOffset_animated_(CGPointMake(0, self.tableView.contentOffset.y-self.refreshControl.frame.size.height), True)
-
+            
+    @objc_method
+    def toggleCompactMode(self) -> None:
+        self.setCompactMode_(not self.compact)
+        
+    @objc_method
+    def setCompactMode_(self, b : bool) -> None:
+        if self.compact is not None and b == bool(self.compact):
+            return
+        self.compact = b
+        #self.navigationItem.rightBarButtonItem.title = _("Expand") if b else _("Compactify")
+        #self.navigationItem.rightBarButtonItem.possibleTitles = NSSet.setWithArray_([ _("Compactify"), _("Expand") ])
+        self.navigationItem.rightBarButtonItem.image = UIImage.imageNamed_("but_expand_v.png") if b else UIImage.imageNamed_("but_compact_v.png")
+        self.navigationItem.rightBarButtonItem.target = self
+        self.navigationItem.rightBarButtonItem.action = SEL(b'toggleCompactMode')
+        self.navigationItem.rightBarButtonItem.style = UIBarButtonItemStylePlain
+        if self.viewIfLoaded:
+            self.tableView.reloadData()
+        utils.get_callback(self, 'on_change_compact_mode')(b)
+        
+    @objc_method
+    def textFieldShouldReturn_(self, tf) -> bool:
+        tf.resignFirstResponder()
+        return True
+    
+    @objc_method
+    def textFieldDidEndEditing_(self, tf) -> None:
+        history = utils.nspy_get_byname(self, 'history')
+        if not history or tf.tag < 0 or tf.tag >= len(history):
+            utils.NSLog("ERROR -- Label text field unknown tag: %d",int(tf.tag))
+            return
+        entry = history[tf.tag]
+        newLabel = tf.text
+        if newLabel != entry.label:
+            gui.ElectrumGui.gui.on_label_edited(entry.tx_hash, newLabel)
+        
+        
 #######################################################################
 # HELPER STUFF EXPORTED TO OTHER MODULES ('Addresses' uses these too) #
 #######################################################################
@@ -144,6 +211,40 @@ statusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
     UIImage.imageNamed_("clock5.png").retain(),
     UIImage.imageNamed_("confirmed.png").retain(),
 ]
+
+def setup_large_cell_for_history_entry(cell : ObjCInstance, entry : object) -> None:
+    if not isinstance(cell, HistoryCellLarge):
+        empty_cell(cell)
+        return
+    dummy1, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, val, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
+
+    ff = str(date)
+    if conf > 0:
+        ff = "%s %s"%(conf, language.gettext('confirmations'))
+    if label is None:
+        label = ''
+        
+    lblColor = UIColor.blackColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(153.0/255.0,51.0/255.0,51.0/255.0,1.0) #"#993333"
+    #bgColor = UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995,0.95870447160000005,0.99979293349999998,1.0) if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
+    bgColor = cell.bal.backgroundColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
+    
+    cell.status1.text = status_str
+    cell.descTf.placeholder = _("Description")
+    cell.descTf.text = label
+    #cell.descTf.backgroundColor = bgColor
+    cell.descTf.textColor = lblColor
+    cell.status2.text = ff
+    cell.amt.text = v_str + (("(" + fiat_amount_str + " " + ccy + ") ") if fiat_amount else '')
+    cell.amt.textColor = lblColor
+    cell.amt.backgroundColor = bgColor
+    cell.bal.text = balance_str + (("(" + fiat_balance_str + " " + ccy + ") ") if fiat_balance else '')
+
+    #cell.amt.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
+    #cell.bal.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
+    
+    cell.icon.image = img
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+       
 
 def setup_cell_for_history_entry(cell : ObjCInstance, entry : object) -> None:
     dummy1, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, val, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
@@ -236,13 +337,22 @@ def get_history(domain : list = None) -> list:
     return history
 
 def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False) -> ObjCInstance:
-    cell.textLabel.attributedText = None
-    cell.textLabel.text = txt
-    if italic:
-        cell.textLabel.font = UIFont.italicSystemFontOfSize_(cell.textLabel.font.pointSize)
-    else:
-        cell.textLabel.font = UIFont.systemFontOfSize_(cell.textLabel.font.pointSize)
-    cell.detailTextLabel.attributedText = None
-    cell.detailTextLabel.text = None
+    if isinstance(cell, HistoryCellLarge):
+        cell.bal.text = ''
+        cell.amt.text = ''
+        cell.descTf.text = txt
+        cell.status1.text = txt
+        cell.status2.text = ''
+        cell.tag = -1
+        cell.icon.image = None
+    else:        
+        cell.textLabel.attributedText = None
+        cell.textLabel.text = txt
+        if italic:
+            cell.textLabel.font = UIFont.italicSystemFontOfSize_(cell.textLabel.font.pointSize)
+        else:
+            cell.textLabel.font = UIFont.systemFontOfSize_(cell.textLabel.font.pointSize)
+        cell.detailTextLabel.attributedText = None
+        cell.detailTextLabel.text = None
     cell.accessoryType = UITableViewCellAccessoryNone
     return cell

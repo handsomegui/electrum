@@ -18,6 +18,7 @@ UIApplication = ObjCClass('UIApplication')
 
 NSArray = ObjCClass('NSArray')
 NSMutableArray = ObjCClass('NSMutableArray')
+NSSet = ObjCClass('NSSet')
 
 # NSLayoutConstraint.h
 NSLayoutConstraint = ObjCClass('NSLayoutConstraint')
@@ -226,6 +227,8 @@ UIButtonTypeInfoDark = 4
 UIButtonTypeContactAdd = 5
 UIButtonTypeRoundedRect = UIButtonTypeSystem #   // Deprecated, use UIButtonTypeSystem instead
 
+
+UINavigationItem = ObjCClass('UINavigationItem')
 
 UIToolbar = ObjCClass('UIToolbar')
 

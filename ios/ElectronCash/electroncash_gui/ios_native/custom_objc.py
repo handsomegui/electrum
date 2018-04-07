@@ -67,3 +67,5 @@ CollapsableTableView = ObjCClass('CollapsableTableView')
 CollapsableSectionHeaderView = ObjCClass('CollapsableSectionHeaderView')
 
 ForwardingDelegate = ObjCClass('ForwardingDelegate')
+
+HistoryCellLarge = ObjCClass('HistoryCellLarge')
