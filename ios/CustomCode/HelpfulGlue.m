@@ -27,6 +27,7 @@ typedef void(^VoidBlock)(void);
 }
 
 + (void) performBlockInMainThread:(VoidBlock)block sync:(BOOL)sync {
+    if (!block) return;
     if (sync) {
         if (NSThread.currentThread.isMainThread) {
             block();

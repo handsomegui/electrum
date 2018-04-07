@@ -98,7 +98,6 @@ class GuiHelper(NSObject):
     butsSeed = objc_property()
     butsPrefs = objc_property()
     butsSend = objc_property()
-    moreTabPtr = objc_property()
     
     @objc_method
     def init(self):
@@ -111,7 +110,6 @@ class GuiHelper(NSObject):
         self.butsSeed = []
         self.butsPrefs = []
         self.butsSend = []
-        self.moreTabPtr = None
         return self
     
     @objc_method
@@ -124,7 +122,6 @@ class GuiHelper(NSObject):
         self.butsSeed = None
         self.butsPrefs = None
         self.butsSend = None
-        self.moreTabPtr = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -172,7 +169,8 @@ class GuiHelper(NSObject):
     @objc_method
     def navigationController_willShowViewController_animated_(self, nav, vc, anim : bool) -> None:
         depth = 1
-        if self.moreTabPtr is not None and nav.ptr.value == self.moreTabPtr:
+        moreTab = ElectrumGui.gui.tabController.moreNavigationController        
+        if moreTab is not None and nav.ptr.value == moreTab.ptr.value:
             depth = 2
         is_hidden = True if len(nav.viewControllers) > depth else False
         #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
@@ -315,13 +313,7 @@ class ElectrumGui(PrintError):
             self.rootVCs[nav.ptr.value] = vc
 
         self.tabController.viewControllers = self.get_tabs_ordered_from_config()
-        self.helper.moreTabPtr = ns_from_py(self.tabController.moreNavigationController.ptr.value)
-        
-        # this sets up polishing the icons for the more table view since the defaults look terrible
-        moreTableView = self.tabController.moreNavigationController.topViewController.view
-        if isinstance(moreTableView, UITableView):
-            self.moreMogrifier = MoreTableCellMogrifier.alloc().initWithDelegate_(moreTableView.delegate)
-            moreTableView.delegate = self.moreMogrifier
+        self.do_more_tab_setup()
         self.tabController.delegate = self.helper # for notification when user edits tab order
 
         self.setup_toolbar()
@@ -380,7 +372,7 @@ class ElectrumGui(PrintError):
         butsSeed = []
         butsCashaddr = []
         butsPrefs = []
-        vcs = self.tabs
+        vcs = self.tabs.copy()
         vcs.append(self.tabController.moreNavigationController)
         for i,nav in enumerate(vcs):
             # TODO: fix this to work with all vcs!
@@ -471,6 +463,17 @@ class ElectrumGui(PrintError):
         vcs = self.tabController.viewControllers
         if index < 0 or index >= len(vcs): return None
         return vcs[index].tabBarItem.image
+  
+    def do_more_tab_setup(self) -> None:        
+        # this sets up polishing the icons for the more table view since the defaults look terrible
+        moreTableView = self.tabController.moreNavigationController.topViewController.view
+        if self.moreMogrifier:
+            self.moreMogrifier.release()
+            self.moreMogrifier = None
+        if isinstance(moreTableView, UITableView):
+            self.moreMogrifier = MoreTableCellMogrifier.alloc().initWithDelegate_(moreTableView.delegate)
+            moreTableView.delegate = self.moreMogrifier
+
         
     def setup_downloading_notif(self):
         if self.downloadingNotif is not None: return
@@ -554,7 +557,7 @@ class ElectrumGui(PrintError):
                 f.size.width = size.width / 2
             b.customView.frame = f
             #b.customView.sizeToFit()
-        
+                
         # on rotation sometimes the notif gets messed up.. so re-create it
         #if self.downloadingNotif is not None and self.is_downloading_notif_showing() and self.downloadingNotif_view is not None:
         #    self.dismiss_downloading_notif()
@@ -777,26 +780,29 @@ class ElectrumGui(PrintError):
             b.setImage_(img)
     
     def get_root_vc(self, nav : ObjCInstance) -> ObjCInstance:
+        if nav is None or not nav.ptr.value: return None
         ret = self.rootVCs.get(nav.ptr.value, None)
         if ret is None and isinstance(nav, UINavigationController) and len(nav.viewControllers):
             ret = nav.viewControllers[0]
         return ret
 
     def update_buttons_on_seed(self):
-        tabs = self.tabs
+        tabs = self.tabs.copy()
         tabs.append(self.tabController.moreNavigationController)
         def removeBut(but,vcidx):
             nav = tabs[vcidx]
             root = self.get_root_vc(nav) #nav.viewControllers[0]
-            if not root: return
+            if root is None: return
             itemsThisNav = root.toolbarItems
+            if itemsThisNav is None: return
             itemsThisNav = [x for x in itemsThisNav if x.tag != but.tag]
             root.setToolbarItems_animated_(itemsThisNav, True)
         def addBut(but,vcidx):
             nav = tabs[vcidx]
             root = self.get_root_vc(nav) #nav.viewControllers[0]
-            if not root: return
+            if root is None: return
             itemsThisNav = root.toolbarItems
+            if itemsThisNav is None: return
             if but not in itemsThisNav:
                 itemsThisNav.insert(but.tag,but)
                 root.setToolbarItems_animated_(itemsThisNav, True)

@@ -13,7 +13,7 @@
         <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
         <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="HistoryCellLarge" rowHeight="130" id="Lxy-Ns-oUn" customClass="HistoryCellLarge">
             <rect key="frame" x="0.0" y="0.0" width="375" height="130"/>
-            <autoresizingMask key="autoresizingMask"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Lxy-Ns-oUn" id="avQ-ak-rwe">
                 <rect key="frame" x="0.0" y="0.0" width="375" height="129"/>
                 <autoresizingMask key="autoresizingMask"/>
