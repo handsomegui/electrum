@@ -12,6 +12,7 @@ from collections import namedtuple
 
 HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
 
+CellIdentifiers = ( "HistoryCellLarge", "HistoryCellCompact", "EmptyCell")
 
 class HistoryTableVC(UITableViewController):
     ''' History Tab -- shows tx's, etc
@@ -41,13 +42,14 @@ class HistoryTableVC(UITableViewController):
         self.needsRefresh = None
         self.compact = None
         utils.nspy_pop(self)
+        utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
 
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         nib = UINib.nibWithNibName_bundle_("HistoryCellLarge", None)
-        self.tableView.registerNib_forCellReuseIdentifier_(nib, "HistoryCellLarge")
+        self.tableView.registerNib_forCellReuseIdentifier_(nib, CellIdentifiers[0])
 
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -64,19 +66,13 @@ class HistoryTableVC(UITableViewController):
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
-        identifier = "HistoryCellCompact" if self.compact else "HistoryCellLarge"
-        cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
-        if cell is None:
-            if self.compact:
-                cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
-            else:
-                cell = NSBundle.mainBundle.loadNibNamed_owner_options_("HistoryCellLarge",None,None)[0]
         try:
             history = utils.nspy_get_byname(self, 'history')
-            if not history:
-                cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "NoTXs").autorelease()
-                empty_cell(cell,_("No transactions"),True)
-            else:
+            identifier = CellIdentifiers[int(self.compact) if history else -1]
+            cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+            if cell is None:
+                cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+            if history:
                 entry = history[indexPath.row]
                 if self.compact:
                     setup_cell_for_history_entry(cell, entry)
@@ -84,8 +80,11 @@ class HistoryTableVC(UITableViewController):
                     setup_large_cell_for_history_entry(cell, entry)
                     cell.descTf.delegate = self
                     cell.descTf.tag = indexPath.row
+            else:
+                empty_cell(cell,_("No transactions"),True)
         except Exception as e:
             print("exception in tableView_cellForRowAtIndexPath_: %s"%str(e))
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
             empty_cell(cell)
         return cell
     
