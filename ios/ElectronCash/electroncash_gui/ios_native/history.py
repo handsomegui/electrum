@@ -211,6 +211,8 @@ statusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
     UIImage.imageNamed_("confirmed.png").retain(),
 ]
 
+_lbl_colors = [ UIColor.blackColor.copy(), UIColor.colorWithRed_green_blue_alpha_(153.0/255.0,51.0/255.0,51.0/255.0,1.0).retain(), ]
+#_bg_colors =  [ UIColor.clearColor.copy(), UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0).retain(), ]
 def setup_large_cell_for_history_entry(cell : ObjCInstance, entry : object) -> None:
     if not isinstance(cell, HistoryCellLarge):
         empty_cell(cell)
@@ -223,26 +225,24 @@ def setup_large_cell_for_history_entry(cell : ObjCInstance, entry : object) -> N
     if label is None:
         label = ''
         
-    lblColor = UIColor.blackColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(153.0/255.0,51.0/255.0,51.0/255.0,1.0) #"#993333"
-    #bgColor = UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995,0.95870447160000005,0.99979293349999998,1.0) if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
-    #bgColor = cell.bal.backgroundColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
-    bgColor = UIColor.clearColor if val >= 0 else UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0)
+    lblColor = _lbl_colors[0] if val >= 0 else _lbl_colors[1]
+    #bgColor = _bg_colors[0] if val >= 0 else _bg_colors[1]
 
-    cell.backgroundColor = bgColor
+    #cell.backgroundColor = bgColor
 
     cell.status1.text = status_str
     cell.descTf.placeholder = _("Description")
     cell.descTf.text = label
-    #cell.descTf.backgroundColor = bgColor
+    ##cell.descTf.backgroundColor = bgColor
     cell.descTf.textColor = lblColor
     cell.status2.text = ff
-    cell.amt.text = v_str + (("(" + fiat_amount_str + " " + ccy + ") ") if fiat_amount else '')
+    cell.amt.text = v_str + ((" (" + fiat_amount_str + " " + ccy + ")") if fiat_amount else '')
     cell.amt.textColor = lblColor
-    #cell.amt.backgroundColor = bgColor
-    cell.bal.text = balance_str + (("(" + fiat_balance_str + " " + ccy + ") ") if fiat_balance else '')
+    ##cell.amt.backgroundColor = bgColor
+    cell.bal.text = balance_str + ((" (" + fiat_balance_str + " " + ccy + ")") if fiat_balance else '')
 
-    #cell.amt.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
-    #cell.bal.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
+    cell.amt.font = utils.font_monospace_17_semibold
+    cell.bal.font = utils.font_monospace_17_bold
     
     cell.icon.image = img
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
@@ -347,6 +347,7 @@ def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False
         cell.status2.text = ''
         cell.tag = -1
         cell.icon.image = None
+        #cell.backgroundColor = UIColor.clearColor
     else:        
         cell.textLabel.attributedText = None
         cell.textLabel.text = txt

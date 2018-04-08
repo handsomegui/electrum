@@ -425,8 +425,10 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     cell.address.textColor = lblColor
     cell.descTf.placeholder = _("Description")
     cell.descTf.text = label
+    cell.amt.font = utils.font_monospace_17_bold
     cell.amt.text = amount_str
     cell.utxo.text = name[0:10] + "\n... " + name[-2:]
+    cell.utxo.font = utils.font_monospace_17_semibold
     cell.height.text = str(height)
     cell.flags.text = ", ".join(flags)
     

@@ -58,7 +58,7 @@
                     </label>
                     <textField opaque="NO" clipsSubviews="YES" tag="40" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Description" textAlignment="natural" minimumFontSize="7" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="UkI-Mo-IaQ">
                         <rect key="frame" x="95" y="68" width="278" height="30"/>
-                        <color key="backgroundColor" red="0.87843137250000003" green="0.87450980389999999" blue="0.92156862750000001" alpha="1" colorSpace="calibratedRGB"/>
+                        <color key="backgroundColor" red="0.91746425629999995" green="0.95870447160000005" blue="0.99979293349999998" alpha="1" colorSpace="calibratedRGB"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="30" id="4XK-Mi-QP7"/>
                         </constraints>

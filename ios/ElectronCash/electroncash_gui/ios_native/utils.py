@@ -46,6 +46,10 @@ bundle_identifier = NSBundle.mainBundle.bundleIdentifier
 bundle_domain = '.'.join(bundle_identifier.split('.')[0:-1])
 bundle_short_name = bundle_domain + ".ElectronCash"
 
+font_monospace_17 = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular).retain()
+font_monospace_17_semibold = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightSemibold).retain()
+font_monospace_17_bold = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightBold).retain()
+
 def is_2x_screen() -> bool:
     return True if UIScreen.mainScreen.scale > 1.0 else False
 
