@@ -101,11 +101,7 @@ class CoinsTableVC(UITableViewController):
                 cell.addressGr.addTarget_action_(self,SEL(b'onOptions:'))
                 if not cell.optionsBut.actionsForTarget_forControlEvent_(self,UIControlEventPrimaryActionTriggered):
                     cell.optionsBut.addTarget_action_forControlEvents_(self, SEL(b'onOptions:'), UIControlEventPrimaryActionTriggered)
-                cell.accessoryType = UITableViewCellAccessoryCheckmark if self.isIndexSelected_(indexPath.row) and parent.wallet and not parent.wallet.is_watching_only() and not entry.is_frozen else UITableViewCellAccessoryDisclosureIndicator
-                if cell.accessoryType == UITableViewCellAccessoryCheckmark:
-                    cell.accessoryView = None
-                else:
-                    cell.accessoryView = get_circle_imageview()
+                self.setupAccessoryForCell_atIndex_(cell, indexPath.row)
                     
             else:
                 empty_cell(cell,_("No coins"),True)
@@ -148,25 +144,11 @@ class CoinsTableVC(UITableViewController):
         tv.deselectRowAtIndexPath_animated_(indexPath,False)
         cell = tv.cellForRowAtIndexPath_(indexPath)
 
-        parent = gui.ElectrumGui.gui
-        no_good = parent.wallet is None or parent.wallet.is_watching_only()
-        try:
-            entry = utils.nspy_get_byname(self, 'coins')[indexPath.row]
-            if entry.is_frozen:
-                no_good = True
-        except:
-            no_good = True
-        
-        if cell.accessoryType == UITableViewCellAccessoryCheckmark or no_good:
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
-            cell.accessoryView = get_circle_imageview()
-            self.setIndex_selected_(indexPath.row, False)
-        else:
-            cell.accessoryType = UITableViewCellAccessoryCheckmark
-            cell.accessoryView = None
-            self.setIndex_selected_(indexPath.row, True)
-            
-        self.updateSelectionButtons()
+        self.setIndex_selected_(indexPath.row, not self.isIndexSelected_(indexPath.row))
+        wasSel = self.setupAccessoryForCell_atIndex_(cell, indexPath.row) # this sometimes fails if address is frozen and/or we are watching only
+        self.setIndex_selected_(indexPath.row, wasSel)
+
+        self.selected = self.updateSelectionButtons()
         
  
     @objc_method
@@ -187,7 +169,7 @@ class CoinsTableVC(UITableViewController):
     def refresh(self):
         self.updateCoinsFromWallet()
         if self.refreshControl: self.refreshControl.endRefreshing()
-        self.updateSelectionButtons()
+        self.selected = self.updateSelectionButtons()
         if self.tableView:
             self.tableView.reloadData()
         self.needsRefresh = False
@@ -376,6 +358,29 @@ class CoinsTableVC(UITableViewController):
             if len(sels):
                 self.clearBut.enabled = True
         return ns_from_py(list(newSels))
+    
+    @objc_method
+    def setupAccessoryForCell_atIndex_(self, cell, index : int) -> bool:
+        parent = gui.ElectrumGui.gui
+        no_good = parent.wallet is None or parent.wallet.is_watching_only()
+        try:
+            entry = utils.nspy_get_byname(self, 'coins')[index]
+            if entry.is_frozen:
+                no_good = True
+        except:
+            no_good = True
+        
+        ret = False
+        
+        if no_good or not self.isIndexSelected_(index):
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+            cell.accessoryView = get_circle_imageview()
+        else:
+            cell.accessoryType = UITableViewCellAccessoryCheckmark
+            cell.accessoryView = None
+            ret = True
+        
+        return ret
 
 
 def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
