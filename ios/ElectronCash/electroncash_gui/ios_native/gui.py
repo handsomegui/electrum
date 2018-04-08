@@ -47,6 +47,7 @@ from . import password_dialog
 from . import seed_dialog
 from . import network_dialog
 from . import coins
+from . import addrconv
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -249,6 +250,9 @@ class ElectrumGui(PrintError):
         self.addressesVC = None
         self.coinsNav = None
         self.coinsVC = None
+        self.addrconvNav = None
+        self.addrconvVC = None
+        
         self.prefsVC = None
         self.prefsNav = None
         self.networkVC = None
@@ -296,19 +300,20 @@ class ElectrumGui(PrintError):
         self.coinsVC = cns = coins.CoinsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
         self.helper.bindRefreshControl_(self.coinsVC.refreshControl)
         
+        self.addrconvVC = acnv = addrconv.AddrConvVC.new().autorelease()
+        
         self.historyNav = nav1 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
-
         self.sendNav = nav2 = UINavigationController.alloc().initWithRootViewController_(snd).autorelease()
         self.receiveNav = nav3 = UINavigationController.alloc().initWithRootViewController_(rcv).autorelease()
         self.addressesNav = nav4 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
         self.coinsNav = nav5 = UINavigationController.alloc().initWithRootViewController_(cns).autorelease()
+        self.addrconvNav = nav6 = UINavigationController.alloc().initWithRootViewController_(acnv).autorelease()
 
         unimplemented_navs = []
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Contacts"), "tab_contacts.png").autorelease()).autorelease())
-        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Addr Conv"), "tab_converter.png").autorelease()).autorelease())
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
-        self.tabs = [nav1, nav2, nav3, nav4, nav5, *unimplemented_navs]
+        self.tabs = [nav1, nav2, nav3, nav4, nav5, nav6, *unimplemented_navs]
         self.rootVCs = dict()
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
@@ -539,6 +544,8 @@ class ElectrumGui(PrintError):
         self.addressesVC = None
         self.coinsVC = None
         self.coinsNav = None
+        self.addrconvNav = None
+        self.addrconvVC = None
         self.window.rootViewController = None
         self.tabController = None
         self.window.release()
@@ -1156,14 +1163,19 @@ class ElectrumGui(PrintError):
         if not args: args = ['*']
         components = set(map(lambda x: str(x).strip().lower(),args))
         al = {'*','all','world','everything'}
+        didCoins = False
         if components & {'helper', *al}:
             self.helper.needUpdate()
         if components & {'history', *al}:
             self.historyVC.needUpdate()
-            self.coinsVC.needUpdate()
+            if not didCoins:
+                self.coinsVC.needUpdate()
+                didCoins = True
         if components & {'address', 'addresses', *al}:
             self.addressesVC.needUpdate()
-            self.coinsVC.needUpdate()
+            if not didCoins:
+                self.coinsVC.needUpdate()
+                didCoins = True
         if components & {'prefs', 'preferences', 'settings', *al}:
             self.prefsVC.refresh()
         if components & {'receive', 'paymentrequests', 'pr', *al}:

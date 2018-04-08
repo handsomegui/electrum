@@ -598,9 +598,10 @@ class AddressesTableVC(UITableViewController):
         new_label = tf.text
         print ("new label for address %s = %s"%(address.to_storage_string(), new_label))
         gui.ElectrumGui.gui.on_label_edited(address, new_label)
-        self.blockRefresh = False # unblock block refreshing
+        # NB: above call implicitly refreshes us, but we need to block it temporarily in case the user just tapped another textfield
         # need to enqueue a call to "doRefreshIfNeeded" because it's possible the user tapped another text field in which case we
         # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
+        self.blockRefresh = False # unblock block refreshing
         utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
         
     @objc_method
@@ -707,6 +708,8 @@ class AddressData:
         self.unspent.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
         self.receiving.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
         
+        numAddresses = len(self.used) + len(self.change) + len(self.unspent) + len(self.receiving)
+        utils.NSLog("fetched %d addresses from wallet",numAddresses)
                     
     def getSections(self) -> dict:
         if len(self.sections):

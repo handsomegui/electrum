@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="11762" systemVersion="15G20015" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+    <device id="retina4_0" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11757"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="AddrConvBase">
+            <connections>
+                <outlet property="address" destination="xM7-nk-GPS" id="sBr-sw-PQm"/>
+                <outlet property="blurb" destination="LFz-h3-G7s" id="Vi4-b4-hyf"/>
+                <outlet property="cash" destination="O5U-7R-p5c" id="yUD-Mg-bvU"/>
+                <outlet property="cashTit" destination="Cln-5o-TDa" id="9cm-cM-2d2"/>
+                <outlet property="cpyCashBut" destination="8or-vh-coA" id="bMv-c0-hd4"/>
+                <outlet property="cpyLegBut" destination="FyQ-dJ-2GR" id="6hK-u5-0Qt"/>
+                <outlet property="legacy" destination="VTm-de-b2m" id="ESB-HE-M9O"/>
+                <outlet property="legacyTit" destination="xn2-at-dgG" id="NEk-4S-wX7"/>
+                <outlet property="qrBut" destination="mav-Sm-RGW" id="uKJ-vW-x3x"/>
+                <outlet property="view" destination="rs4-A6-TkR" id="HU5-mu-62s"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" id="rs4-A6-TkR">
+            <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <subviews>
+                <view tag="100" contentMode="TopLeft" horizontalCompressionResistancePriority="1000" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="iN0-l3-epB" userLabel="Content View">
+                    <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                    <subviews>
+                        <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Input address to convert" textAlignment="center" minimumFontSize="10" clearButtonMode="always" translatesAutoresizingMaskIntoConstraints="NO" id="xM7-nk-GPS">
+                            <rect key="frame" x="16" y="156" width="260" height="30"/>
+                            <nil key="textColor"/>
+                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                            <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no"/>
+                            <connections>
+                                <action selector="onAddress:" destination="-1" eventType="editingChanged" id="jj5-b5-wbx"/>
+                                <outlet property="delegate" destination="-1" id="5Xs-i3-f6X"/>
+                            </connections>
+                        </textField>
+                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mav-Sm-RGW">
+                            <rect key="frame" x="280" y="159" width="24" height="24"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="24" id="5sV-se-O7w"/>
+                                <constraint firstAttribute="width" constant="24" id="p7f-7t-hrM"/>
+                            </constraints>
+                            <state key="normal" image="qrcode.png"/>
+                            <state key="highlighted" image="qrcode_blue.png"/>
+                            <connections>
+                                <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="p8U-A9-7xp"/>
+                            </connections>
+                        </button>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Cash address" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Cln-5o-TDa">
+                            <rect key="frame" x="16" y="202" width="288" height="21"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="21" id="hRW-ti-lSo"/>
+                            </constraints>
+                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Legacy address" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="xn2-at-dgG">
+                            <rect key="frame" x="16" y="289" width="288" height="21"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="21" id="u3i-VK-6gm"/>
+                            </constraints>
+                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="bitcoincash:qphax4cg8sxuc0qnzk6sx25939ma7y877uz04s2z82" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="O5U-7R-p5c">
+                            <rect key="frame" x="16" y="231" width="260" height="42"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="42" id="iEA-8Z-hUK"/>
+                            </constraints>
+                            <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8or-vh-coA">
+                            <rect key="frame" x="280" y="240" width="24" height="24"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="24" id="0k8-5E-jww"/>
+                                <constraint firstAttribute="height" constant="24" id="D4U-U3-V4Q"/>
+                            </constraints>
+                            <state key="normal" image="copy.png"/>
+                            <connections>
+                                <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="155-o2-PLK"/>
+                            </connections>
+                        </button>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="1BCHBTCTQ1h5oB3XBk1yfAayNdgZB1wV2P" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="VTm-de-b2m">
+                            <rect key="frame" x="16" y="318" width="260" height="42"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="42" id="P4q-bt-HvW"/>
+                            </constraints>
+                            <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="FyQ-dJ-2GR">
+                            <rect key="frame" x="280" y="327" width="24" height="24"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="24" id="KU7-x0-khP"/>
+                                <constraint firstAttribute="width" constant="24" id="h9J-Kd-Iqc"/>
+                            </constraints>
+                            <state key="normal" image="copy.png"/>
+                            <connections>
+                                <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="2eS-tQ-PZi"/>
+                            </connections>
+                        </button>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="LFz-h3-G7s">
+                            <rect key="frame" x="16" y="20" width="288" height="128"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="128" id="NnJ-l5-SlF"/>
+                            </constraints>
+                            <string key="text">This tool helps convert between address formats for Bitcoin Cash addresses. 
+ 
+You are encouraged to use the 'Cash address' format.</string>
+                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                    </subviews>
+                    <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <constraints>
+                        <constraint firstItem="8or-vh-coA" firstAttribute="centerY" secondItem="O5U-7R-p5c" secondAttribute="centerY" id="18l-vt-FEk"/>
+                        <constraint firstItem="mav-Sm-RGW" firstAttribute="centerY" secondItem="xM7-nk-GPS" secondAttribute="centerY" id="6IV-3S-hQ7"/>
+                        <constraint firstItem="Cln-5o-TDa" firstAttribute="top" secondItem="xM7-nk-GPS" secondAttribute="bottom" constant="16" id="767-qD-zAc"/>
+                        <constraint firstItem="xM7-nk-GPS" firstAttribute="leading" secondItem="LFz-h3-G7s" secondAttribute="leading" id="9Cr-HM-4wd"/>
+                        <constraint firstItem="VTm-de-b2m" firstAttribute="leading" secondItem="xn2-at-dgG" secondAttribute="leading" id="DP4-Ti-r94"/>
+                        <constraint firstItem="O5U-7R-p5c" firstAttribute="top" secondItem="Cln-5o-TDa" secondAttribute="bottom" constant="8" id="GMl-Pd-QT3"/>
+                        <constraint firstItem="xn2-at-dgG" firstAttribute="trailing" secondItem="Cln-5o-TDa" secondAttribute="trailing" id="H5j-kk-ady"/>
+                        <constraint firstItem="LFz-h3-G7s" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="20" id="IkH-yN-Pdo"/>
+                        <constraint firstItem="FyQ-dJ-2GR" firstAttribute="leading" secondItem="VTm-de-b2m" secondAttribute="trailing" constant="4" id="J3X-6P-9eE"/>
+                        <constraint firstItem="xn2-at-dgG" firstAttribute="top" secondItem="O5U-7R-p5c" secondAttribute="bottom" constant="16" id="KLp-gm-nq2"/>
+                        <constraint firstItem="xM7-nk-GPS" firstAttribute="top" secondItem="LFz-h3-G7s" secondAttribute="bottom" constant="8" id="LOi-5m-mfn"/>
+                        <constraint firstItem="8or-vh-coA" firstAttribute="trailing" secondItem="mav-Sm-RGW" secondAttribute="trailing" id="NM9-qa-z4V"/>
+                        <constraint firstItem="mav-Sm-RGW" firstAttribute="trailing" secondItem="Cln-5o-TDa" secondAttribute="trailing" id="OKp-Wl-zdQ"/>
+                        <constraint firstItem="LFz-h3-G7s" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="16" id="Ug4-n6-Ucv"/>
+                        <constraint firstAttribute="trailing" secondItem="LFz-h3-G7s" secondAttribute="trailing" constant="16" id="Zxf-Tv-xvh"/>
+                        <constraint firstItem="FyQ-dJ-2GR" firstAttribute="centerY" secondItem="VTm-de-b2m" secondAttribute="centerY" id="eaz-aL-D9C"/>
+                        <constraint firstItem="mav-Sm-RGW" firstAttribute="trailing" secondItem="LFz-h3-G7s" secondAttribute="trailing" id="exV-s9-ffi"/>
+                        <constraint firstItem="xn2-at-dgG" firstAttribute="leading" secondItem="Cln-5o-TDa" secondAttribute="leading" id="f15-AD-Qhh"/>
+                        <constraint firstItem="8or-vh-coA" firstAttribute="leading" secondItem="O5U-7R-p5c" secondAttribute="trailing" constant="4" id="ft5-Pt-j48"/>
+                        <constraint firstItem="mav-Sm-RGW" firstAttribute="leading" secondItem="xM7-nk-GPS" secondAttribute="trailing" constant="4" id="hj8-Oq-mdJ"/>
+                        <constraint firstItem="VTm-de-b2m" firstAttribute="top" secondItem="xn2-at-dgG" secondAttribute="bottom" constant="8" id="jZf-jU-ufF"/>
+                        <constraint firstItem="O5U-7R-p5c" firstAttribute="leading" secondItem="Cln-5o-TDa" secondAttribute="leading" id="kvz-aS-gv7"/>
+                        <constraint firstItem="FyQ-dJ-2GR" firstAttribute="trailing" secondItem="xn2-at-dgG" secondAttribute="trailing" id="mdI-oM-9kk"/>
+                        <constraint firstAttribute="height" constant="568" id="smc-K3-xcJ"/>
+                        <constraint firstItem="Cln-5o-TDa" firstAttribute="leading" secondItem="xM7-nk-GPS" secondAttribute="leading" id="xL6-4M-6Hr"/>
+                    </constraints>
+                </view>
+            </subviews>
+            <constraints>
+                <constraint firstItem="iN0-l3-epB" firstAttribute="top" secondItem="rs4-A6-TkR" secondAttribute="top" id="ddB-tn-cW2"/>
+                <constraint firstAttribute="trailing" secondItem="iN0-l3-epB" secondAttribute="trailing" id="jiF-YR-NnX"/>
+                <constraint firstItem="iN0-l3-epB" firstAttribute="centerX" secondItem="rs4-A6-TkR" secondAttribute="centerX" id="mZx-pA-TjV"/>
+                <constraint firstAttribute="bottom" secondItem="iN0-l3-epB" secondAttribute="bottom" id="pLS-qM-Qdi"/>
+                <constraint firstItem="iN0-l3-epB" firstAttribute="leading" secondItem="rs4-A6-TkR" secondAttribute="leading" id="rGq-LA-Hpn"/>
+            </constraints>
+            <point key="canvasLocation" x="33" y="143"/>
+        </scrollView>
+    </objects>
+    <resources>
+        <image name="copy.png" width="24" height="24"/>
+        <image name="qrcode.png" width="24" height="24"/>
+        <image name="qrcode_blue.png" width="24" height="24"/>
+    </resources>
+</document>

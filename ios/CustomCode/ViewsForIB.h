@@ -40,5 +40,19 @@
 @property (nonatomic, weak) IBOutlet UITapGestureRecognizer *addressGr;
 @end
 
+@interface AddrConvBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *blurb;
+@property (nonatomic, weak) IBOutlet UILabel *cashTit;
+@property (nonatomic, weak) IBOutlet UILabel *cash;
+@property (nonatomic, weak) IBOutlet UILabel *legacyTit;
+@property (nonatomic, weak) IBOutlet UILabel *legacy;
+@property (nonatomic, weak) IBOutlet UITextField *address;
+@property (nonatomic, weak) IBOutlet UIButton *qrBut;
+@property (nonatomic, weak) IBOutlet UIButton *cpyCashBut;
+@property (nonatomic, weak) IBOutlet UIButton *cpyLegBut;
+- (IBAction) onBut:(id)sender;
+- (IBAction) onAddress:(id)sender;
+@end
+
 
 #endif /* ViewsForIB_h */

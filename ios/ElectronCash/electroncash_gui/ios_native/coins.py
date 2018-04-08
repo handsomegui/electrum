@@ -6,7 +6,6 @@ from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 import time
-import html
 from .uikit_bindings import *
 from .custom_objc import *
 from collections import namedtuple
@@ -19,6 +18,7 @@ class CoinsTableVC(UITableViewController):
     ''' Coins Tab -- shows utxos
     '''
     needsRefresh = objc_property()
+    blockRefresh = objc_property()
     selected = objc_property() # NSArray of entry.name strings
     clearBut = objc_property()
     spendBut = objc_property()
@@ -27,6 +27,7 @@ class CoinsTableVC(UITableViewController):
     def initWithStyle_(self, style : int) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
         self.needsRefresh = False
+        self.blockRefresh = False
         self.title = _("Coins")
         self.selected = []
         self.tabBarItem.image = UIImage.imageNamed_("tab_coins.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
@@ -48,6 +49,7 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def dealloc(self) -> None:
         self.needsRefresh = None
+        self.blockRefresh = None
         self.selected = None
         self.clearBut = None
         self.spendBut = None
@@ -167,6 +169,9 @@ class CoinsTableVC(UITableViewController):
 
     @objc_method
     def refresh(self):
+        self.needsRefresh = True # mark that a refresh was called in case refresh is blocked
+        if self.blockRefresh:
+            return
         self.updateCoinsFromWallet()
         if self.refreshControl: self.refreshControl.endRefreshing()
         self.selected = self.updateSelectionButtons()
@@ -202,17 +207,28 @@ class CoinsTableVC(UITableViewController):
     def textFieldShouldReturn_(self, tf) -> bool:
         tf.resignFirstResponder()
         return True
+
+    @objc_method
+    def textFieldDidBeginEditing_(self, tf) -> None:
+        self.blockRefresh = True # temporarily block refreshing since that kills out keyboard/textfield
     
     @objc_method
     def textFieldDidEndEditing_(self, tf) -> None:
         coins = utils.nspy_get_byname(self, 'coins')
         if not coins or tf.tag < 0 or tf.tag >= len(coins):
             utils.NSLog("ERROR -- Coins label text field unknown tag: %d",int(tf.tag))
-            return
-        entry = coins[tf.tag]
-        newLabel = tf.text
-        if newLabel != entry.label:
-            gui.ElectrumGui.gui.on_label_edited(entry.tx_hash, newLabel)
+        else:
+            entry = coins[tf.tag]
+            newLabel = tf.text
+            if newLabel != entry.label:
+                # implicitly refreshes us
+                gui.ElectrumGui.gui.on_label_edited(entry.tx_hash, newLabel)
+        # need to enqueue a call to "doRefreshIfNeeded" because it's possible the user tapped another text field in which case we
+        # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
+        # note we wait until here to unblock refresh because it's possible used tapped another textfield in the same view and we want to continue to block if that is the case
+        self.blockRefresh = False # unblock block refreshing
+        utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
+
             
     @objc_method
     def onCpyBut_(self, but : ObjCInstance) -> None:

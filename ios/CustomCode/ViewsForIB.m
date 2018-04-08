@@ -9,10 +9,15 @@
 #import "ViewsForIB.h"
 
 @implementation HistoryCellLarge
-@synthesize icon, status1, status2, amtTit, amt, balTit, bal, descTf;
+// properties get autosynthesized since Xcode 4.4
 @end
 
 @implementation CoinsCellLarge
-@synthesize addressTit, address, flags, heightTit, height, amtTit, amt, utxoTit, utxo, descTf, cpyBut, qrBut, optionsBut, addressGr;
+// properties get autosynthesized since Xcode 4.4
 @end
 
+@implementation AddrConvBase
+// properties get autosynthesized since Xcode 4.4
+- (IBAction) onBut:(id)sender { /* implement in subclass.. */ }
+- (IBAction) onAddress:(id)sender { /* implement in subclass.. */ }
+@end
