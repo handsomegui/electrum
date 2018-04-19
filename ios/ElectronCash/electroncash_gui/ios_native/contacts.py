@@ -42,17 +42,22 @@ class ContactsTableVC(UITableViewController):
       
         if self.mode == ModePicker:
             buts = [
+                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onPickerPayTo')).autorelease(),
                 UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self, SEL(b'onPickerCancel')).autorelease(),
-                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onPickerDone')).autorelease(),
             ]
-            self.cancelBut = buts[0]
-            self.doneBut = buts[1]
+            self.cancelBut = buts[1]
+            self.doneBut = buts[0]
             self.doneBut.enabled = False
             self.cancelBut.enabled = True
             self.navigationItem.rightBarButtonItems = buts
         else:
-            self.addBut = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAdd, self, SEL(b'onAddBut')).autorelease()
-            self.navigationItem.rightBarButtonItem = self.addBut
+            buts = [
+                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAdd, self, SEL(b'onAddBut')).autorelease(),
+                UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Pay to"), UIBarButtonItemStyleDone, self, SEL(b'onPickerPayTo')).autorelease(),
+            ]
+            self.addBut = buts[0]
+            self.doneBut = buts[1]
+            self.navigationItem.rightBarButtonItems = buts
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
         
@@ -173,6 +178,7 @@ class ContactsTableVC(UITableViewController):
                 contacts = utils.nspy_get_byname(self, 'contacts')
                 if len(contacts):
                     tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
+                    self.selected = self.updateSelectionButtons()
                 else:
                     self.refresh()
     
@@ -349,18 +355,17 @@ class ContactsTableVC(UITableViewController):
         self.refresh()
         
     @objc_method
-    def onPickerDone(self) -> None:
-        print ("picker done...")
-        return
+    def onPickerPayTo(self) -> None:
+        #print ("picker done/payto...")
         validSels = list(self.updateSelectionButtons())
         #print("valid selections:",*validSels)
-        coins = utils.nspy_get_byname(self, 'coins')
-        utxos = []
-        for entry in coins:
-            if entry.name in validSels:
-                utxos.append(entry.utxo)
-        if utxos:
-            spend_from(utxos)
+        contacts = utils.nspy_get_byname(self, 'contacts')
+        addys = []
+        for entry in contacts:
+            if entry.address_str in validSels:
+                addys.append(entry.address_str)
+        if addys:
+            pay_to(addys)
 
     @objc_method
     def showNewEditForm_(self, index : int) -> None:
@@ -650,3 +655,11 @@ def cleanup_address_remove_colon(result : str) -> str:
             except:
                 pass
     return result
+
+def pay_to(addys : list) -> None:
+    print("payto:",*addys)
+    if len(addys) > 1:
+        gui.ElectrumGui.gui.show_error(title=_("Coming Soon"),
+                                       message=_("This version of Electron Cash currently only supports sending to 1 address at a time! Sorry!"))
+        return
+    gui.ElectrumGui.gui.jump_to_send_with_pay_to(addys[0])

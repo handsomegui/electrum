@@ -1493,6 +1493,12 @@ class ElectrumGui(PrintError):
         if not self.sendVC: return
         utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
         self.show_send_tab()
+
+    def jump_to_send_with_pay_to(self, addr) -> None:
+        if not self.sendVC: return
+        utils.nspy_put_byname(self.sendVC, addr, 'pay_to')
+        self.show_send_tab()
+
         
     def jump_to_receive_with_address(self, address) -> None:
         if not self.receiveVC or not isinstance(address, (Address, str)): return

@@ -297,6 +297,12 @@ class SendVC(UIViewController):
 
         parent().cash_addr_sig.connect(lambda: self.reformatSpendFrom(), self.ptr.value)
         self.reformatSpendFrom()
+        
+        pay_to = utils.nspy_get_byname(self, 'pay_to')
+        if pay_to is not None:
+            if isinstance(pay_to, str):
+                self.view.viewWithTag_(115).text = pay_to            
+            utils.nspy_pop_byname(self, 'pay_to')
 
         self.chkOk()
 
