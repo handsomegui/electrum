@@ -500,7 +500,7 @@ class NewContactVC(NewContactBase):
         
         if ':' in result:
             try:
-                result = ''.join(s.split(':')[1:])
+                result = ''.join(result.split(':')[1:])
             except:
                 pass
         if not Address.is_valid(result):
