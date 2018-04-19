@@ -21,3 +21,11 @@
 - (IBAction) onBut:(id)sender { /* implement in subclass.. */ }
 - (IBAction) onAddress:(id)sender { /* implement in subclass.. */ }
 @end
+
+@implementation NewContactBase
+// properties will be auto-synthesized
+-(BOOL) textFieldShouldReturn:(UITextField *)tf {
+    [tf resignFirstResponder];
+    return YES;
+}
+@end

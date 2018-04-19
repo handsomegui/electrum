@@ -54,5 +54,15 @@
 - (IBAction) onAddress:(id)sender;
 @end
 
+@interface NewContactBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *blurb;
+@property (nonatomic, weak) IBOutlet UILabel *nameTit;
+@property (nonatomic, weak) IBOutlet UITextField *name;
+@property (nonatomic, weak) IBOutlet UILabel *addressTit;
+@property (nonatomic, weak) IBOutlet UITextField *address;
+@property (nonatomic, weak) IBOutlet UIButton *qrBut;
+@property (nonatomic, weak) IBOutlet UIButton *okBut;
+@property (nonatomic, weak) IBOutlet UIButton *cancelBut;
+@end
 
 #endif /* ViewsForIB_h */

@@ -347,7 +347,7 @@ class ContactsTableVC(UITableViewController):
         try:
             entry = utils.nspy_get_byname(self, 'contacts')[index]
             sels = set(list(self.selected))
-            return bool(entry.name in sels)
+            return bool(entry.address_str in sels)
         except:
             import sys
             utils.NSLog("Exception during contacts.py 'isIndexSelected': %s",str(sys.exc_info()[1]))
@@ -358,8 +358,8 @@ class ContactsTableVC(UITableViewController):
         try:
             entry = utils.nspy_get_byname(self, 'contacts')[index]
             sels = set(list(self.selected))
-            if not b: sels.discard(entry.name)
-            else: sels.add(entry.name)
+            if not b: sels.discard(entry.address_str)
+            else: sels.add(entry.address_str)
             self.selected = list(sels)
         except:
             import sys
@@ -388,8 +388,16 @@ class ContactsTableVC(UITableViewController):
             
     @objc_method
     def onAddBut(self) -> None:
-        print("on add but...")
-        
+        #print("on add but...")
+        vc = NewContactVC.new().autorelease()
+        def onOk(entry : ContactsEntry) -> None:
+            #print ("parent onOK called...")
+            if entry is not None:
+                add_contact(entry)
+                self.refresh()
+        utils.add_callback(vc, 'on_ok', onOk)
+        self.presentViewController_animated_completion_(vc, True, None)
+
     @objc_method
     def updateSelectionButtons(self) -> ObjCInstance:
         parent = gui.ElectrumGui.gui
@@ -399,8 +407,8 @@ class ContactsTableVC(UITableViewController):
             sels = set(list(self.selected))
             contacts = utils.nspy_get_byname(self, 'contacts')
             for c in contacts:
-                if c.name in sels:
-                    newSels.add(c.name)
+                if c.address_str in sels:
+                    newSels.add(c.address_str)
             if len(newSels) and self.doneBut:
                 self.doneBut.enabled = True
         return ns_from_py(list(newSels))
@@ -426,6 +434,85 @@ class ContactsTableVC(UITableViewController):
         
         return ret
 
+class NewContactVC(NewContactBase):
+    
+    @objc_method
+    def init(self) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'init'))
+        if self:
+            self.title = _("New Contact")
+            self.modalPresentationStyle = UIModalPresentationOverFullScreen
+            self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
+        return self
+    
+    @objc_method
+    def dealloc(self) -> None:
+        utils.nspy_pop(self)
+        utils.remove_all_callbacks(self)
+        print("NewContactVC dealloc")
+        send_super(__class__, self, 'dealloc')
+    
+    @objc_method
+    def loadView(self) -> None:
+        NSBundle.mainBundle.loadNibNamed_owner_options_("NewContact",self,None)
+
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+
+        def onOk(bid : objc_id) -> None:
+            #print("On OK...")
+            address_str = self.address.text
+            name = self.name.text
+            if not Address.is_valid(address_str):
+                gui.ElectrumGui.gui.show_error(_("Invalid Address"))
+                return
+            if not name:
+                gui.ElectrumGui.gui.show_error(_("Name is empty"))
+                return                
+            def doCB() -> None:
+                cb = utils.get_callback(self, 'on_ok')
+                if callable(cb):
+                    entry = None
+                    if name and address_str and Address.is_valid(address_str):
+                        address = Address.from_string(address_str)
+                        entry = ContactsEntry(name, address, address_str)
+                    cb(entry)
+                self.autorelease()
+            self.retain()
+            self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
+        def onCancel(bid : objc_id) -> None:
+            #print("On Cancel...")
+            def doCB() -> None:
+                cb = utils.get_callback(self, 'on_cancel')
+                if callable(cb): cb()
+                self.autorelease()
+            self.retain()
+            self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
+        def onQR(bid : objc_id) -> None:
+            print("On QR...")
+        
+        self.okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onOk)
+        self.cancelBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCancel)
+        self.qrBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)
+        
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.translateUI()
+        
+    @objc_method
+    def translateUI(self) -> None:
+        if not self.viewIfLoaded: return
+        self.blurb.text = _("Contacts are a convenient feature to associate addresses with user-friendly names. "
+                            "Contacts can be accessed when sending a payment via the 'Send' tab.")
+        self.addressTit.text = _("Address") + ':'
+        self.nameTit.text = _("Name") + ':'
+        self.title = _("New Contact")
+        self.name.placeholder = _("Name")
+        self.address.placeholdeer = _("Address")
+        self.okBut.setTitle_forState_(_("OK"), UIControlStateNormal)
+        self.cancelBut.setTitle_forState_(_("Cancel"), UIControlStateNormal)
 
 
 def get_contacts() -> list:
@@ -469,6 +556,25 @@ def delete_contact(entry : ContactsEntry) -> int:
     ret = n - n2
     utils.NSLog("deleted %d contact(s)", ret)
     return ret
+
+def add_contact(entry : ContactsEntry) -> bool:
+    parent = gui.ElectrumGui.gui
+    wallet = parent.wallet
+    if wallet is None:
+        utils.NSLog("add_contact: wallent was None, returning early")
+        return False
+    c = wallet.contacts
+    if c is None:
+        utils.NSLog("add_contact: contacts was None, returning early")
+        return False
+    n = len(c)
+    c[entry.address_str] = ("address", entry.name)
+    n2 = len(c)
+    c.save()
+    c.storage.write()
+    ret = n2 - n
+    utils.NSLog("added %d contact(s)", ret)
+    return bool(ret)
 
 def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False) -> ObjCInstance:
     cell.textLabel.attributedText = None
