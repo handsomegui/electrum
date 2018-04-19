@@ -263,22 +263,6 @@ class ContactsTableVC(UITableViewController):
         except:
             import sys
             utils.NSLog("Exception during 'onCpyBut': %s",str(sys.exc_info()[1]))
-
-    @objc_method
-    def onQR_(self, but : ObjCInstance) -> None:
-        print ("On QR")
-        return
-        #below is from coins.py -- here for reference
-        try:
-            entry = utils.nspy_get_byname(self, 'coins')[but.tag]
-            qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
-                                                    data=entry.address_str,
-                                                    title = _('QR code'))
-            gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
-            #print ("address =", entry.address_str)
-        except:
-            import sys
-            utils.NSLog("Exception during 'onQRBut': %s",str(sys.exc_info()[1]))
             
     @objc_method
     def onOptions_(self, obj : ObjCInstance) -> None:
@@ -436,6 +420,9 @@ class ContactsTableVC(UITableViewController):
 
 class NewContactVC(NewContactBase):
     
+    qr = objc_property()
+    qrvc = objc_property()
+    
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
@@ -447,6 +434,8 @@ class NewContactVC(NewContactBase):
     
     @objc_method
     def dealloc(self) -> None:
+        self.qrvc = None
+        self.qr = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         print("NewContactVC dealloc")
@@ -490,11 +479,50 @@ class NewContactVC(NewContactBase):
             self.retain()
             self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
         def onQR(bid : objc_id) -> None:
-            print("On QR...")
+            #print("On QR...")
+            if not QRCodeReader.isAvailable:
+                utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
+            else:
+                self.qr = QRCodeReader.new().autorelease()
+                self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
+                self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
+                self.qrvc.delegate = self
+                self.presentViewController_animated_completion_(self.qrvc, True, None)
         
         self.okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onOk)
         self.cancelBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCancel)
         self.qrBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)
+
+    @objc_method
+    def reader_didScanResult_(self, reader, result) -> None:
+        utils.NSLog("Reader data = '%s'",str(result))
+        result = str(result).strip()
+        
+        if ':' in result:
+            try:
+                result = ''.join(s.split(':')[1:])
+            except:
+                pass
+        if not Address.is_valid(result):
+            title = _("Invalid QR Code")
+            message = _("The QR code does not appear to be a valid BCH address.\nPlease try again.")
+            reader.stopScanning()
+            gui.ElectrumGui.gui.show_error(
+                title = title,
+                message = message,
+                onOk = lambda: reader.startScanning(),
+                vc = self.qrvc
+            )
+        else:
+            self.address.text = result
+            self.readerDidCancel_(reader)
+             
+    @objc_method
+    def readerDidCancel_(self, reader) -> None:
+        if reader is not None: reader.stopScanning()
+        self.dismissViewControllerAnimated_completion_(True, None)
+        self.qr = None
+        self.qrvc = None
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:

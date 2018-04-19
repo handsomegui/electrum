@@ -90,7 +90,8 @@ class AddrConvVC(AddrConvBase):
             gui.ElectrumGui.gui.show_error(
                 title = title,
                 message = message,
-                onOk = lambda: reader.startScanning()
+                onOk = lambda: reader.startScanning(),
+                vc = self.qrvc
             )
         else:
             self.address.text = result
@@ -101,7 +102,7 @@ class AddrConvVC(AddrConvBase):
         if reader is not None: reader.stopScanning()
         self.dismissViewControllerAnimated_completion_(True, None)
         self.qr = None
-        self.qrvc = None    
+        self.qrvc = None
         
     @objc_method
     def onAddress_(self, tf) -> None:

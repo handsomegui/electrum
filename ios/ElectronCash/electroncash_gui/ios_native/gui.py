@@ -1066,11 +1066,11 @@ class ElectrumGui(PrintError):
         return self.tabController.selectedViewController
     
     # can be called from any thread, always runs in main thread
-    def show_error(self, message, title = _("Error"), onOk = None, localRunLoop = False):
-        return self.show_message(message, title, onOk, localRunLoop)
+    def show_error(self, message, title = _("Error"), onOk = None, localRunLoop = False, vc = None):
+        return self.show_message(message=message, title=title, onOk=onOk, localRunLoop=localRunLoop, vc=vc)
     
     # full stop question for user -- appropriate for send tx dialog
-    def question(self, message, title = _("Question"), yesno = False, onOk = None) -> bool:
+    def question(self, message, title = _("Question"), yesno = False, onOk = None, vc = None) -> bool:
         ret = False
         localRunLoop = True if onOk is None else False
         def local_onOk() -> None:
@@ -1080,20 +1080,20 @@ class ElectrumGui(PrintError):
         extrakwargs = {}
         if yesno:
             extrakwargs = { 'cancelButTitle' : _("No"), 'okButTitle' : _("Yes") }
-        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs)
+        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs, vc = vc)
         return ret
     
     # can be called from any thread, always runs in main thread
     def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False,
-                     cancelButTitle = _('Cancel'), okButTitle = _('OK')):
+                     cancelButTitle = _('Cancel'), okButTitle = _('OK'), vc = None):
         def func() -> None:
-            vc = self.get_presented_viewcontroller() 
+            myvc = self.get_presented_viewcontroller() if vc is None else vc
             actions = [ [str(okButTitle)] ]
             if onOk is not None and callable(onOk): actions[0].append(onOk)
             if hasCancel:
                 actions.append( [ str(cancelButTitle) ] )
             utils.show_alert(
-                vc = vc,
+                vc = myvc,
                 title = title,
                 message = message,
                 actions = actions,
