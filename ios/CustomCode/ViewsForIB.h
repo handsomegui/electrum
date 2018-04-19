@@ -63,6 +63,8 @@
 @property (nonatomic, weak) IBOutlet UIButton *qrBut;
 @property (nonatomic, weak) IBOutlet UIButton *okBut;
 @property (nonatomic, weak) IBOutlet UIButton *cancelBut;
+@property (nonatomic, weak) IBOutlet UIButton *cpyAddressBut;
+@property (nonatomic, weak) IBOutlet UIButton *cpyNameBut;
 @end
 
 #endif /* ViewsForIB_h */

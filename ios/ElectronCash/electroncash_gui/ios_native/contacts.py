@@ -114,6 +114,13 @@ class ContactsTableVC(UITableViewController):
             if cell is None:
                 cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
             if contacts:
+                if self.mode == ModeNormal and cell.imageView.image is None:
+                    cell.imageView.image = UIImage.imageNamed_("edit_details.png")
+                    if not cell.imageView.gestureRecognizers or not len(cell.imageView.gestureRecognizers):
+                        gr = UITapGestureRecognizer.alloc().initWithTarget_action_(self, SEL(b'onTapEdit:')).autorelease()
+                        cell.imageView.addGestureRecognizer_(gr)
+                        cell.imageView.userInteractionEnabled = True
+                cell.imageView.tag = indexPath.row
                 c = contacts[indexPath.row]
                 cell.textLabel.text = c.name
                 cell.detailTextLabel.text = c.address_str
@@ -248,22 +255,7 @@ class ContactsTableVC(UITableViewController):
         # note we wait until here to unblock refresh because it's possible used tapped another textfield in the same view and we want to continue to block if that is the case
         self.blockRefresh = False # unblock block refreshing
         utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
-
-            
-    @objc_method
-    def onCpy_(self, but : ObjCInstance) -> None:
-        print ("On Copy")
-        return
-        # below is from coins.py -- here for reference
-        try:
-            entry = utils.nspy_get_byname(self, 'coins')[but.tag]
-            UIPasteboard.generalPasteboard.string = entry.address_str
-            #print ("address =", entry.address_str)
-            utils.show_notification(message=_("Text copied to clipboard"))
-        except:
-            import sys
-            utils.NSLog("Exception during 'onCpyBut': %s",str(sys.exc_info()[1]))
-            
+                        
     @objc_method
     def onOptions_(self, obj : ObjCInstance) -> None:
         print ("On Options")
@@ -369,18 +361,35 @@ class ContactsTableVC(UITableViewController):
                 utxos.append(entry.utxo)
         if utxos:
             spend_from(utxos)
-            
+
     @objc_method
-    def onAddBut(self) -> None:
-        #print("on add but...")
+    def showNewEditForm_(self, index : int) -> None:
         vc = NewContactVC.new().autorelease()
+        if index > -1:
+            contacts = utils.nspy_get_byname(self, 'contacts')
+            if contacts and index < len(contacts):
+                utils.nspy_put_byname(vc, contacts[index], 'edit_contact')
+                
         def onOk(entry : ContactsEntry) -> None:
             #print ("parent onOK called...")
             if entry is not None:
+                oldEntry = utils.nspy_get_byname(vc, 'edit_contact')
+                if oldEntry:
+                    delete_contact(oldEntry, False)
                 add_contact(entry)
                 self.refresh()
         utils.add_callback(vc, 'on_ok', onOk)
         self.presentViewController_animated_completion_(vc, True, None)
+        
+            
+    @objc_method
+    def onAddBut(self) -> None:
+        #print("on add but...")
+        self.showNewEditForm_(-1)
+
+    @objc_method
+    def onTapEdit_(self, gr : ObjCInstance) -> None:
+        self.showNewEditForm_(int(gr.view.tag))
 
     @objc_method
     def updateSelectionButtons(self) -> ObjCInstance:
@@ -451,7 +460,7 @@ class NewContactVC(NewContactBase):
 
         def onOk(bid : objc_id) -> None:
             #print("On OK...")
-            address_str = self.address.text
+            address_str = cleanup_address_remove_colon(self.address.text)
             name = self.name.text
             if not Address.is_valid(address_str):
                 gui.ElectrumGui.gui.show_error(_("Invalid Address"))
@@ -488,21 +497,32 @@ class NewContactVC(NewContactBase):
                 self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
                 self.qrvc.delegate = self
                 self.presentViewController_animated_completion_(self.qrvc, True, None)
+        def onCpy(bid : objc_id) -> None:
+            try:
+                datum = str(self.name.text) if bid.value == self.cpyNameBut.ptr.value else str(self.address.text)
+                UIPasteboard.generalPasteboard.string = datum
+                print ("copied to clipboard =", datum)
+                utils.show_notification(message=_("Text copied to clipboard"))
+            except:
+                import sys
+                utils.NSLog("Exception during NewContactVC 'onCpy': %s",str(sys.exc_info()[1]))
+
+        
+        editContact = utils.nspy_get_byname(self, 'edit_contact')
+        if editContact:
+            self.address.text = editContact.address_str
+            self.name.text = editContact.name
         
         self.okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onOk)
         self.cancelBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCancel)
         self.qrBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)
+        self.cpyNameBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy)
+        self.cpyAddressBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy)
 
     @objc_method
     def reader_didScanResult_(self, reader, result) -> None:
         utils.NSLog("Reader data = '%s'",str(result))
-        result = str(result).strip()
-        
-        if ':' in result:
-            try:
-                result = ''.join(result.split(':')[1:])
-            except:
-                pass
+        result = cleanup_address_remove_colon(result)
         if not Address.is_valid(result):
             title = _("Invalid QR Code")
             message = _("The QR code does not appear to be a valid BCH address.\nPlease try again.")
@@ -566,7 +586,7 @@ def get_contacts() -> list:
 
     return contacts
 
-def delete_contact(entry : ContactsEntry) -> int:
+def delete_contact(entry : ContactsEntry, do_write = True) -> int:
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     if wallet is None:
@@ -580,12 +600,13 @@ def delete_contact(entry : ContactsEntry) -> int:
     n2 = len(c)
     if n2 < n:
         c.save()
-        c.storage.write()
+        if do_write:
+            c.storage.write()
     ret = n - n2
     utils.NSLog("deleted %d contact(s)", ret)
     return ret
 
-def add_contact(entry : ContactsEntry) -> bool:
+def add_contact(entry : ContactsEntry, do_write = True) -> bool:
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     if wallet is None:
@@ -599,7 +620,8 @@ def add_contact(entry : ContactsEntry) -> bool:
     c[entry.address_str] = ("address", entry.name)
     n2 = len(c)
     c.save()
-    c.storage.write()
+    if do_write:
+        c.storage.write()
     ret = n2 - n
     utils.NSLog("added %d contact(s)", ret)
     return bool(ret)
@@ -615,4 +637,16 @@ def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False
     cell.detailTextLabel.text = None
     cell.accessoryType = UITableViewCellAccessoryNone
     cell.accessoryView = None
+    cell.imageView.image = None
     return cell
+
+def cleanup_address_remove_colon(result : str) -> str:
+    if result is not None:
+        result = str(result).strip()
+        
+        if ':' in result:
+            try:
+                result = ''.join(result.split(':')[1:])
+            except:
+                pass
+    return result
