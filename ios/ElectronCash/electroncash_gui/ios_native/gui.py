@@ -48,6 +48,7 @@ from . import seed_dialog
 from . import network_dialog
 from . import coins
 from . import addrconv
+from . import contacts
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -252,6 +253,8 @@ class ElectrumGui(PrintError):
         self.coinsVC = None
         self.addrconvNav = None
         self.addrconvVC = None
+        self.contactsVC = None
+        self.contactsNav = None
         
         self.prefsVC = None
         self.prefsNav = None
@@ -294,7 +297,7 @@ class ElectrumGui(PrintError):
         
         self.receiveVC = rcv = receive.ReceiveVC.alloc().init().autorelease()
         
-        self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.AddressesTableVCModeNormal).autorelease()
+        self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
         self.coinsVC = cns = coins.CoinsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
@@ -302,18 +305,21 @@ class ElectrumGui(PrintError):
         
         self.addrconvVC = acnv = addrconv.AddrConvVC.new().autorelease()
         
+        self.contactsVC = cntcts = contacts.ContactsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
+        self.helper.bindRefreshControl_(self.contactsVC.refreshControl)
+        
         self.historyNav = nav1 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
         self.sendNav = nav2 = UINavigationController.alloc().initWithRootViewController_(snd).autorelease()
         self.receiveNav = nav3 = UINavigationController.alloc().initWithRootViewController_(rcv).autorelease()
         self.addressesNav = nav4 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
         self.coinsNav = nav5 = UINavigationController.alloc().initWithRootViewController_(cns).autorelease()
         self.addrconvNav = nav6 = UINavigationController.alloc().initWithRootViewController_(acnv).autorelease()
+        self.contactsNav = nav7 = UINavigationController.alloc().initWithRootViewController_(cntcts).autorelease()
 
         unimplemented_navs = []
-        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Contacts"), "tab_contacts.png").autorelease()).autorelease())
         unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
-        self.tabs = [nav1, nav2, nav3, nav4, nav5, nav6, *unimplemented_navs]
+        self.tabs = [nav1, nav2, nav3, nav4, nav5, nav6, nav7, *unimplemented_navs]
         self.rootVCs = dict()
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
@@ -546,6 +552,8 @@ class ElectrumGui(PrintError):
         self.coinsNav = None
         self.addrconvNav = None
         self.addrconvVC = None
+        self.contactsNav = None
+        self.contactsVC = None
         self.window.rootViewController = None
         self.tabController = None
         self.window.release()
@@ -1183,7 +1191,8 @@ class ElectrumGui(PrintError):
         if components & {'network', 'servers','connection', 'interfaces', *al}:
             if self.networkVC is not None: # networkVC isn't always around, we create it on-demand and delete it when it's done
                 self.networkVC.refresh()
-                
+        if components & {'contact', 'contacts', *al}:
+            self.contactsVC.needUpdate()
 
     def on_new_daemon(self):
         self.daemon.gui = self

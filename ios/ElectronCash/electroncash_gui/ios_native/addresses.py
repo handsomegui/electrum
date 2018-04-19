@@ -347,8 +347,8 @@ class AddressDetail(UIViewController):
         utils.nspy_put_byname(txd, entry, 'tx_entry')
         self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
 
-AddressesTableVCModeNormal = 0
-AddressesTableVCModePicker = 1
+ModeNormal = 0
+ModePicker = 1
 
 # Addresses Tab -- shows addresses, etc
 class AddressesTableVC(UITableViewController):
@@ -362,14 +362,14 @@ class AddressesTableVC(UITableViewController):
         self.needsRefresh = False
         self.blockRefresh = False
         self.mode = int(mode)
-        self.title = _("&Addresses").split('&')[1] if self.mode == AddressesTableVCModeNormal else _("Choose Address")
-        if self.mode == AddressesTableVCModeNormal:
+        self.title = _("&Addresses").split('&')[1] if self.mode == ModeNormal else _("Choose Address")
+        if self.mode == ModeNormal:
             self.tabBarItem.image = UIImage.imageNamed_("tab_addresses.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
 
         self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
         self.updateAddressesFromWallet()
         
-        if self.mode == AddressesTableVCModePicker:
+        if self.mode == ModePicker:
             def onRefreshCtl() -> None:
                 self.refresh()
             self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
@@ -389,7 +389,7 @@ class AddressesTableVC(UITableViewController):
     def loadView(self) -> None:
         # frame is pretty much ignored due to autosizie but c'tor needs it...
         self.tableView = CollapsableTableView.alloc().initWithFrame_style_(CGRectMake(0,0,320,600), UITableViewStylePlain).autorelease()
-        if self.mode == AddressesTableVCModeNormal:
+        if self.mode == ModeNormal:
             uinib = UINib.nibWithNibName_bundle_("AddressListCell", None)
             self.tableView.registerNib_forCellReuseIdentifier_(uinib, str(__class__))
 
@@ -421,10 +421,10 @@ class AddressesTableVC(UITableViewController):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         #todo: - allow for label editing (popup menu?)
-        identifier = str(__class__) if self.mode == AddressesTableVCModeNormal else "Cell"
+        identifier = str(__class__) if self.mode == ModeNormal else "Cell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
         newCell = False
-        if self.mode == AddressesTableVCModePicker and cell is None:
+        if self.mode == ModePicker and cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle,identifier).autorelease()
             newCell = True
         assert cell is not None
@@ -433,7 +433,7 @@ class AddressesTableVC(UITableViewController):
         entries = addrData.getSections().get(indexPath.section,(None,[]))[1]
         assert indexPath.row < len(entries)
         entry = entries[indexPath.row]
-        if self.mode == AddressesTableVCModeNormal:
+        if self.mode == ModeNormal:
             addrlbl = cell.viewWithTag_(10)
             chglbl = cell.viewWithTag_(15)
             addrlbl.text = entry.addr_str
@@ -509,7 +509,7 @@ class AddressesTableVC(UITableViewController):
     
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
-        if self.mode == AddressesTableVCModeNormal:
+        if self.mode == ModeNormal:
             return 126.0
         return 44.0
     
@@ -527,7 +527,7 @@ class AddressesTableVC(UITableViewController):
             section = addrData.getSections().get(indexPath.section,None)
             if section is not None and indexPath.row < len(section[1]):
                 entry = section[1][indexPath.row]
-                if self.mode == AddressesTableVCModeNormal:
+                if self.mode == ModeNormal:
                     addrDetail = AddressDetail.alloc().init().autorelease()
                     utils.nspy_put_byname(addrDetail, entry, 'entry')
                     self.navigationController.pushViewController_animated_(addrDetail, True)
@@ -728,7 +728,7 @@ class AddressData:
 
 def present_modal_address_picker(callback) -> None:
     parent = gui.ElectrumGui.gui
-    avc = AddressesTableVC.alloc().initWithMode_(AddressesTableVCModePicker).autorelease()
+    avc = AddressesTableVC.alloc().initWithMode_(ModePicker).autorelease()
     nav = UINavigationController.alloc().initWithRootViewController_(avc).autorelease()
     def pickedAddress(entry) -> None:
         if callable(callback):
