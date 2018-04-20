@@ -289,6 +289,7 @@
             <state key="disabled">
                 <color key="titleColor" red="0.1612265259" green="0.16708478330000001" blue="0.55065631869999998" alpha="0.48262557519999999" colorSpace="calibratedRGB"/>
             </state>
+            <point key="canvasLocation" x="156" y="-217"/>
         </button>
         <barButtonItem tag="1100" title="Clear" style="plain" id="4y4-Sz-2LC"/>
         <barButtonItem tag="1110" title="Preview" style="plain" id="NcO-3J-2Ud"/>
