@@ -15,6 +15,7 @@
                 <outlet property="clearBut" destination="4y4-Sz-2LC" id="lkT-io-VEB"/>
                 <outlet property="clearSFBut" destination="har-Wl-wWO" id="5pt-sS-c01"/>
                 <outlet property="contentView" destination="iN0-l3-epB" id="Jtg-tD-S6c"/>
+                <outlet property="csFeeTop" destination="Kaw-dM-Y7n" id="rd7-IZ-tyu"/>
                 <outlet property="desc" destination="DIP-SW-ID7" id="iIV-c4-hcC"/>
                 <outlet property="descTit" destination="j7K-4S-lZ9" id="Sgx-hE-kIZ"/>
                 <outlet property="feeLbl" destination="j1b-rK-qmj" id="Ue3-qc-cPS"/>

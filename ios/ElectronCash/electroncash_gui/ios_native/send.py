@@ -273,10 +273,9 @@ class SendVC(SendBase):
         if doFX:
             fiatte.placeholder = _("Input amount") + (" ({})").format(ccy)
         feelbl = self.feeTit
-        cs = feelbl.superview().constraints()
-        for c in cs:
-            if c.identifier == "FEE_TOP":
-                c.constant = 60.0 if doFX else 24.0
+        c = self.csFeeTop
+        if c is not None:
+            c.constant = 60.0 if doFX else 24.0
 
         parent().cash_addr_sig.connect(lambda: self.reformatSpendFrom(), self.ptr.value)
         self.reformatSpendFrom()

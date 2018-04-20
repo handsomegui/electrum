@@ -101,6 +101,7 @@
 @property (nonatomic, weak) IBOutlet UILabel *spendFromTit;
 @property (nonatomic, weak) IBOutlet UIButton *clearSFBut;
 @property (nonatomic, weak) IBOutlet UITextView *spendFrom;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop;
 @end
 
 #endif /* ViewsForIB_h */
