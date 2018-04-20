@@ -202,7 +202,7 @@ class MoreTableCellMogrifier(ForwardingDelegate):
             img = parent.get_image_for_tab_index(indexPath.row + 4)
             if img: cell.imageView.image = img
 
-
+"""
 class UnimplementedVC(UIViewController):
     ''' Proxy view controller for as-yet unimplemented tabs.  TODO: get rid of this and implement all tabs! '''
     @objc_method
@@ -219,7 +219,7 @@ class UnimplementedVC(UIViewController):
         l = UILabel.new().autorelease()
         l.text = self.title + " UNIMPLEMENTED"
         self.view = l
-   
+"""   
 
 # Manages the GUI. Part of the ElectronCash API so you can't rename this class easily.
 class ElectrumGui(PrintError):
@@ -317,7 +317,7 @@ class ElectrumGui(PrintError):
         self.contactsNav = nav7 = UINavigationController.alloc().initWithRootViewController_(cntcts).autorelease()
 
         unimplemented_navs = []
-        unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
+        #unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
         self.tabs = [nav1, nav2, nav3, nav4, nav5, nav6, nav7, *unimplemented_navs]
         self.rootVCs = dict()
