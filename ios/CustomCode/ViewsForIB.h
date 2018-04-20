@@ -95,7 +95,7 @@
 @property (nonatomic, weak) IBOutlet BTCAmountEdit *feeTf;
 @property (nonatomic, weak) IBOutlet UILabel *feeTfLbl;
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *clearBut;
-@property (nonatomic, weak) IBOutlet UIButton *previewBut;
+@property (nonatomic, weak) IBOutlet UIBarButtonItem *previewBut;
 @property (nonatomic, weak) IBOutlet UIButton *sendBut; // actually a subview of a UIBarButtonItem
 @property (nonatomic, weak) IBOutlet UILabel *message;
 @property (nonatomic, weak) IBOutlet UILabel *spendFromTit;

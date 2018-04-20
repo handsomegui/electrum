@@ -114,17 +114,6 @@ class SendVC(SendBase):
     def loadView(self) -> None:
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("Send",self,None)
         assert objs is not None and len(objs)
-
-        # set up navigation bar items...
-        barButSend = UIBarButtonItem.alloc().initWithCustomView_(self.sendBut).autorelease()
-        self.clearBut.title = _("Clear")
-        but = self.sendBut
-        but.setTitle_forState_(_("Send"), UIControlStateNormal)
-        but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
-        self.navigationItem.rightBarButtonItem = barButSend
-        self.navigationItem.leftBarButtonItem = self.clearBut
-        self.clearBut.target = self
-        self.clearBut.action = SEL(b'clear')
         
         # Apply translations and other stuff to UI text...
         self.payToTit.text = _("Pay to")
@@ -171,11 +160,7 @@ class SendVC(SendBase):
         but = self.maxBut
         but.setTitle_forState_(_("Max"), UIControlStateNormal)
         but.addTarget_action_forControlEvents_(self, SEL(b'spendMax'), UIControlEventPrimaryActionTriggered)
-        
-        but = self.previewBut
-        but.setTitle_forState_(_("Preview"), UIControlStateNormal)
-        but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
-        
+                
         # Fee Label
         self.feeTit.text = _("Fee")
 
@@ -220,6 +205,22 @@ class SendVC(SendBase):
         
         but = self.clearSFBut
         but.addTarget_action_forControlEvents_(self, SEL(b'clearSpendFrom'), UIControlEventPrimaryActionTriggered)
+
+        # set up navigation bar items...
+        self.clearBut.title = _("Clear")
+        self.clearBut.target = self
+        self.clearBut.action = SEL(b'clear')
+        but = self.sendBut
+        barButSend = UIBarButtonItem.alloc().initWithCustomView_(but).autorelease()
+        but.setTitle_forState_(_("Send"), UIControlStateNormal)
+        but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
+        barButPreview = self.previewBut
+        barButPreview.title = _("Preview")
+        barButPreview.target = self
+        barButPreview.action = SEL(b'onPreviewSendBut:')
+
+        self.navigationItem.rightBarButtonItems = [barButSend, barButPreview]
+        self.navigationItem.leftBarButtonItem = self.clearBut
         
         
     @objc_method
@@ -425,7 +426,7 @@ class SendVC(SendBase):
                 errLbl.text = ""
                 raise Exception("SilentException") # silent error when amount or fee isn't yet specified
             
-            previewBut.enabled = False # for now, unimplemented.. #True
+            previewBut.enabled = True #False # for now, unimplemented.. #True
             sendBut.enabled = True if parent().wallet is not None and not parent().wallet.is_watching_only() else False
             retVal = True
         except Exception as e:
@@ -637,8 +638,8 @@ class SendVC(SendBase):
 
     @objc_method
     def onPreviewSendBut_(self, but) -> None:
-        isPreview = but.tag == 1110
-        print ("Clicked %s"%("Preview" if isPreview else "Send"))
+        isPreview = but.ptr.value == self.previewBut.ptr.value
+        #print ("Clicked %s"%("Preview" if isPreview else "Send"))
         def func() -> None:
             self.doSend_(isPreview)
         # this is an ugly hack to work around a bug in iOS UIKit related to modal dialogs that have a local eventloop
@@ -648,6 +649,7 @@ class SendVC(SendBase):
     @objc_method
     def showTransaction_desc_(self, txraw, desc) -> None:
         print("showTransaction unimplemented. desc=%s, raw=%s"%(str(desc),str(txraw)))
+        parent().show_error(title="UNIMPLEMENTED", message="'Preview' unimplemented.. coming soon!")
             
     @objc_method
     def doSend_(self, preview : bool) -> None:
