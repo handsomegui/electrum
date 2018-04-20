@@ -57,6 +57,9 @@ class SendVC(SendBase):
         self.notEnoughFunds = False
         self.excessiveFee = False
         self.timer = None
+        
+        self.navigationItem.leftItemsSupplementBackButton = True
+                
         return self
     
     @objc_method
@@ -67,6 +70,8 @@ class SendVC(SendBase):
         self.feeSats = None
         self.isMax = None
         self.notEnoughFunds = None
+        self.qr = None
+        self.qrvc = None
         if self.timer: self.timer.invalidate()  # kill a timer if it hasn't fired yet
         self.timer = None
         self.excessiveFee = None
@@ -109,6 +114,17 @@ class SendVC(SendBase):
     def loadView(self) -> None:
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("Send",self,None)
         assert objs is not None and len(objs)
+
+        # set up navigation bar items...
+        barButSend = UIBarButtonItem.alloc().initWithCustomView_(self.sendBut).autorelease()
+        self.clearBut.title = _("Clear")
+        but = self.sendBut
+        but.setTitle_forState_(_("Send"), UIControlStateNormal)
+        but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
+        self.navigationItem.rightBarButtonItem = barButSend
+        self.navigationItem.leftBarButtonItem = self.clearBut
+        self.clearBut.target = self
+        self.clearBut.action = SEL(b'clear')
         
         # Apply translations and other stuff to UI text...
         self.payToTit.text = _("Pay to")
@@ -150,26 +166,16 @@ class SendVC(SendBase):
             self.isMax = False
         utils.add_callback(fiatedit, 'edited', onEditFiat)
         
-        
-        self.descTit.text = _("Description")
-        
+        self.descTit.text = _("Description")     
         
         but = self.maxBut
         but.setTitle_forState_(_("Max"), UIControlStateNormal)
         but.addTarget_action_forControlEvents_(self, SEL(b'spendMax'), UIControlEventPrimaryActionTriggered)
         
-        but = self.clearBut
-        but.setTitle_forState_(_("Clear"), UIControlStateNormal)
-        but.addTarget_action_forControlEvents_(self, SEL(b'clear'), UIControlEventPrimaryActionTriggered)
-        
         but = self.previewBut
         but.setTitle_forState_(_("Preview"), UIControlStateNormal)
         but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
         
-        but = self.sendBut
-        but.setTitle_forState_(_("Send"), UIControlStateNormal)
-        but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
-
         # Fee Label
         self.feeTit.text = _("Fee")
 
