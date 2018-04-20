@@ -29,3 +29,7 @@
     return YES;
 }
 @end
+
+@implementation SendBase
+// properties auto-synthesized
+@end

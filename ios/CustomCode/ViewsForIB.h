@@ -67,4 +67,40 @@
 @property (nonatomic, weak) IBOutlet UIButton *cpyNameBut;
 @end
 
+// dummy stub for Interface Builder -- actual implementation is in python in amountedit.py
+@interface BTCAmountEdit : UITextField
+@end
+// dummy stub for Interface Builder -- actual implementation is in python in amountedit.py
+@interface FiatAmountEdit : BTCAmountEdit
+@end
+// dummy stub for Interface Builder -- actual implementation is in python in feeslider.py
+@interface FeeSlider : UISlider
+@end
+
+@interface SendBase : UIViewController
+@property (nonatomic, weak) IBOutlet UIView *contentView;
+@property (nonatomic, weak) IBOutlet UILabel *payToTit;
+@property (nonatomic, weak) IBOutlet UITextField *payTo;
+@property (nonatomic, weak) IBOutlet UIButton *qrBut;
+@property (nonatomic, weak) IBOutlet UILabel *descTit;
+@property (nonatomic, weak) IBOutlet UITextField *desc;
+@property (nonatomic, weak) IBOutlet UILabel *amtTit;
+@property (nonatomic, weak) IBOutlet BTCAmountEdit *amt;
+@property (nonatomic, weak) IBOutlet UIButton *maxBut;
+@property (nonatomic, weak) IBOutlet UILabel *fiatTit;
+@property (nonatomic, weak) IBOutlet FiatAmountEdit *fiat;
+@property (nonatomic, weak) IBOutlet UILabel *feeTit;
+@property (nonatomic, weak) IBOutlet UISlider *feeSlider;
+@property (nonatomic, weak) IBOutlet UILabel *feeLbl;
+@property (nonatomic, weak) IBOutlet BTCAmountEdit *feeTf;
+@property (nonatomic, weak) IBOutlet UILabel *feeTfLbl;
+@property (nonatomic, weak) IBOutlet UIButton *clearBut;
+@property (nonatomic, weak) IBOutlet UIButton *previewBut;
+@property (nonatomic, weak) IBOutlet UIButton *sendBut;
+@property (nonatomic, weak) IBOutlet UILabel *message;
+@property (nonatomic, weak) IBOutlet UILabel *spendFromTit;
+@property (nonatomic, weak) IBOutlet UIButton *clearSFBut;
+@property (nonatomic, weak) IBOutlet UITextView *spendFrom;
+@end
+
 #endif /* ViewsForIB_h */
