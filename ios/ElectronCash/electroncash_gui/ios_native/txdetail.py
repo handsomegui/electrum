@@ -7,6 +7,7 @@ from .history import HistoryEntry, statusImages
 from electroncash.transaction import Transaction
 from electroncash.address import Address, PublicKey
 from electroncash.util import timestamp_to_datetime
+import json
 
 # ViewController used for the TxDetail view's "Inputs" and "Outputs" tables.. not exposed.. managed internally
 class TxInputsOutputsTVC(NSObject):
@@ -339,6 +340,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         qrBut.setHidden_(True)
         vc.notsigned = True
         txHash.userInteractionEnabled = False
+        rbbs.insert(0,UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAction, vc, SEL(b'onShareSave:')).autorelease())
     else:
         copyBut.setHidden_(False)
         qrBut.setHidden_(False)
@@ -500,12 +502,38 @@ class TxDetail(TxDetailBase):
                                                 title = _('QR code'))
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
 
+    @objc_method
+    def onShareSave_(self, sender : ObjCInstance) -> None:
+        parent = gui.ElectrumGui.gui        
+        ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
+        if not self.rawtx or not parent.wallet: return
+        tx = Transaction(self.rawtx)
+        tx.deserialize()
+        name = 'signed_%s.txt' % (tx.txid()[0:8]) if tx.is_complete() else 'unsigned.txt'
+        fileName = utils.get_tmp_dir() + '/' + name
+        text = None
+        if fileName:
+            tx_dict = tx.as_dict()
+            input_values = [x.get('value') for x in tx.inputs()]
+            tx_dict['input_values'] = input_values
+            with open(fileName, "w+") as f:
+                text = json.dumps(tx_dict, indent=4) + '\n'
+                f.write(text)
+            utils.NSLog("wrote tx - %d bytes to file: %s",len(text),fileName)
+            text = None #No text.. 
+        else:
+            parent.show_error("Could not save transaction temp file")
+            return           
+        utils.show_share_actions(vc = self, fileName = fileName, text = text, ipadAnchor = ipadAnchor)
         
     @objc_method
     def onTxLink_(self, sender : ObjCInstance) -> None:
         entry = utils.nspy_get_byname(self, 'tx_entry')
+        parent = gui.ElectrumGui.gui
+        
+        ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
+
         def on_block_explorer() -> None:
-            parent = gui.ElectrumGui.gui
             parent.view_on_block_explorer(entry.tx_hash, 'tx')
 
         actions = [
@@ -515,6 +543,9 @@ class TxDetail(TxDetailBase):
         ]
         if not self.noBlkXplo:
             actions.append([ _("View on block explorer"), on_block_explorer ])
+         
+            
+        actions.append([_("Share/Save..."), lambda: self.onShareSave_(sender)])
             
         utils.show_alert(
             vc = self,
@@ -523,7 +554,7 @@ class TxDetail(TxDetailBase):
             actions = actions,
             cancel = _('Cancel'),
             style = UIAlertControllerStyleActionSheet,
-            ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
+            ipadAnchor = ipadAnchor
         )
         
     @objc_method
@@ -531,7 +562,7 @@ class TxDetail(TxDetailBase):
         password = None
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
-        if not wallet: return
+        if not wallet or not self.rawtx: return
         tx = Transaction(self.rawtx)
         tx.deserialize()
 

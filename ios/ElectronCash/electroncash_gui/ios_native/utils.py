@@ -120,6 +120,54 @@ def uilabel_replace_attributed_text(lbl : ObjCInstance, text : str, template : O
     return lbl
 
 ###################################################
+### Show Share ActionSheet
+###################################################
+def show_share_actions(vc : ObjCInstance,
+                       fileName : str = None,
+                       text : str = None,
+                       excludedActivityTypes = None,
+                       completion: Callable[[],None] = None, # optional completion function that gets called when alert is presented
+                       ipadAnchor : object = None,
+                       animated : bool = True) -> ObjCInstance:
+    items = []
+    if fileName:
+        items.append(NSURL.fileURLWithPath_(fileName))
+    if text is not None:
+        items.append(ns_from_py(text))
+    avc = UIActivityViewController.alloc().initWithActivityItems_applicationActivities_(items, None).autorelease()
+    if excludedActivityTypes is None:
+        excludedActivityTypes = [
+            UIActivityTypePostToFacebook,
+            UIActivityTypePostToTwitter,
+            UIActivityTypePostToWeibo,
+            UIActivityTypeAssignToContact,
+            UIActivityTypeSaveToCameraRoll,
+            UIActivityTypeAddToReadingList,
+            UIActivityTypePostToFlickr,
+            UIActivityTypePostToVimeo,
+            UIActivityTypePostToTencentWeibo,
+            UIActivityTypeOpenInIBooks,
+        ]
+    avc.excludedActivityTypes = excludedActivityTypes
+    if is_ipad():
+        popover = avc.popoverPresentationController()
+        if isinstance(ipadAnchor, UIBarButtonItem):
+            popover.barButtonItem = ipadAnchor
+        else:
+            popover.sourceView = vc.view
+            if isinstance(ipadAnchor, CGRect):
+                rect = ipadAnchor
+            else:
+                rect = vc.view.frame
+                rect = CGRectMake(rect.size.width/2.0,rect.size.height/4.0,0.0,0.0)
+            popover.sourceRect = rect
+    def onCompletion() -> None:
+        if completion is not None:
+            #print("Calling completion callback..")
+            completion()
+    vc.presentViewController_animated_completion_(avc,animated,onCompletion)
+    
+###################################################
 ### Show modal alert
 ###################################################
 def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view in

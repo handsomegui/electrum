@@ -720,3 +720,22 @@ UIPopoverArrowDirectionLeft = 1 << 2
 UIPopoverArrowDirectionRight = 1 << 3
 UIPopoverArrowDirectionAny = UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown | UIPopoverArrowDirectionLeft | UIPopoverArrowDirectionRight,
 UIPopoverArrowDirectionUnknown = NSUIntegerMax
+
+# UIActivityViewController
+UIActivityViewController = ObjCClass('UIActivityViewController')
+# UIActivityType (NSString constants in UIKit dll)
+UIActivityTypePostToFacebook     = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToFacebook"))
+UIActivityTypePostToTwitter      = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToTwitter"))
+UIActivityTypePostToWeibo        = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToWeibo"))
+UIActivityTypeMessage            = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeMessage"))
+UIActivityTypeMail               = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeMail"))
+UIActivityTypePrint              = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePrint"))
+UIActivityTypeCopyToPasteboard   = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeCopyToPasteboard"))
+UIActivityTypeAssignToContact    = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeAssignToContact"))
+UIActivityTypeSaveToCameraRoll   = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeSaveToCameraRoll"))
+UIActivityTypeAddToReadingList   = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeAddToReadingList"))
+UIActivityTypePostToFlickr       = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToFlickr"))
+UIActivityTypePostToVimeo        = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToVimeo"))
+UIActivityTypePostToTencentWeibo = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToTencentWeibo"))
+UIActivityTypeAirDrop            = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeAirDrop"))
+UIActivityTypeOpenInIBooks       = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeOpenInIBooks"))
