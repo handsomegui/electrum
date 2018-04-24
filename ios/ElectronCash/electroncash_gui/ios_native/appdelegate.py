@@ -36,7 +36,7 @@ class PythonAppDelegate(UIResponder):
     @objc_method
     def application_didFinishLaunchingWithOptions_(self, application : ObjCInstance, launchOptions : ObjCInstance) -> bool:
         print("App finished launching.")
-
+        
         ElectronCash.app.main()
 
         return True

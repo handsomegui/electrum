@@ -1354,7 +1354,7 @@ class ElectrumGui(PrintError):
         utils.WaitingDialog(self.tabController, _('Signing transaction...'), task,
                             on_signed, on_failed)
 
-    def broadcast_transaction(self, tx, tx_desc):
+    def broadcast_transaction(self, tx, tx_desc, doneCallback = None):
         def broadcast_thread(): # non-GUI thread
             #pr = self.payment_request
             #if pr and pr.has_expired():
@@ -1381,7 +1381,10 @@ class ElectrumGui(PrintError):
                 if status:
                     if tx_desc is not None and tx.is_complete():
                         self.wallet.set_label(tx.txid(), tx_desc)
-                    parent.show_message(_('Payment sent.') + '\n' + msg)
+                    onOk = None
+                    if callable(doneCallback):
+                        onOk = doneCallback
+                    parent.show_message(message=_('Payment sent.') + '\n' + msg, onOk = onOk)
                     #self.invoice_list.update()
                     self.sendVC.clear()
                 else:
@@ -1480,14 +1483,20 @@ class ElectrumGui(PrintError):
     def show_send_tab(self) -> None:
         if not self.tabController or not self.sendNav: return
         self.tabController.selectedViewController = self.sendNav
+        if self.sendNav.topViewController.ptr.value != self.sendVC.ptr.value:
+            self.sendNav.popToRootViewControllerAnimated_(True)
      
     def show_receive_tab(self) -> None:
         if not self.tabController or not self.receiveNav: return
         self.tabController.selectedViewController = self.receiveNav
+        if self.receiveNav.topViewController.ptr.value != self.receiveVC.ptr.value:
+            self.receiveNav.popToRootViewControllerAnimated_(True)
         
     def show_addresses_tab(self) -> None:
         if not self.tabController or not self.addressesNav: return
         self.tabController.selectedViewController = self.addressesNav
+        if self.addressesNav.topViewController.ptr.value != self.addressesVC.ptr.value:
+            self.addressesNav.popToRootViewControllerAnimated_(True)
         
     def jump_to_send_with_spend_from(self, coins) -> None:
         if not self.sendVC: return

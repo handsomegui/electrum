@@ -14,6 +14,10 @@ uikit = cdll.LoadLibrary(util.find_library('UIKit'))
 uikit.UIApplicationMain.restype = c_int
 uikit.UIApplicationMain.argtypes = [c_int, POINTER(c_char_p), c_void_p, c_void_p]
 
+# NSString *NSTemporaryDirectory(void)
+uikit.NSTemporaryDirectory.restype = c_void_p
+uikit.NSTemporaryDirectory.argtypes = []
+
 UIApplication = ObjCClass('UIApplication')
 
 NSArray = ObjCClass('NSArray')

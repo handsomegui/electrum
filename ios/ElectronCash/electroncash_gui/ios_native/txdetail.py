@@ -1,7 +1,9 @@
 from electroncash.i18n import _, language
 from . import utils
 from . import gui
+from .custom_objc import TxDetailBase
 from .uikit_bindings import *
+from .history import HistoryEntry, statusImages
 from electroncash.transaction import Transaction
 from electroncash.address import Address, PublicKey
 from electroncash.util import timestamp_to_datetime
@@ -259,17 +261,17 @@ class TxInputsOutputsTVC(NSObject):
 
 # returns the view itself, plus the copy button and the qrcode button, plus the (sometimes nil!!) UITextField for the editable description
 #  the copy and the qrcode buttons are so that caller may attach event handing to them
-def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (ObjCInstance, ObjCInstance, ObjCInstance, ObjCInstance):
-    entry = utils.nspy_get_byname(txDetailViewController, 'tx_entry')
+def setup_transaction_detail_view(vc : ObjCInstance) -> None:
+    entry = utils.nspy_get_byname(vc, 'tx_entry')
     dummy, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     base_unit = parent.base_unit()
     format_amount = parent.format_amount
     tx = None
-    if txDetailViewController.rawtx:
+    if vc.rawtx:
         try:
-            tx = Transaction(txDetailViewController.rawtx)
+            tx = Transaction(vc.rawtx)
             tx.deserialize()
         except Exception as e:
             tx = None
@@ -284,55 +286,74 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
     can_sign = not tx.is_complete() and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
     # todo: something akin to this: self.sign_button.setEnabled(can_sign)
 
-    objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TxDetail",None,None)
-    view = objs[0]
+    if not vc.viewIfLoaded:
+        NSBundle.mainBundle.loadNibNamed_owner_options_("TxDetail",vc,None)
     
     # grab all the views
     # Transaction ID:
-    txTit = view.viewWithTag_(100)
-    txHash = view.viewWithTag_(110)
-    copyBut = view.viewWithTag_(120)
-    qrBut = view.viewWithTag_(130)
+    txTit = vc.txTit
+    txHash =  vc.txHash
+    copyBut = vc.cpyBut  
+    qrBut =  vc.qrBut
     # Description:
-    descTit = view.viewWithTag_(200)
-    descTf = view.viewWithTag_(210)
+    descTit = vc.descTit
+    descTf = vc.descTf
     # Status:
-    statusTit = view.viewWithTag_(300)
-    statusIV = view.viewWithTag_(310)
-    statusLbl = view.viewWithTag_(320)
+    statusTit = vc.statusTit
+    statusIV = vc.statusIV
+    statusLbl = vc.statusLbl
     # Date:
-    dateTit = view.viewWithTag_(400)
-    dateLbl = view.viewWithTag_(410)
+    dateTit = vc.dateTit
+    dateLbl = vc.dateLbl
     # Amount received/sent:
-    amtTit = view.viewWithTag_(500)
-    amtLbl = view.viewWithTag_(510)
+    amtTit = vc.amtTit
+    amtLbl = vc.amtLbl
     # Size:
-    sizeTit = view.viewWithTag_(600)
-    sizeLbl = view.viewWithTag_(610)
+    sizeTit = vc.sizeTit
+    sizeLbl = vc.sizeLbl
     # Fee:
-    feeTit = view.viewWithTag_(700)
-    feeLbl = view.viewWithTag_(710)
+    feeTit = vc.feeTit
+    feeLbl = vc.feeLbl
     # Locktime:
-    lockTit = view.viewWithTag_(800)
-    lockLbl = view.viewWithTag_(810)
+    lockTit = vc.lockTit
+    lockLbl = vc.lockLbl
     # Inputs
-    inputsTV = view.viewWithTag_(1000)
+    inputsTV = vc.inputsTV
     # Outputs
-    outputsTV = view.viewWithTag_(1100)
+    outputsTV = vc.outputsTV
     
     # Setup data for all the stuff
     txTit.text = _("Transaction ID:")
     tx_hash_str = tx_hash if tx_hash is not None and tx_hash != "None" and tx_hash != "Unknown" and tx_hash != _("Unknown") else _('Unknown')
-    if tx_hash == _("Unknown"):
+    rbbs = []
+    if can_sign:
+        vc.noBlkXplo = True
+        rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Sign"), UIBarButtonItemStylePlain, vc, SEL(b'onSign')).autorelease())
+    if can_broadcast:
+        vc.noBlkXplo = True
+        rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Broadcast"), UIBarButtonItemStylePlain, vc, SEL(b'onBroadcast')).autorelease())
+        
+    if tx_hash == _("Unknown") or tx_hash is None: #unsigned tx
         txHash.text = tx_hash_str
+        copyBut.setHidden_(True)
+        qrBut.setHidden_(True)
+        vc.notsigned = True
+        txHash.userInteractionEnabled = False
     else:
+        copyBut.setHidden_(False)
+        qrBut.setHidden_(False)
+        vc.notsigned = False
         linkAttributes = {
             NSForegroundColorAttributeName : UIColor.colorWithRed_green_blue_alpha_(0.05,0.4,0.65,1.0),
             NSUnderlineStyleAttributeName : NSUnderlineStyleSingle              
         }
         txHash.attributedText = NSAttributedString.alloc().initWithString_attributes_(tx_hash_str, linkAttributes).autorelease()
         txHash.userInteractionEnabled = True
-        txHash.addGestureRecognizer_(UITapGestureRecognizer.alloc().initWithTarget_action_(txDetailViewController,SEL(b'onTxLink:')).autorelease())
+        if not txHash.gestureRecognizers:
+            txHash.addGestureRecognizer_(UITapGestureRecognizer.alloc().initWithTarget_action_(vc,SEL(b'onTxLink:')).autorelease())
+        rbbs.append(UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAction, vc, SEL(b'onTxLink:')).autorelease())
+
+    vc.navigationItem.rightBarButtonItems = rbbs 
 
     descTit.text = _("Description") + ":"
     descTf.text = label
@@ -346,9 +367,8 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
     descTf.clearButtonMode = UITextFieldViewModeWhileEditing
 
     statusTit.text = _("Status:")
-    #statusIV.autoresizingMask = UIViewAutoresizingNone
     statusIV.image = img
-    ff = status_str
+    ff = str(status_) #status_str
     try:
         if int(conf) > 0:
            ff = "%s %s"%(str(conf), _('confirmations'))
@@ -363,6 +383,7 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
         elif exp_n:
             dateTit.text = _("Expected confirmation time") + ':'
             dateLbl.text = '%d blocks'%(exp_n) if exp_n > 0 else _('unknown (low fee)')
+        vc.noBlkXplo = False
     else:
         # wtf? what to do here? 
         dateTit.text = _("Date") + ":"
@@ -401,21 +422,22 @@ def create_transaction_detail_view(txDetailViewController : ObjCInstance) -> (Ob
         
     # refreshes the tableview with data
     tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, float(ts))
-    
-    #view.translatesAutoresizingMaskIntoConstraints = False
-    #view.viewWithTag_(1).translatesAutoresizingMaskIntoConstraints = True
-    
-    return (view, copyBut, qrBut, descTf)
-
-class TxDetail(UIViewController):
+        
+class TxDetail(TxDetailBase):
     rawtx = objc_property()  # string of the raw tx data suitable for building a Transaction instance using deserialize.  May be None
+    notsigned = objc_property() # by default is false.. if true, offer different buttons/options
+    noBlkXplo = objc_property()
+    cbTimer = objc_property()
 
     @objc_method
     def initWithRawTx_(self, rawtx : ObjCInstance) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
+            self.notsigned = False
+            self.noBlkXplo = False
             self.rawtx = rawtx
             self.title = _("Transaction") + " " + _("Details")
+
         return self
     
     @objc_method
@@ -424,23 +446,23 @@ class TxDetail(UIViewController):
         self.rawtx = None
         self.title = None
         self.view = None
+        self.notsigned = None
+        self.noBlkXplo = None
+        if self.cbTimer: self.cbTimer.invalidate()
+        self.cbTimer = None
         utils.nspy_pop(self)
+        utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
     
     @objc_method
     def loadView(self) -> None:
-        self.view, butCopy, butQR, descrTF = create_transaction_detail_view(self)
-        butCopy.addTarget_action_forControlEvents_(self, SEL(b'onCopyBut:'), UIControlEventPrimaryActionTriggered)
-        butQR.addTarget_action_forControlEvents_(self, SEL(b'onQRBut:'), UIControlEventPrimaryActionTriggered)
-        if descrTF is not None:
-            descrTF.delegate = self
+        setup_transaction_detail_view(self)
             
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         entry = utils.nspy_get_byname(self, 'tx_entry')
-        descTf = self.view.viewWithTag_(210)
-        descTf.text = entry.label
+        self.descTf.text = entry.label
         #todo update this stuff in realtime?
 
     @objc_method
@@ -457,10 +479,12 @@ class TxDetail(UIViewController):
         new_label = tf.text
         entry = utils.set_namedtuple_field(entry, 'label', new_label)
         utils.nspy_put_byname(self, entry, 'tx_entry')
-        gui.ElectrumGui.gui.on_label_edited(tx_hash, new_label)
+        if tx_hash is not None:
+            gui.ElectrumGui.gui.on_label_edited(tx_hash, new_label)
+        utils.get_callback(self, 'on_label')(new_label)
 
     @objc_method
-    def onCopyBut_(self, but) -> None:
+    def onCpyBut_(self, but) -> None:
         entry = utils.nspy_get_byname(self, 'tx_entry')
         UIPasteboard.generalPasteboard.string = entry.tx_hash
         utils.show_notification(message=_("Text copied to clipboard"))
@@ -478,23 +502,86 @@ class TxDetail(UIViewController):
 
         
     @objc_method
-    def onTxLink_(self, gestureRecognizer : ObjCInstance) -> None:
+    def onTxLink_(self, sender : ObjCInstance) -> None:
         entry = utils.nspy_get_byname(self, 'tx_entry')
         def on_block_explorer() -> None:
             parent = gui.ElectrumGui.gui
             parent.view_on_block_explorer(entry.tx_hash, 'tx')
+
+        actions = [
+            [ _('Cancel') ],
+            [ _('Copy to clipboard'), self.onCpyBut_, None ],
+            [ _('Show as QR code'), self.onQRBut_, None ],
+        ]
+        if not self.noBlkXplo:
+            actions.append([ _("View on block explorer"), on_block_explorer ])
             
         utils.show_alert(
             vc = self,
             title = _("Options"),
             message = _("Transaction ID:") + " " + entry.tx_hash[:12] + "...",
-            actions = [
-                [ _('Cancel') ],
-                [ _('Copy to clipboard'), self.onCopyBut_, None ],
-                [ _('Show as QR code'), self.onQRBut_, None ],
-                [ _("View on block explorer"), on_block_explorer ],
-            ],
+            actions = actions,
             cancel = _('Cancel'),
             style = UIAlertControllerStyleActionSheet,
-            ipadAnchor = gestureRecognizer.view.frame
+            ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
         )
+        
+    @objc_method
+    def onSign(self) -> None:
+        password = None
+        parent = gui.ElectrumGui.gui
+        wallet = parent.wallet
+        if not wallet: return
+        tx = Transaction(self.rawtx)
+        tx.deserialize()
+
+        if wallet.has_password():
+            password = parent.password_dialog(_("Enter your password to proceed"))
+            if not password:
+                return
+
+        def sign_done(success) -> None:
+            if success:
+                self.rawtx = str(tx.serialize())
+                entry = utils.nspy_get_byname(self, 'tx_entry')
+                entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[-2])
+                tx_hash, *dummy = wallet.get_tx_info(tx)
+                entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
+                entry = utils.set_namedtuple_field(entry, 'status_str', _("Signed"))
+                utils.nspy_put_byname(self, entry, 'tx_entry')
+                setup_transaction_detail_view(self) # recreate ui
+            #else:
+            #    parent.show_error(_("An Unknown Error Occurred"))
+        parent.sign_tx_with_password(tx, sign_done, password)
+
+    @objc_method
+    def onBroadcast(self) -> None:
+        parent = gui.ElectrumGui.gui
+        wallet = parent.wallet
+        if not wallet or not self.rawtx: return
+        tx = Transaction(self.rawtx)
+        tx.deserialize()
+        
+        def broadcastDone():
+            if self.viewIfLoaded is None:
+                self.cbTimer = None
+                return
+            tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet.get_tx_info(tx)
+            if conf is None:
+                print("conf was none; calling broadcastDone again in 250 ms...")
+                if self.cbTimer: self.cbTimer.invalidate()
+                self.cbTimer = utils.call_later(0.250, broadcastDone)
+                return
+            else:
+                print("conf was not none...refreshing TxDetail...")
+            if self.cbTimer: self.cbTimer.invalidate()
+            self.cbTimer = None
+            status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
+            if status is not None and status >= 0 and status < len(statusImages):
+                entry = utils.nspy_get_byname(self, 'tx_entry')
+                entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[status])
+                utils.nspy_put_byname(self, entry, 'tx_entry')
+            setup_transaction_detail_view(self)
+            
+        parent.broadcast_transaction(tx, self.descTf.text, broadcastDone)
+    

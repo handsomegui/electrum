@@ -75,6 +75,9 @@ def get_user_dir():
     thedir = dfm.URLsForDirectory_inDomains_(9, 1).objectAtIndex_(0)
     return str(thedir.path)
 
+def get_tmp_dir():
+    return str(ObjCInstance(uikit.NSTemporaryDirectory()))
+
 def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
     if view is None: return
     view.userInteractionEnabled = bool(b)
@@ -185,13 +188,16 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
             completion()
     if is_ipad() and alert.preferredStyle == UIAlertControllerStyleActionSheet:
         popover = alert.popoverPresentationController()
-        popover.sourceView = vc.view
-        if isinstance(ipadAnchor, CGRect):
-            rect = ipadAnchor
+        if isinstance(ipadAnchor, UIBarButtonItem):
+            popover.barButtonItem = ipadAnchor
         else:
-            rect = vc.view.frame
-            rect = CGRectMake(rect.size.width/2.0,rect.size.height/4.0,0.0,0.0)
-        popover.sourceRect = rect
+            popover.sourceView = vc.view
+            if isinstance(ipadAnchor, CGRect):
+                rect = ipadAnchor
+            else:
+                rect = vc.view.frame
+                rect = CGRectMake(rect.size.width/2.0,rect.size.height/4.0,0.0,0.0)
+            popover.sourceRect = rect
     vc.presentViewController_animated_completion_(alert,animated,onCompletion)
     if localRunLoop:
         while not got_callback:

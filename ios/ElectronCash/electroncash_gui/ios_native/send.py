@@ -1,7 +1,10 @@
 from . import utils
 from . import gui
+from .history import HistoryEntry, statusImages
+from .txdetail import TxDetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime, NotEnoughFunds, ExcessiveFee
+from electroncash.transaction import Transaction
 from electroncash.i18n import _
 from .custom_objc import *
 import time
@@ -647,8 +650,25 @@ class SendVC(SendBase):
         
     @objc_method
     def showTransaction_desc_(self, txraw, desc) -> None:
-        print("showTransaction unimplemented. desc=%s, raw=%s"%(str(desc),str(txraw)))
-        parent().show_error(title="UNIMPLEMENTED", message="'Preview' unimplemented.. coming soon!")
+        txvc = TxDetail.alloc()
+        tx = Transaction(txraw)
+        tx.deserialize()
+        tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet().get_tx_info(tx)
+        size = tx.estimated_size()
+        conf = 0 if conf is None else conf
+        timestamp = time.time() if timestamp is None else timestamp
+        status, status_str = (status_, _("Unsigned")) #wallet().get_tx_status(tx_hash, height, conf, timestamp)
+        doFX = fx() and fx().is_enabled()
+        ccy = fx().get_currency() if doFX else None
+        fiat_amount_str = str(self.fiat.text) if doFX else None 
+        #HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+        entry = HistoryEntry(None,tx_hash,status_str,str(desc),parent().format_amount(amount),"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,statusImages[-1])
+        utils.nspy_put_byname(txvc, entry, 'tx_entry')
+        def newLabel(l):
+            self.desc.text = l
+        utils.add_callback(txvc, 'on_label', newLabel)
+        self.navigationController.pushViewController_animated_(txvc.initWithRawTx_(txraw).autorelease(), True)
+
             
     @objc_method
     def doSend_(self, preview : bool) -> None:

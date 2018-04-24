@@ -1,6 +1,5 @@
 from . import utils
 from . import gui
-from .txdetail import TxDetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
@@ -11,6 +10,25 @@ from .custom_objc import *
 from collections import namedtuple
 
 HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+#######################################################################
+# HELPER STUFF EXPORTED TO OTHER MODULES ('Addresses' uses these too) #
+#######################################################################
+statusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
+    UIImage.imageNamed_("warning.png").retain(),
+    UIImage.imageNamed_("warning.png").retain(),
+    UIImage.imageNamed_("unconfirmed.png").retain(),
+    UIImage.imageNamed_("unconfirmed.png").retain(),
+    UIImage.imageNamed_("clock1.png").retain(),
+    UIImage.imageNamed_("clock2.png").retain(),
+    UIImage.imageNamed_("clock3.png").retain(),
+    UIImage.imageNamed_("clock4.png").retain(),
+    UIImage.imageNamed_("clock5.png").retain(),
+    UIImage.imageNamed_("confirmed.png").retain(),
+    UIImage.imageNamed_("signed.png").retain(),
+    UIImage.imageNamed_("unsigned.png").retain(),
+]
+
+from .txdetail import TxDetail
 
 CellIdentifiers = ( "HistoryCellLarge", "HistoryCellCompact", "EmptyCell")
 
@@ -195,22 +213,6 @@ class HistoryTableVC(UITableViewController):
             gui.ElectrumGui.gui.on_label_edited(entry.tx_hash, newLabel)
         
         
-#######################################################################
-# HELPER STUFF EXPORTED TO OTHER MODULES ('Addresses' uses these too) #
-#######################################################################
-statusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
-    UIImage.imageNamed_("warning.png").retain(),
-    UIImage.imageNamed_("warning.png").retain(),
-    UIImage.imageNamed_("unconfirmed.png").retain(),
-    UIImage.imageNamed_("unconfirmed.png").retain(),
-    UIImage.imageNamed_("clock1.png").retain(),
-    UIImage.imageNamed_("clock2.png").retain(),
-    UIImage.imageNamed_("clock3.png").retain(),
-    UIImage.imageNamed_("clock4.png").retain(),
-    UIImage.imageNamed_("clock5.png").retain(),
-    UIImage.imageNamed_("confirmed.png").retain(),
-]
-
 _lbl_colors = [ UIColor.blackColor.copy(), UIColor.colorWithRed_green_blue_alpha_(153.0/255.0,51.0/255.0,51.0/255.0,1.0).retain(), ]
 #_bg_colors =  [ UIColor.clearColor.copy(), UIColor.colorWithRed_green_blue_alpha_(0.99270844459999996,0.96421206000000004,0.99976575369999998,1.0).retain(), ]
 def setup_large_cell_for_history_entry(cell : ObjCInstance, entry : object) -> None:

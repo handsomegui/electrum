@@ -104,4 +104,39 @@
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop;
 @end
 
+@interface TxDetailBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *txTit;
+@property (nonatomic, weak) IBOutlet UILabel *txHash;
+@property (nonatomic, weak) IBOutlet UIButton *cpyBut;
+@property (nonatomic, weak) IBOutlet UIButton *qrBut;
+//# Description:
+@property (nonatomic, weak) IBOutlet UILabel *descTit;
+@property (nonatomic, weak) IBOutlet UITextField *descTf;
+//# Status:
+@property (nonatomic, weak) IBOutlet UILabel *statusTit;
+@property (nonatomic, weak) IBOutlet UIImageView *statusIV;
+@property (nonatomic, weak) IBOutlet UILabel *statusLbl;
+//# Date:
+@property (nonatomic, weak) IBOutlet UILabel *dateTit;
+@property (nonatomic, weak) IBOutlet UILabel *dateLbl;
+//# Amount received/sent:
+@property (nonatomic, weak) IBOutlet UILabel *amtTit;
+@property (nonatomic, weak) IBOutlet UILabel *amtLbl;
+//# Size:
+@property (nonatomic, weak) IBOutlet UILabel *sizeTit;
+@property (nonatomic, weak) IBOutlet UILabel *sizeLbl;
+//# Fee:
+@property (nonatomic, weak) IBOutlet UILabel *feeTit;
+@property (nonatomic, weak) IBOutlet UILabel *feeLbl;
+//# Locktime:
+@property (nonatomic, weak) IBOutlet UILabel *lockTit;
+@property (nonatomic, weak) IBOutlet UILabel *lockLbl;
+//# Inputs
+@property (nonatomic, weak) IBOutlet UITableView *inputsTV;
+//# Outputs
+@property (nonatomic, weak) IBOutlet UITableView *outputsTV;
+
+- (IBAction) onCpyBut:(id)sender; // overridden in TxDetail (python)
+- (IBAction) onQRBut:(id)sender; // overridden in TxDetail (python)
+@end
 #endif /* ViewsForIB_h */

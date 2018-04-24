@@ -33,3 +33,9 @@
 @implementation SendBase
 // properties auto-synthesized
 @end
+
+@implementation TxDetailBase
+// properties auto-synthesized
+- (IBAction) onCpyBut:(id)sender {} // overridden in TxDetail (python)
+- (IBAction) onQRBut:(id)sender {} // overridden in TxDetail (python)
+@end
