@@ -429,19 +429,23 @@ def present_modal_picker(parentVC : ObjCInstance,
 ### Banner (status bar) notifications
 ###################################################
 def show_notification(message : str,
-                      duration : float = 2.0, # the duration is in seconds
+                      duration : float = 2.0, # the duration is in seconds may be None but in that case must specify a completion
                       color : tuple = None, # color needs to have r,g,b,a components -- length 4!
                       style : int = CWNotificationStyleStatusBarNotification,
                       animationStyle : int = CWNotificationAnimationStyleTop,
                       animationType : int = CWNotificationAnimationTypeReplace,
+                      animationDuration : float = 0.25, # the amount of time to animate in and out the notif
                       onTapCallback : Callable[[],None] = None, # the function to call if user taps notification -- should return None and take no args
-                      multiline : bool = False) -> None:
+                      multiline : bool = False,
+                      noTapDismiss : bool = False,
+                      completion : callable = None, # if you want to use the completion handler, set duration to None
+                      ) -> ObjCInstance:
     cw_notif = CWStatusBarNotification.new().autorelease()
     
     def onTap() -> None:
         #print("onTap")
         if onTapCallback is not None: onTapCallback()
-        if not cw_notif.notificationIsDismissing:
+        if not cw_notif.notificationIsDismissing and not noTapDismiss:
             cw_notif.dismissNotification()
         
     if color is None or len(color) != 4 or [c for c in color if type(c) not in [float,int] ]:
@@ -453,12 +457,22 @@ def show_notification(message : str,
     cw_notif.notificationAnimationInStyle = animationStyle
     cw_notif.notificationAnimationOutStyle = animationStyle
     cw_notif.notificationAnimationType = animationType
+    cw_notif.notificationAnimationDuration = animationDuration
     cw_notif.multiline = multiline
     message = str(message)
-    duration = float(duration)
+    duration = float(duration) if duration is not None else None
     cw_notif.notificationTappedBlock = onTap
-    cw_notif.displayNotificationWithMessage_forDuration_(message, duration)
- 
+    if duration is None and completion is not None:
+        cw_notif.displayNotificationWithMessage_completion_(message, Block(completion))
+    else:
+        if duration is None: duration = 2.0
+        cw_notif.displayNotificationWithMessage_forDuration_(message, duration)
+    return cw_notif
+
+def dismiss_notification(cw_notif : ObjCInstance) -> None:
+    if cw_notif is not None and not cw_notif.notificationIsDismissing:
+        cw_notif.dismissNotification()
+
  #######################################################
  ### NSLog emulation -- python wrapper for NSLog
  #######################################################

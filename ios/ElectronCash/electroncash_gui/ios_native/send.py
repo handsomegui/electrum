@@ -662,12 +662,25 @@ class SendVC(SendBase):
         ccy = fx().get_currency() if doFX else None
         fiat_amount_str = str(self.fiat.text) if doFX else None 
         #HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
-        entry = HistoryEntry(None,tx_hash,status_str,str(desc),parent().format_amount(amount),"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,statusImages[-1])
+        entry = HistoryEntry(None,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,statusImages[-1])
         utils.nspy_put_byname(txvc, entry, 'tx_entry')
         def newLabel(l):
             self.desc.text = l
         utils.add_callback(txvc, 'on_label', newLabel)
-        self.navigationController.pushViewController_animated_(txvc.initWithRawTx_(txraw).autorelease(), True)
+        notif = None
+        def onAppear():
+            nonlocal notif
+            if notif:
+                utils.dismiss_notification(notif.autorelease())
+                notif = None
+            utils.remove_callback(txvc, 'on_appear')
+        utils.add_callback(txvc, 'on_appear', onAppear)
+        def notifCompletion() -> None:
+            self.navigationController.pushViewController_animated_(txvc.initWithRawTx_(txraw).autorelease(), True)
+        notif = utils.show_notification("Generating Tx, please wait...", duration = None, multiline = True,
+                                        animationDuration = 0.010,
+                                        #color = (.8,.6,.4,1.0),
+                                        noTapDismiss = True, completion = notifCompletion).retain()
 
             
     @objc_method

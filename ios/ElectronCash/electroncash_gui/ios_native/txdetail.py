@@ -22,6 +22,9 @@ class TxInputsOutputsTVC(NSObject):
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self is not None:
             self.txraw = txraw
+            tx = Transaction(txraw)
+            tx.deserialize()
+            utils.nspy_put(self, tx)
             if inputTV.tag == 0:
                 inputTV.tag = 9001
             self.tagin = inputTV.tag
@@ -50,6 +53,7 @@ class TxInputsOutputsTVC(NSObject):
         self.tagin = None
         self.tagout = None
         self.ts = None
+        utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
         
     @objc_classmethod
@@ -63,16 +67,14 @@ class TxInputsOutputsTVC(NSObject):
     
     @objc_method
     def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
-        tx = Transaction(self.txraw)
-        tx.deserialize()
+        tx = utils.nspy_get(self)
         if tv.tag == self.tagin: return _("Inputs") + " (%d) "%len(tx.inputs())
         elif tv.tag == self.tagout: return _("Outputs") + " (%d) "%len(tx.outputs())
         return "*ERROR*"
             
     @objc_method
     def tableView_numberOfRowsInSection_(self, tv : ObjCInstance, section : int) -> int:
-        tx = Transaction(self.txraw)
-        tx.deserialize()
+        tx = utils.nspy_get(self)
         
         if tv.tag == self.tagin:
             return len(tx.inputs())
@@ -96,8 +98,7 @@ class TxInputsOutputsTVC(NSObject):
         if cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
         try:
-            tx = Transaction(self.txraw)
-            tx.deserialize()
+            tx = utils.nspy_get(self)
         
             isInput = None
             x = None
@@ -179,8 +180,7 @@ class TxInputsOutputsTVC(NSObject):
         print("DID SELECT ROW CALLED FOR SECTION %s, ROW %s"%(str(indexPath.section),str(indexPath.row)))
         parent = gui.ElectrumGui.gui
         tv.deselectRowAtIndexPath_animated_(indexPath, True)
-        tx = Transaction(self.txraw)
-        tx.deserialize()
+        tx = utils.nspy_get(self)
         isInput = tv.tag == self.tagin
         x = tx.inputs()[indexPath.row] if isInput else tx.get_outputs()[indexPath.row]
         vc = parent.get_presented_viewcontroller()
@@ -287,8 +287,10 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     can_sign = not tx.is_complete() and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
     # todo: something akin to this: self.sign_button.setEnabled(can_sign)
 
+    wasNew = False
     if not vc.viewIfLoaded:
         NSBundle.mainBundle.loadNibNamed_owner_options_("TxDetail",vc,None)
+        wasNew = True
     
     # grab all the views
     # Transaction ID:
@@ -340,7 +342,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         qrBut.setHidden_(True)
         vc.notsigned = True
         txHash.userInteractionEnabled = False
-        rbbs.insert(0,UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAction, vc, SEL(b'onShareSave:')).autorelease())
+        rbbs.append(UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAction, vc, SEL(b'onShareSave:')).autorelease())
     else:
         copyBut.setHidden_(False)
         qrBut.setHidden_(False)
@@ -421,9 +423,11 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     
     if tx.locktime > 0:
         lockLbl.text = str(tx.locktime)
-        
+
     # refreshes the tableview with data
-    tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, float(ts))
+    if wasNew:
+        if ts is None: ts = time.time()
+        tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, float(ts))
         
 class TxDetail(TxDetailBase):
     rawtx = objc_property()  # string of the raw tx data suitable for building a Transaction instance using deserialize.  May be None
@@ -466,6 +470,12 @@ class TxDetail(TxDetailBase):
         entry = utils.nspy_get_byname(self, 'tx_entry')
         self.descTf.text = entry.label
         #todo update this stuff in realtime?
+        
+    @objc_method
+    def viewDidAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
+        utils.get_callback(self, "on_appear")()
+
 
     @objc_method
     def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
@@ -575,6 +585,10 @@ class TxDetail(TxDetailBase):
             if success:
                 self.rawtx = str(tx.serialize())
                 entry = utils.nspy_get_byname(self, 'tx_entry')
+                if self.inputsTV.delegate:
+                    utils.nspy_put(self.inputsTV.delegate, tx)
+                    self.inputsTV.reloadData()
+                    self.outputsTV.reloadData()
                 entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[-2])
                 tx_hash, *dummy = wallet.get_tx_info(tx)
                 entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
@@ -612,6 +626,10 @@ class TxDetail(TxDetailBase):
                 entry = utils.nspy_get_byname(self, 'tx_entry')
                 entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[status])
                 utils.nspy_put_byname(self, entry, 'tx_entry')
+                if self.inputsTV.delegate:
+                    utils.nspy_put(self.inputsTV.delegate, tx)
+                    self.inputsTV.reloadData()
+                    self.outputsTV.reloadData()
             setup_transaction_detail_view(self)
             
         parent.broadcast_transaction(tx, self.descTf.text, broadcastDone)
