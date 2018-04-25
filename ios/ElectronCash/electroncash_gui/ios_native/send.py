@@ -1,7 +1,7 @@
 from . import utils
 from . import gui
 from .history import HistoryEntry, statusImages
-from .txdetail import TxDetail
+from . import txdetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime, NotEnoughFunds, ExcessiveFee
 from electroncash.transaction import Transaction
@@ -650,7 +650,6 @@ class SendVC(SendBase):
         
     @objc_method
     def showTransaction_desc_(self, txraw, desc) -> None:
-        txvc = TxDetail.alloc()
         tx = Transaction(txraw)
         tx.deserialize()
         tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet().get_tx_info(tx)
@@ -662,25 +661,33 @@ class SendVC(SendBase):
         ccy = fx().get_currency() if doFX else None
         fiat_amount_str = str(self.fiat.text) if doFX else None 
         #HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
-        entry = HistoryEntry(None,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,statusImages[-1])
-        utils.nspy_put_byname(txvc, entry, 'tx_entry')
+        entry = HistoryEntry(tx,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,statusImages[-1])
         def newLabel(l):
             self.desc.text = l
-        utils.add_callback(txvc, 'on_label', newLabel)
+            
+        self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(entry, on_label = newLabel), True)
+        '''
+        # Below was used to generate a "please wait" notification but we optimized the code to be fast so this is no longer needed.. I hope!
+        # Keeping it here in case we see slow loads again for tx detail of unsigned tx's... Feel free to remove this code sometime in the future.
+        
         notif = None
+        txvc = None
         def onAppear():
             nonlocal notif
+            nonlocal txvc
             if notif:
                 utils.dismiss_notification(notif.autorelease())
                 notif = None
             utils.remove_callback(txvc, 'on_appear')
-        utils.add_callback(txvc, 'on_appear', onAppear)
+        
+        txvc = txdetail.CreateTxDetailWithEntry(entry, on_label = newLabel, on_appear = onAppear).retain()
         def notifCompletion() -> None:
-            self.navigationController.pushViewController_animated_(txvc.initWithRawTx_(txraw).autorelease(), True)
+            self.navigationController.pushViewController_animated_(txvc.autorelease(), True)
         notif = utils.show_notification("Generating Tx, please wait...", duration = None, multiline = True,
                                         animationDuration = 0.010,
                                         #color = (.8,.6,.4,1.0),
                                         noTapDismiss = True, completion = notifCompletion).retain()
+        '''
 
             
     @objc_method

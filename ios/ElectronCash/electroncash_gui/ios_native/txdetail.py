@@ -12,19 +12,16 @@ import json
 # ViewController used for the TxDetail view's "Inputs" and "Outputs" tables.. not exposed.. managed internally
 class TxInputsOutputsTVC(NSObject):
     
-    txraw = objc_property()
     tagin = objc_property()
     tagout = objc_property()
     ts = objc_property()
     
     @objc_method
-    def initWithTxRaw_inputTV_outputTV_timestamp_(self, txraw : ObjCInstance, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : float) -> ObjCInstance:
+    def initWithInputTV_outputTV_timestamp_(self, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : float) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self is not None:
-            self.txraw = txraw
-            tx = Transaction(txraw)
-            tx.deserialize()
-            utils.nspy_put(self, tx)
+            if not isinstance(utils.nspy_get(self), Transaction):
+                raise ValueError('TxInputsOutputsTVC requires an nspy entry on self that is a Transaction subclass!')
             if inputTV.tag == 0:
                 inputTV.tag = 9001
             self.tagin = inputTV.tag
@@ -49,17 +46,11 @@ class TxInputsOutputsTVC(NSObject):
     @objc_method
     def dealloc(self) -> None:
         print("TxInputsOutputsTVC dealloc")
-        self.txraw = None
         self.tagin = None
         self.tagout = None
         self.ts = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
-        
-    @objc_classmethod
-    def tvcWithTxRaw_inputTV_outputTV_timestamp_(cls, txraw : ObjCInstance, itv : ObjCInstance, otv : ObjCInstance,
-                                                 timestamp : float) -> ObjCInstance:
-        return __class__.alloc().initWithTxRaw_inputTV_outputTV_timestamp_(txraw,itv,otv,timestamp).autorelease()
     
     @objc_method
     def numberOfSectionsInTableView_(self, tv) -> int:
@@ -260,23 +251,21 @@ class TxInputsOutputsTVC(NSObject):
                          )
     
 
+        
+def CreateTxInputsOutputsTVC(tx : Transaction, itv : ObjCInstance, otv : ObjCInstance, timestamp : float) -> ObjCInstance:
+    tvc = TxInputsOutputsTVC.alloc()
+    utils.nspy_put(tvc, tx)
+    return tvc.initWithInputTV_outputTV_timestamp_(itv,otv,timestamp).autorelease()
+
 # returns the view itself, plus the copy button and the qrcode button, plus the (sometimes nil!!) UITextField for the editable description
 #  the copy and the qrcode buttons are so that caller may attach event handing to them
 def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     entry = utils.nspy_get_byname(vc, 'tx_entry')
-    dummy, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
+    tx, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     base_unit = parent.base_unit()
     format_amount = parent.format_amount
-    tx = None
-    if vc.rawtx:
-        try:
-            tx = Transaction(vc.rawtx)
-            tx.deserialize()
-        except Exception as e:
-            tx = None
-            utils.NSLog("Got exception finding & deserializing tx with hash %s: %s",tx_hash,str(e))
     if tx is None:
         tx = wallet.transactions.get(tx_hash, None)
         if tx is not None: tx.deserialize()
@@ -388,6 +377,8 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
             dateTit.text = _("Expected confirmation time") + ':'
             dateLbl.text = '%d blocks'%(exp_n) if exp_n > 0 else _('unknown (low fee)')
         vc.noBlkXplo = False
+        dateTit.alpha = 1.0
+        dateLbl.alpha = 1.0
     else:
         # wtf? what to do here? 
         dateTit.text = _("Date") + ":"
@@ -427,21 +418,22 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     # refreshes the tableview with data
     if wasNew:
         if ts is None: ts = time.time()
-        tvc = TxInputsOutputsTVC.tvcWithTxRaw_inputTV_outputTV_timestamp_(tx.raw, inputsTV, outputsTV, float(ts))
+        tvc = CreateTxInputsOutputsTVC(tx, inputsTV, outputsTV, float(ts))
+    else:
+        inputsTV.reloadData()
+        outputsTV.reloadData()
         
 class TxDetail(TxDetailBase):
-    rawtx = objc_property()  # string of the raw tx data suitable for building a Transaction instance using deserialize.  May be None
     notsigned = objc_property() # by default is false.. if true, offer different buttons/options
     noBlkXplo = objc_property()
     cbTimer = objc_property()
 
     @objc_method
-    def initWithRawTx_(self, rawtx : ObjCInstance) -> ObjCInstance:
+    def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
             self.notsigned = False
             self.noBlkXplo = False
-            self.rawtx = rawtx
             self.title = _("Transaction") + " " + _("Details")
 
         return self
@@ -449,7 +441,6 @@ class TxDetail(TxDetailBase):
     @objc_method
     def dealloc(self) -> None:
         print("TxDetail dealloc")
-        self.rawtx = None
         self.title = None
         self.view = None
         self.notsigned = None
@@ -516,9 +507,8 @@ class TxDetail(TxDetailBase):
     def onShareSave_(self, sender : ObjCInstance) -> None:
         parent = gui.ElectrumGui.gui        
         ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
-        if not self.rawtx or not parent.wallet: return
-        tx = Transaction(self.rawtx)
-        tx.deserialize()
+        if not parent.wallet: return
+        tx = utils.nspy_get_byname(self, 'tx_entry').tx
         name = 'signed_%s.txt' % (tx.txid()[0:8]) if tx.is_complete() else 'unsigned.txt'
         fileName = utils.get_tmp_dir() + '/' + name
         text = None
@@ -572,9 +562,9 @@ class TxDetail(TxDetailBase):
         password = None
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
-        if not wallet or not self.rawtx: return
-        tx = Transaction(self.rawtx)
-        tx.deserialize()
+        if not wallet: return
+        entry = utils.nspy_get_byname(self, 'tx_entry')
+        tx = entry.tx
 
         if wallet.has_password():
             password = parent.password_dialog(_("Enter your password to proceed"))
@@ -582,13 +572,8 @@ class TxDetail(TxDetailBase):
                 return
 
         def sign_done(success) -> None:
+            nonlocal entry
             if success:
-                self.rawtx = str(tx.serialize())
-                entry = utils.nspy_get_byname(self, 'tx_entry')
-                if self.inputsTV.delegate:
-                    utils.nspy_put(self.inputsTV.delegate, tx)
-                    self.inputsTV.reloadData()
-                    self.outputsTV.reloadData()
                 entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[-2])
                 tx_hash, *dummy = wallet.get_tx_info(tx)
                 entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
@@ -603,11 +588,12 @@ class TxDetail(TxDetailBase):
     def onBroadcast(self) -> None:
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
-        if not wallet or not self.rawtx: return
-        tx = Transaction(self.rawtx)
-        tx.deserialize()
+        if not wallet: return
+        entry = utils.nspy_get_byname(self, 'tx_entry')
+        tx = entry.tx
         
         def broadcastDone():
+            nonlocal entry
             if self.viewIfLoaded is None:
                 self.cbTimer = None
                 return
@@ -623,14 +609,20 @@ class TxDetail(TxDetailBase):
             self.cbTimer = None
             status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
             if status is not None and status >= 0 and status < len(statusImages):
-                entry = utils.nspy_get_byname(self, 'tx_entry')
                 entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[status])
                 utils.nspy_put_byname(self, entry, 'tx_entry')
-                if self.inputsTV.delegate:
-                    utils.nspy_put(self.inputsTV.delegate, tx)
-                    self.inputsTV.reloadData()
-                    self.outputsTV.reloadData()
             setup_transaction_detail_view(self)
             
         parent.broadcast_transaction(tx, self.descTf.text, broadcastDone)
     
+def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = None, tx = None) -> ObjCInstance:
+    txvc = TxDetail.alloc()
+    if not isinstance(entry.tx, Transaction) or isinstance(tx, Transaction):
+        if isinstance(tx, Transaction):
+            entry = utils.set_namedtuple_field(entry, 'tx', tx)
+        else:
+            raise ValueError('CreateWithEntry -- HistoryEntry provided must have an entry.tx that is a transaction!')
+    utils.nspy_put_byname(txvc, entry, 'tx_entry')
+    if callable(on_label): utils.add_callback(txvc, 'on_label', on_label)
+    if callable(on_appear): utils.add_callback(txvc, 'on_appear', on_appear)
+    return txvc.init().autorelease()

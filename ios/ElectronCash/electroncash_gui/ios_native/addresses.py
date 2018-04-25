@@ -3,7 +3,7 @@ from . import gui
 from . import history
 from . import private_key_dialog
 from . import sign_decrypt_dialog
-from .txdetail import TxDetail
+from . import txdetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 import electroncash.exchange_rate
@@ -340,12 +340,9 @@ class AddressDetail(UIViewController):
             tv.deselectRowAtIndexPath_animated_(indexPath,True)
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
-        rawtx = None
-        if tx is not None: rawtx = tx.raw
-        else: return
-        txd = TxDetail.alloc()
-        utils.nspy_put_byname(txd, entry, 'tx_entry')
-        self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
+        if tx is None:
+            raise Exception("Could not find Transaction for tx '%s'"%str(entry.tx_hash))
+        self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(entry, tx=tx), True)
 
 ModeNormal = 0
 ModePicker = 1

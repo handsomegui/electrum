@@ -9,7 +9,7 @@ from .uikit_bindings import *
 from .custom_objc import *
 from collections import namedtuple
 
-HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+HistoryEntry = namedtuple("HistoryEntry", "tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
 #######################################################################
 # HELPER STUFF EXPORTED TO OTHER MODULES ('Addresses' uses these too) #
 #######################################################################
@@ -28,7 +28,7 @@ statusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
     UIImage.imageNamed_("unsigned.png").retain(),
 ]
 
-from .txdetail import TxDetail
+from . import txdetail
 
 CellIdentifiers = ( "HistoryCellLarge", "HistoryCellCompact", "EmptyCell")
 
@@ -124,11 +124,9 @@ class HistoryTableVC(UITableViewController):
             tv.deselectRowAtIndexPath_animated_(indexPath,True)
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
-        rawtx = None
-        if tx is not None: rawtx = tx.raw
-        txd = TxDetail.alloc()
-        utils.nspy_put_byname(txd, entry, 'tx_entry')
-        self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
+        if tx is None:
+            raise Exception("Could not find Transaction for tx '%s'"%str(entry.tx_hash))
+        self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(entry,tx=tx), True)
  
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:

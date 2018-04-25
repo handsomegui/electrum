@@ -1,6 +1,6 @@
 from . import utils
 from . import gui
-from .txdetail import TxDetail
+from . import txdetail
 from .addresses import AddressDetail
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
@@ -134,10 +134,9 @@ class CoinsTableVC(UITableViewController):
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
         rawtx = None
-        if tx is not None: rawtx = tx.raw
-        txd = TxDetail.alloc()
-        utils.nspy_put_byname(txd, hentry, 'tx_entry')
-        self.navigationController.pushViewController_animated_(txd.initWithRawTx_(rawtx).autorelease(), True)
+        if tx is None:
+            raise Exception("Could not find Transaction for tx '%s'"%str(entry.tx_hash))
+        self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(hentry, tx=tx), True)
     
     
     @objc_method
