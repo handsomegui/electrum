@@ -35,12 +35,25 @@ class PythonAppDelegate(UIResponder):
 
     @objc_method
     def application_didFinishLaunchingWithOptions_(self, application : ObjCInstance, launchOptions : ObjCInstance) -> bool:
-        print("App finished launching.")
+        print("App finished launching. Options:",py_from_ns(launchOptions) if launchOptions else dict())
         
         ElectronCash.app.main()
 
         return True
 
+    @objc_method
+    def application_openURL_options_(self, application : ObjCInstance, url : ObjCInstance, options : ObjCInstance) -> bool:
+        data, filename = utils.nsurl_read_local_file(url)
+        utils.NSLog("App openURL: %s Options: %s",str(filename),str(py_from_ns(options) if options else dict()))
+        eg = gui.ElectrumGui.gui
+        ret = True
+        if eg:
+            eg.open_ext_txn(data)
+        else:
+            utils.NSLog("ERROR -- no gui! Cannot open txn!")
+            ret = False
+        return ret
+        
     # NB: According to apple docs, it's bad to abuse this method if you actually do no downloading, so disabled.
     # If we reenable be sure to add the appropriate BackgroundModes key to Info.plist
     '''@objc_method

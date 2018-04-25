@@ -277,6 +277,7 @@ class ElectrumGui(PrintError):
         self.lowMemoryToken = None
         self.downloadingNotif = None
         self.downloadingNotif_view = None
+        self.queued_ext_txn = None
         
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
         NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
@@ -518,6 +519,7 @@ class ElectrumGui(PrintError):
         self.dispose()
           
     def dispose(self):
+        self.queued_ext_txn = None
         if self.window is None:
             return
         self.stop_daemon()
@@ -1057,6 +1059,12 @@ class ElectrumGui(PrintError):
         p = pow(10, self.decimal_point)
         return int( p * x ) if x > 0 else None
     
+    def has_modal(self) -> ObjCInstance:
+        rvc = self.window.rootViewController if self.window else None
+        if rvc:
+            return rvc.presentedViewController is not None
+        return False
+    
     def get_presented_viewcontroller(self) -> ObjCInstance:
         rvc = self.window.rootViewController if self.window else None
         pvc = rvc.presentedViewController if rvc is not None else None
@@ -1244,7 +1252,8 @@ class ElectrumGui(PrintError):
         assert w
         # TODO: put this stuff in the UI
         self.wallet = w
-
+        self.ext_txn_check()
+        
     @staticmethod
     def forever_prompt_for_password_on_wallet(path_or_storage, msg = None) -> str:
         storage = WalletStorage(path_or_storage, manual_upgrades=True) if not isinstance(path_or_storage, WalletStorage) else path_or_storage
@@ -1576,6 +1585,48 @@ class ElectrumGui(PrintError):
                     return entry
         return None
             
+    def open_ext_txn(self, data : str) -> None:
+        if not self.wallet:
+            self.queued_ext_txn = data
+        else:
+            self.show_ext_txn(data)
+ 
+    def ext_txn_check(self) -> None:
+        if self.queued_ext_txn and self.wallet and self.window and self.tabController and self.window.rootViewController and self.window.rootViewController.ptr.value == self.tabController.ptr.value:
+            txn = self.queued_ext_txn
+            self.queued_ext_txn = None
+            self.show_ext_txn(txn)
+           
+    def show_ext_txn(self, txn : str) -> None:
+        if isinstance(txn, bytes):
+            txn = txn.decode('utf-8')
+            print("Warning: show_ext_txn got bytes instead of a str for the txn.. this may be bad...")
+        from electroncash.transaction import tx_from_str, Transaction
+        from . import txdetail
+        try:
+            txt_tx = tx_from_str(txn)
+            tx = Transaction(txt_tx)
+            tx.deserialize()
+            if self.wallet:
+                my_coins = self.wallet.get_spendable_coins(None, self.config)
+                my_outpoints = [vin['prevout_hash'] + ':' + str(vin['prevout_n']) for vin in my_coins]
+                for i, txin in enumerate(tx.inputs()):
+                    outpoint = txin['prevout_hash'] + ':' + str(txin['prevout_n'])
+                    if outpoint in my_outpoints:
+                        my_index = my_outpoints.index(outpoint)
+                        tx._inputs[i]['value'] = my_coins[my_index]['value']
+            print("ext txn read ok")
+            if self.has_modal():
+                self.show_error(_("Cannot display the requested transaction since you already have a modal dialog open."))
+            else:
+                vc = self.get_presented_viewcontroller()
+                txvc = txdetail.CreateTxDetailWithTx(tx, asModalNav = True)
+                vc.presentViewController_animated_completion_(txvc, True, None)
+        except:
+            traceback.print_exc(file=sys.stderr)
+            self.show_error(_("Electron Cash was unable to parse your transaction"))
+            return
+
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
@@ -1594,3 +1645,5 @@ class ElectrumGui(PrintError):
         self.open_last_wallet()
         
         self.createAndShowUI()
+        self.ext_txn_check()
+

@@ -23,6 +23,7 @@ UIApplication = ObjCClass('UIApplication')
 NSArray = ObjCClass('NSArray')
 NSMutableArray = ObjCClass('NSMutableArray')
 NSSet = ObjCClass('NSSet')
+NSMutableData = ObjCClass('NSMutableData')
 
 # NSLayoutConstraint.h
 NSLayoutConstraint = ObjCClass('NSLayoutConstraint')

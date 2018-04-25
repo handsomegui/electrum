@@ -332,9 +332,13 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     if can_sign:
         vc.noBlkXplo = True
         rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Sign"), UIBarButtonItemStylePlain, vc, SEL(b'onSign')).autorelease())
+        if not img:
+            img = statusImages[-1]
     if can_broadcast:
         vc.noBlkXplo = True
         rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Broadcast"), UIBarButtonItemStylePlain, vc, SEL(b'onBroadcast')).autorelease())
+        if not img:
+            img = statusImages[-2]
         
     if tx_hash == _("Unknown") or tx_hash is None: #unsigned tx
         txHash.text = tx_hash_str
@@ -362,7 +366,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     descTit.text = _("Description") + ":"
     descTf.text = label
     descTf.placeholder = _("Tap to add a description")
-    if amount < 0:
+    if amount is not None and amount < 0:
         descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,0.2,0.2,0.040)
     else:
         descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,1.0,0.040)
@@ -371,6 +375,8 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     descTf.clearButtonMode = UITextFieldViewModeWhileEditing
 
     statusTit.text = _("Status:")
+    if not img:
+        img = UIImage.imageNamed_("empty.png")
     statusIV.image = img
     ff = str(status_) #status_str
     try:
@@ -650,3 +656,31 @@ def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = N
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(txvc,leftSide = True)
         return UINavigationController.alloc().initWithRootViewController_(txvc).autorelease()
     return txvc
+
+def CreateTxDetailWithTx(tx : Transaction, on_label = None, on_appear = None, asModalNav = False) -> ObjCInstance:
+    parent = gui.ElectrumGui.gui
+    wallet = parent.wallet
+    import time
+
+    tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet.get_tx_info(tx)
+    size = tx.estimated_size()
+    status_str = ""
+    status = status_
+    img = None
+    if conf is not None:
+        if tx_hash is not None and height is not None and timestamp is not None:
+            status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
+            if status is not None and status >= 0 and status < len(statusImages):
+                img = statusImages[status]
+    else:
+        conf = 0
+    timestamp = time.time() if timestamp is None else timestamp
+    doFX = False #fx() and fx().is_enabled()
+    ccy = None #fx().get_currency() if doFX else None
+    fiat_amount_str = None #str(self.fiat.text) if doFX else None 
+    #HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+    entry = HistoryEntry(tx,tx_hash,status_str,"",parent.format_amount(amount) if amount is not None else _("Transaction unrelated to your wallet"),
+                         "",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),
+                         timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,img)
+      
+    return CreateTxDetailWithEntry(entry, on_label = on_label, on_appear = on_appear, asModalNav = asModalNav)

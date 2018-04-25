@@ -119,6 +119,26 @@ def uilabel_replace_attributed_text(lbl : ObjCInstance, text : str, template : O
     lbl.attributedText = astr
     return lbl
 
+def nsurl_read_local_file(url : ObjCInstance, binary = False) -> tuple:
+    try:
+        cstring = NSMutableData.dataWithLength_(4096)
+        from ctypes import c_char_p
+        url.getFileSystemRepresentation_maxLength_(c_char_p(cstring.mutableBytes), 4096)
+        filename = py_from_ns(cstring)
+        nul = filename.find(b'\0') 
+        if nul >= 0:
+            filename = filename[:nul]
+        filename = filename.decode('utf-8')
+        mode = "r"
+        if binary: mode = "rb"
+        with open(filename, mode) as f:
+            data = f.read()
+            #print("File data:\n",data)
+        return data, filename
+    except:
+        NSLog("nsurl_read_local_file got exception: %s",str(sys.exc_info[1]))
+        return None, None        
+
 ###################################################
 ### Show Share ActionSheet
 ###################################################
