@@ -666,6 +666,9 @@ class SendVC(SendBase):
             self.desc.text = l
             
         self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(entry, on_label = newLabel), True)
+        
+        # For modal do the following:
+        #self.presentViewController_animated_completion_(txdetail.CreateTxDetailWithEntry(entry, on_label = newLabel, asModalNav = True), True, None)
         '''
         # Below was used to generate a "please wait" notification but we optimized the code to be fast so this is no longer needed.. I hope!
         # Keeping it here in case we see slow loads again for tx detail of unsigned tx's... Feel free to remove this code sometime in the future.

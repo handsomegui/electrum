@@ -15,6 +15,7 @@ class TxInputsOutputsTVC(NSObject):
     tagin = objc_property()
     tagout = objc_property()
     ts = objc_property()
+    modalParentVC = objc_property()
     
     @objc_method
     def initWithInputTV_outputTV_timestamp_(self, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : float) -> ObjCInstance:
@@ -49,6 +50,7 @@ class TxInputsOutputsTVC(NSObject):
         self.tagin = None
         self.tagout = None
         self.ts = None
+        self.modalParentVC = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
     
@@ -238,7 +240,16 @@ class TxInputsOutputsTVC(NSObject):
             except:
                 addy = None
         if addy and parent.wallet and parent.wallet.is_mine(addy):
-            actions.insert(0, [ _("Show in Addresses Tab"), parent.jump_to_addresses_with_address, addy ] )
+            def onShowAddy(addy):
+                def doJump() -> None:
+                    parent.jump_to_addresses_with_address(addy)
+                if self.modalParentVC:
+                    print("txdetail was modal, dismissing first then jumping to addresses")
+                    self.modalParentVC.dismissViewControllerAnimated_completion_(True, doJump)
+                else:
+                    #print("txdetail was NOT modal")
+                    doJump()
+            actions.insert(0, [ _("Show in Addresses Tab"), onShowAddy, addy ] )
             
         
         utils.show_alert(vc = vc,
@@ -460,12 +471,21 @@ class TxDetail(TxDetailBase):
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         entry = utils.nspy_get_byname(self, 'tx_entry')
         self.descTf.text = entry.label
+        if isinstance(self.inputsTV.delegate, TxInputsOutputsTVC):
+            self.inputsTV.delegate.modalParentVC = self.presentingViewController
         #todo update this stuff in realtime?
         
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
         utils.get_callback(self, "on_appear")()
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if isinstance(self.inputsTV.delegate, TxInputsOutputsTVC):
+            self.inputsTV.delegate.modalParentVC = None
+
 
 
     @objc_method
@@ -615,7 +635,7 @@ class TxDetail(TxDetailBase):
             
         parent.broadcast_transaction(tx, self.descTf.text, broadcastDone)
     
-def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = None, tx = None) -> ObjCInstance:
+def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = None, tx = None, asModalNav = False) -> ObjCInstance:
     txvc = TxDetail.alloc()
     if not isinstance(entry.tx, Transaction) or isinstance(tx, Transaction):
         if isinstance(tx, Transaction):
@@ -625,4 +645,8 @@ def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = N
     utils.nspy_put_byname(txvc, entry, 'tx_entry')
     if callable(on_label): utils.add_callback(txvc, 'on_label', on_label)
     if callable(on_appear): utils.add_callback(txvc, 'on_appear', on_appear)
-    return txvc.init().autorelease()
+    txvc = txvc.init().autorelease()
+    if asModalNav:
+        gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(txvc,leftSide = True)
+        return UINavigationController.alloc().initWithRootViewController_(txvc).autorelease()
+    return txvc

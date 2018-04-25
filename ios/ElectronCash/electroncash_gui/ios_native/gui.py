@@ -877,9 +877,12 @@ class ElectrumGui(PrintError):
             pass
         self.tabController.dismissViewControllerAnimated_completion_(True, None)
         
-    def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance) -> ObjCInstance:
+    def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = False) -> ObjCInstance:
         closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self.helper, SEL(b'onModalClose:')).autorelease()
-        vc.navigationItem.rightBarButtonItem = closeButton
+        if leftSide:
+            vc.navigationItem.leftBarButtonItem = closeButton
+        else:
+            vc.navigationItem.rightBarButtonItem = closeButton
         return closeButton
         
         
@@ -1329,12 +1332,14 @@ class ElectrumGui(PrintError):
             self.daemon.add_wallet(wallet)
         return wallet
 
-    def sign_tx_with_password(self, tx, callback, password):
+    def sign_tx_with_password(self, tx, callback, password, vc = None):
         '''Sign the transaction in a separate thread.  When done, calls
         the callback with a success code of True or False.
         '''
         # call hook to see if plugin needs gui interaction
         run_hook('sign_tx', self, tx)
+        if not vc:
+            vc = self.get_presented_viewcontroller()
 
         def on_error(exc_info):
             if not isinstance(exc_info[1], UserCancelled):
@@ -1351,10 +1356,12 @@ class ElectrumGui(PrintError):
             task = partial(Transaction.sign, tx, self.tx_external_keypairs)
         else:
             task = partial(self.wallet.sign_transaction, tx, password)
-        utils.WaitingDialog(self.tabController, _('Signing transaction...'), task,
+        utils.WaitingDialog(vc, _('Signing transaction...'), task,
                             on_signed, on_failed)
 
-    def broadcast_transaction(self, tx, tx_desc, doneCallback = None):
+    def broadcast_transaction(self, tx, tx_desc, doneCallback = None, vc = None):
+        if not vc:
+            vc = self.get_presented_viewcontroller()
         def broadcast_thread(): # non-GUI thread
             #pr = self.payment_request
             #if pr and pr.has_expired():
@@ -1394,7 +1401,7 @@ class ElectrumGui(PrintError):
                 traceback.print_exception(*exc_info)
                 self.show_error(str(exc_info[1]))
 
-        utils.WaitingDialog(self.tabController, _('Broadcasting transaction...'),
+        utils.WaitingDialog(vc, _('Broadcasting transaction...'),
                             broadcast_thread, broadcast_done, on_error)
 
     def change_password(self, oldpw : str, newpw : str, enc : bool) -> None:
