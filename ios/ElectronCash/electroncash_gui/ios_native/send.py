@@ -2,6 +2,7 @@ from . import utils
 from . import gui
 from .history import HistoryEntry, statusImages
 from . import txdetail
+from . import contacts
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime, NotEnoughFunds, ExcessiveFee
 from electroncash.transaction import Transaction
@@ -162,7 +163,6 @@ class SendVC(SendBase):
         
         but = self.maxBut
         but.setTitle_forState_(_("Max"), UIControlStateNormal)
-        but.addTarget_action_forControlEvents_(self, SEL(b'spendMax'), UIControlEventPrimaryActionTriggered)
                 
         # Fee Label
         self.feeTit.text = _("Fee")
@@ -183,10 +183,6 @@ class SendVC(SendBase):
 
         tedit = self.desc
         tedit.placeholder = _("Description of the transaction (not mandatory).")
-        
-        # Check for QRCode availability and if not available, destroy the button
-        but = self.qrBut
-        but.addTarget_action_forControlEvents_(self, SEL(b'onQRBut:'), UIControlEventPrimaryActionTriggered)
    
         feelbl = self.feeLbl
         feefont = feelbl.font
@@ -206,21 +202,13 @@ class SendVC(SendBase):
         
         utils.nspy_put_byname(self, 'dummy', '_last_spend_from') # trigger the clear
         
-        but = self.clearSFBut
-        but.addTarget_action_forControlEvents_(self, SEL(b'clearSpendFrom'), UIControlEventPrimaryActionTriggered)
-
         # set up navigation bar items...
         self.clearBut.title = _("Clear")
-        self.clearBut.target = self
-        self.clearBut.action = SEL(b'clear')
         but = self.sendBut
         barButSend = UIBarButtonItem.alloc().initWithCustomView_(but).autorelease()
         but.setTitle_forState_(_("Send"), UIControlStateNormal)
-        but.addTarget_action_forControlEvents_(self, SEL(b'onPreviewSendBut:'), UIControlEventPrimaryActionTriggered)
         barButPreview = self.previewBut
         barButPreview.title = _("Preview")
-        barButPreview.target = self
-        barButPreview.action = SEL(b'onPreviewSendBut:')
 
         self.navigationItem.rightBarButtonItems = [barButSend, barButPreview]
         self.navigationItem.leftBarButtonItem = self.clearBut
@@ -334,7 +322,7 @@ class SendVC(SendBase):
         
 
     @objc_method
-    def onQRBut_(self, but):
+    def onQRBut_(self, but) -> None:
         if not QRCodeReader.isAvailable:
             utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
         else:
@@ -344,7 +332,17 @@ class SendVC(SendBase):
             self.qrvc.delegate = self
             self.presentViewController_animated_completion_(self.qrvc, True, None)
             self.qrScanErr = False
-            pass
+
+    @objc_method
+    def onContactBut_(self, but) -> None:
+        def onPayTo(addys : list) -> None:
+            if contacts.pay_to(addys):
+                self.dismissViewControllerAnimated_completion_(True, None)
+        vc = contacts.ContactsTableVC.alloc().initWithStyle_mode_(UITableViewStylePlain, contacts.ModePicker).autorelease()                
+        nav = UINavigationController.alloc().initWithRootViewController_(vc).autorelease()
+        utils.add_callback(vc, 'on_pay_to', onPayTo)
+        self.presentViewController_animated_completion_(nav, True, None)
+
 
     @objc_method
     def textFieldDidBeginEditing_(self, tf) -> None:

@@ -14,6 +14,7 @@
                 <outlet property="amtTit" destination="E7N-nC-teV" id="UgR-2m-G81"/>
                 <outlet property="clearBut" destination="4y4-Sz-2LC" id="lkT-io-VEB"/>
                 <outlet property="clearSFBut" destination="har-Wl-wWO" id="5pt-sS-c01"/>
+                <outlet property="contactBut" destination="lxg-Vg-byX" id="GAJ-XA-Rke"/>
                 <outlet property="contentView" destination="iN0-l3-epB" id="Jtg-tD-S6c"/>
                 <outlet property="csFeeTop" destination="Kaw-dM-Y7n" id="rd7-IZ-tyu"/>
                 <outlet property="desc" destination="DIP-SW-ID7" id="iIV-c4-hcC"/>
@@ -61,7 +62,7 @@
                             <nil key="highlightedColor"/>
                         </label>
                         <textField opaque="NO" clipsSubviews="YES" tag="115" contentMode="right" horizontalCompressionResistancePriority="1000" contentHorizontalAlignment="center" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Paste an address or use QR" textAlignment="center" minimumFontSize="7" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="xYv-i9-QAj">
-                            <rect key="frame" x="26" y="39" width="258" height="30"/>
+                            <rect key="frame" x="26" y="39" width="222" height="30"/>
                             <constraints>
                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="199" id="ixl-TA-rke"/>
                             </constraints>
@@ -73,10 +74,13 @@
                             </connections>
                         </textField>
                         <button opaque="NO" tag="150" contentMode="right" verticalHuggingPriority="252" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="3fW-oz-3Eo">
-                            <rect key="frame" x="292" y="42" width="78" height="24"/>
+                            <rect key="frame" x="288" y="42" width="24" height="24"/>
                             <state key="normal" title="Button" image="qrcode.png"/>
                             <state key="selected" image="qrcode_blue.png"/>
                             <state key="highlighted" image="qrcode_blue.png"/>
+                            <connections>
+                                <action selector="onQRBut:" destination="-1" eventType="primaryActionTriggered" id="YaI-Ll-Mhz"/>
+                            </connections>
                         </button>
                         <textField opaque="NO" clipsSubviews="YES" tag="230" contentMode="scaleToFill" verticalHuggingPriority="253" verticalCompressionResistancePriority="751" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Tap to add a description" textAlignment="natural" minimumFontSize="7" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="DIP-SW-ID7">
                             <rect key="frame" x="26" y="122" width="285" height="30"/>
@@ -133,6 +137,9 @@
                             <state key="normal" title="Max">
                                 <color key="titleColor" red="0.17959927022457123" green="0.5573570728302002" blue="0.53899538516998291" alpha="1" colorSpace="calibratedRGB"/>
                             </state>
+                            <connections>
+                                <action selector="spendMax" destination="-1" eventType="primaryActionTriggered" id="RJs-2c-oyX"/>
+                            </connections>
                         </button>
                         <label opaque="NO" userInteractionEnabled="NO" tag="320" contentMode="left" horizontalHuggingPriority="251" text="0 BCH" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="j1b-rK-qmj">
                             <rect key="frame" x="215" y="258" width="100" height="31"/>
@@ -207,6 +214,20 @@
                             </constraints>
                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
                             <state key="normal" title="Clear"/>
+                            <connections>
+                                <action selector="clearSpendFrom" destination="-1" eventType="primaryActionTriggered" id="iqf-Ls-C7M"/>
+                            </connections>
+                        </button>
+                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="lxg-Vg-byX">
+                            <rect key="frame" x="256" y="42" width="24" height="24"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="24" id="QlM-yb-CTH"/>
+                                <constraint firstAttribute="width" constant="24" id="WiE-Vf-EBB"/>
+                            </constraints>
+                            <state key="normal" image="tab_contacts.png"/>
+                            <connections>
+                                <action selector="onContactBut:" destination="-1" eventType="primaryActionTriggered" id="pNt-Sx-iQZ"/>
+                            </connections>
                         </button>
                     </subviews>
                     <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -225,13 +246,15 @@
                         <constraint firstItem="j1b-rK-qmj" firstAttribute="centerY" secondItem="l6u-7I-2R7" secondAttribute="centerY" id="FKU-Gg-7Le"/>
                         <constraint firstItem="TUB-fe-ZLf" firstAttribute="centerY" secondItem="bOO-8Z-aO7" secondAttribute="centerY" id="GkY-0r-gPg"/>
                         <constraint firstAttribute="trailing" secondItem="KSf-pb-DFK" secondAttribute="trailing" constant="8" id="Hra-Vf-DKf"/>
+                        <constraint firstItem="3fW-oz-3Eo" firstAttribute="leading" secondItem="lxg-Vg-byX" secondAttribute="trailing" constant="8" id="JB0-Eq-CKY"/>
                         <constraint firstItem="p3X-R7-5S3" firstAttribute="top" secondItem="bfH-Zw-ELf" secondAttribute="bottom" constant="60" identifier="FEE_TOP" id="Kaw-dM-Y7n"/>
                         <constraint firstAttribute="trailing" secondItem="DIP-SW-ID7" secondAttribute="trailing" constant="9" id="L5o-h7-V54"/>
                         <constraint firstItem="Sws-3w-ut5" firstAttribute="trailing" secondItem="bfH-Zw-ELf" secondAttribute="trailing" id="OgY-xM-peF"/>
                         <constraint firstItem="bfH-Zw-ELf" firstAttribute="centerY" secondItem="E7N-nC-teV" secondAttribute="centerY" id="QP9-sb-L0W"/>
+                        <constraint firstItem="3fW-oz-3Eo" firstAttribute="centerY" secondItem="lxg-Vg-byX" secondAttribute="centerY" id="Sd6-xA-0bB"/>
                         <constraint firstItem="WGL-Di-B5n" firstAttribute="centerY" secondItem="bfH-Zw-ELf" secondAttribute="centerY" id="SnL-rY-i0J"/>
-                        <constraint firstAttribute="trailing" secondItem="xYv-i9-QAj" secondAttribute="trailing" constant="36" id="VGl-zZ-uaI"/>
                         <constraint firstItem="KSf-pb-DFK" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="VRr-XH-o9N"/>
+                        <constraint firstItem="lxg-Vg-byX" firstAttribute="leading" secondItem="xYv-i9-QAj" secondAttribute="trailing" constant="8" id="WA4-J3-VVu"/>
                         <constraint firstItem="xYv-i9-QAj" firstAttribute="top" secondItem="Oxq-xj-JGe" secondAttribute="bottom" constant="8" id="Xrq-aB-eq1"/>
                         <constraint firstItem="har-Wl-wWO" firstAttribute="trailing" secondItem="KSf-pb-DFK" secondAttribute="trailing" id="a7Z-Z0-FbH"/>
                         <constraint firstItem="Oxq-xj-JGe" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="bgA-Oa-SMD"/>
@@ -250,16 +273,17 @@
                         <constraint firstItem="Oay-ld-2UX" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="nlv-Bv-7Oi"/>
                         <constraint firstAttribute="trailing" secondItem="Oay-ld-2UX" secondAttribute="trailing" constant="8" id="oRZ-u6-Jtb"/>
                         <constraint firstItem="j7K-4S-lZ9" firstAttribute="top" secondItem="xYv-i9-QAj" secondAttribute="bottom" constant="24" id="oXR-Rg-8ES"/>
+                        <constraint firstAttribute="trailing" secondItem="3fW-oz-3Eo" secondAttribute="trailing" constant="8" id="pUy-cF-guO"/>
                         <constraint firstItem="bOO-8Z-aO7" firstAttribute="width" secondItem="E7N-nC-teV" secondAttribute="width" id="qPs-ev-JG7"/>
                         <constraint firstItem="har-Wl-wWO" firstAttribute="centerY" secondItem="KSf-pb-DFK" secondAttribute="centerY" id="qfb-Tc-N3z"/>
                         <constraint firstItem="p3X-R7-5S3" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="8" id="rMp-4O-FSF"/>
-                        <constraint firstItem="3fW-oz-3Eo" firstAttribute="leading" secondItem="xYv-i9-QAj" secondAttribute="trailing" constant="8" id="sID-wy-LR8"/>
                         <constraint firstAttribute="height" constant="568" id="smc-K3-xcJ"/>
                         <constraint firstItem="MlF-KI-I4b" firstAttribute="centerX" secondItem="iN0-l3-epB" secondAttribute="centerX" id="sxP-yg-7lx"/>
                         <constraint firstItem="TUB-fe-ZLf" firstAttribute="width" secondItem="bfH-Zw-ELf" secondAttribute="width" id="t0p-Io-lK1"/>
                         <constraint firstAttribute="trailing" secondItem="MlF-KI-I4b" secondAttribute="trailing" constant="24" id="tzy-WU-a1Z"/>
                         <constraint firstItem="bfH-Zw-ELf" firstAttribute="leading" secondItem="E7N-nC-teV" secondAttribute="trailing" constant="8" id="u8y-8I-pLN"/>
                         <constraint firstItem="j1b-rK-qmj" firstAttribute="leading" secondItem="l6u-7I-2R7" secondAttribute="trailing" constant="10" id="uFF-Ue-8cd"/>
+                        <constraint firstItem="3fW-oz-3Eo" firstAttribute="width" secondItem="lxg-Vg-byX" secondAttribute="width" id="wbZ-G5-Byt"/>
                         <constraint firstItem="3fW-oz-3Eo" firstAttribute="centerY" secondItem="xYv-i9-QAj" secondAttribute="centerY" id="x9W-us-wQ9"/>
                         <constraint firstItem="MlF-KI-I4b" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="24" id="xsN-I3-K8o"/>
                         <constraint firstItem="C8Q-sX-QgU" firstAttribute="leading" secondItem="Sws-3w-ut5" secondAttribute="trailing" constant="10" id="z7e-ou-0ee"/>
@@ -289,14 +313,26 @@
             <state key="disabled">
                 <color key="titleColor" red="0.1612265259" green="0.16708478330000001" blue="0.55065631869999998" alpha="0.48262557519999999" colorSpace="calibratedRGB"/>
             </state>
+            <connections>
+                <action selector="onPreviewSendBut:" destination="-1" eventType="primaryActionTriggered" id="OMP-gd-Z0V"/>
+            </connections>
             <point key="canvasLocation" x="156" y="-217"/>
         </button>
-        <barButtonItem tag="1100" title="Clear" style="plain" id="4y4-Sz-2LC"/>
-        <barButtonItem tag="1110" title="Preview" style="plain" id="NcO-3J-2Ud"/>
+        <barButtonItem tag="1100" title="Clear" style="plain" id="4y4-Sz-2LC">
+            <connections>
+                <action selector="clear" destination="-1" id="I2N-GK-MX3"/>
+            </connections>
+        </barButtonItem>
+        <barButtonItem tag="1110" title="Preview" style="plain" id="NcO-3J-2Ud">
+            <connections>
+                <action selector="onPreviewSendBut:" destination="-1" id="BPq-p5-shs"/>
+            </connections>
+        </barButtonItem>
     </objects>
     <resources>
         <image name="qrcode.png" width="24" height="24"/>
         <image name="qrcode_blue.png" width="24" height="24"/>
+        <image name="tab_contacts.png" width="30" height="30"/>
         <image name="tab_send.png" width="30" height="30"/>
     </resources>
 </document>

@@ -82,6 +82,7 @@
 @property (nonatomic, weak) IBOutlet UILabel *payToTit;
 @property (nonatomic, weak) IBOutlet UITextField *payTo;
 @property (nonatomic, weak) IBOutlet UIButton *qrBut;
+@property (nonatomic, weak) IBOutlet UIButton *contactBut;
 @property (nonatomic, weak) IBOutlet UILabel *descTit;
 @property (nonatomic, weak) IBOutlet UITextField *desc;
 @property (nonatomic, weak) IBOutlet UILabel *amtTit;
@@ -102,7 +103,15 @@
 @property (nonatomic, weak) IBOutlet UIButton *clearSFBut;
 @property (nonatomic, weak) IBOutlet UITextView *spendFrom;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop;
+
+-(IBAction)onQRBut:(id)sender; // implemented in python send.py
+-(IBAction)onContactBut:(id)sender; // implemented in python send.py
+-(IBAction)clear; // implemented in python send.py
+-(IBAction)onPreviewSendBut:(id)sender; // implemented in python send.py
+-(IBAction)clearSpendFrom; // implemented in python send.py
+-(IBAction)spendMax; // implemented in python send.py
 @end
+
 
 @interface TxDetailBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *txTit;

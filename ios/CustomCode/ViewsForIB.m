@@ -32,6 +32,12 @@
 
 @implementation SendBase
 // properties auto-synthesized
+-(IBAction)onQRBut:(id)sender {} // implemented in python send.py
+-(IBAction)onContactBut:(id)sender {} // implemented in python send.py
+-(IBAction)clear {} // implemented in python send.py
+-(IBAction)onPreviewSendBut:(id)sender {} // implemented in python send.py
+-(IBAction)clearSpendFrom {} // implemented in python send.py
+-(IBAction)spendMax {} // implemented in python send.py
 @end
 
 @implementation TxDetailBase

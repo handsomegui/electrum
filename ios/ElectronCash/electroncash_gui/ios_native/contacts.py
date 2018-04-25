@@ -41,15 +41,20 @@ class ContactsTableVC(UITableViewController):
         self.cancelBut = None
       
         if self.mode == ModePicker:
-            buts = [
-                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onPickerPayTo')).autorelease(),
+            lbuts = [
                 UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self, SEL(b'onPickerCancel')).autorelease(),
             ]
-            self.cancelBut = buts[1]
+            buts = [
+                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onPickerPayTo')).autorelease(),
+                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAdd, self, SEL(b'onAddBut')).autorelease(),
+            ]
+            self.cancelBut = lbuts[0]
             self.doneBut = buts[0]
+            self.addBut = buts[1]
             self.doneBut.enabled = False
             self.cancelBut.enabled = True
             self.navigationItem.rightBarButtonItems = buts
+            self.navigationItem.leftBarButtonItems = lbuts
         else:
             buts = [
                 UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAdd, self, SEL(b'onAddBut')).autorelease(),
@@ -350,6 +355,7 @@ class ContactsTableVC(UITableViewController):
     @objc_method
     def onPickerCancel(self) -> None:
         print ("picker cancel...")
+        self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
         return
         self.selected = []
         self.refresh()
@@ -365,7 +371,11 @@ class ContactsTableVC(UITableViewController):
             if entry.address_str in validSels:
                 addys.append(entry.address_str)
         if addys:
-            pay_to(addys)
+            if self.mode == ModePicker:
+                utils.get_callback(self, 'on_pay_to')(addys)
+            else:
+                pay_to(addys)
+
 
     @objc_method
     def showNewEditForm_(self, index : int) -> None:
@@ -656,10 +666,11 @@ def cleanup_address_remove_colon(result : str) -> str:
                 pass
     return result
 
-def pay_to(addys : list) -> None:
+def pay_to(addys : list) -> bool:
     print("payto:",*addys)
     if len(addys) > 1:
         gui.ElectrumGui.gui.show_error(title=_("Coming Soon"),
                                        message=_("This version of Electron Cash currently only supports sending to 1 address at a time! Sorry!"))
-        return
+        return False
     gui.ElectrumGui.gui.jump_to_send_with_pay_to(addys[0])
+    return True
