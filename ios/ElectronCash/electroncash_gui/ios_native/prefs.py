@@ -246,7 +246,7 @@ class PrefsVC(UITableViewController):
                     b.tag = TAG_BLOCK_EXPLORER
                     be = web.BE_sorted_list()
                     be = be if be is not None and len(be) > 0 else ["None"]
-                    beprefs = parent.config.get('block_explorer', None)
+                    beprefs = web.BE_from_config(parent.config)
                     if beprefs not in be:  beprefs = be[0]
                     b.setTitle_forState_(beprefs,UIControlStateNormal)
                     if b.allTargets.count <= 0:

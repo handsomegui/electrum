@@ -20,6 +20,7 @@
                 <outlet property="nameTit" destination="cdQ-9Z-b7F" id="qIq-Gb-wtG"/>
                 <outlet property="okBut" destination="hcv-1d-5WE" id="NMk-dv-VAw"/>
                 <outlet property="qrBut" destination="amv-xH-GTb" id="Exq-gp-GRu"/>
+                <outlet property="topCS" destination="EGe-44-jcg" id="wgf-p9-JEN"/>
                 <outlet property="view" destination="Ndc-Dw-vXf" id="cmy-qP-wlj"/>
             </connections>
         </placeholder>

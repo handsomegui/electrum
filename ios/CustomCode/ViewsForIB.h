@@ -65,6 +65,7 @@
 @property (nonatomic, weak) IBOutlet UIButton *cancelBut;
 @property (nonatomic, weak) IBOutlet UIButton *cpyAddressBut;
 @property (nonatomic, weak) IBOutlet UIButton *cpyNameBut;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS;
 @end
 
 // dummy stub for Interface Builder -- actual implementation is in python in amountedit.py

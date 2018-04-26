@@ -446,6 +446,7 @@ class NewContactVC(NewContactBase):
     
     qr = objc_property()
     qrvc = objc_property()
+    topCSOrig = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
@@ -460,6 +461,7 @@ class NewContactVC(NewContactBase):
     def dealloc(self) -> None:
         self.qrvc = None
         self.qr = None
+        self.topCSOrig = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         print("NewContactVC dealloc")
@@ -576,6 +578,18 @@ class NewContactVC(NewContactBase):
         self.address.placeholdeer = _("Address")
         self.okBut.setTitle_forState_(_("OK"), UIControlStateNormal)
         self.cancelBut.setTitle_forState_(_("Cancel"), UIControlStateNormal)
+
+    @objc_method
+    def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
+        if self.topCSOrig is not None:
+            self.topCS.constant = self.topCSOrig
+
+    @objc_method
+    def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
+        if self.topCSOrig is None:
+            self.topCSOrig = self.topCS.constant
+        if utils.is_landscape():
+            self.topCS.constant = 0
 
 
 def get_contacts() -> list:

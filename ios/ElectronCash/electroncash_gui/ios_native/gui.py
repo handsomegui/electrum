@@ -1047,7 +1047,7 @@ class ElectrumGui(PrintError):
         assert which is not None and item is not None
         url = web.BE_URL(self.config, which, item)
         if UIApplication.sharedApplication.respondsToSelector_(SEL(b'openURL:options:completionHandler:')):
-            UIApplication.sharedApplication.openURL_options_completionHandler_(NSURL.URLWithString_(url),{},None)
+            UIApplication.sharedApplication.openURL_options_completionHandler_(NSURL.URLWithString_(url),dict(),None)
         else:
             UIApplication.sharedApplication.openURL_(NSURL.URLWithString_(url))
 

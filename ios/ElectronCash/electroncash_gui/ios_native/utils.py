@@ -59,6 +59,13 @@ def is_iphone() -> bool:
 def is_ipad() -> bool:
     return not is_iphone()
 
+def is_landscape() -> bool:
+    o = UIApplication.sharedApplication.statusBarOrientation
+    return bool(o in [UIInterfaceOrientationLandscapeLeft,UIInterfaceOrientationLandscapeRight])
+
+def is_portrait() -> bool:
+    return not is_landscape()
+
 def get_fn_and_ext(fileName: str) -> tuple:
     *p1, ext = fileName.split('.')
     fn=''

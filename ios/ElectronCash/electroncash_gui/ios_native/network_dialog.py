@@ -432,8 +432,7 @@ class NetworkDialogVC(UIViewController):
             v = sv.subviews()[0]
             frame = v.frame
             frame.origin.y = 700 - frame.size.height
-            o = UIApplication.sharedApplication.statusBarOrientation
-            if o in [UIInterfaceOrientationLandscapeLeft,UIInterfaceOrientationLandscapeRight]:
+            if utils.is_landscape():
                 frame.origin.y -= 100
                 #print("WAS LANDSCAPE")
             #print("frame=%f,%f,%f,%f"%(frame.origin.x,frame.origin.y,frame.size.width,frame.size.height))
