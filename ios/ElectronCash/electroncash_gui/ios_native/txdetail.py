@@ -277,15 +277,16 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     wallet = parent.wallet
     base_unit = parent.base_unit()
     format_amount = parent.format_amount
+    #print("conf", conf,"label",label,"v_str",v_str,"date",date,"ts",ts,"status",status)
     if tx is None:
         tx = wallet.transactions.get(tx_hash, None)
         if tx is not None: tx.deserialize()
     if tx is None: raise ValueError("Cannot find tx for hash: %s"%tx_hash)
     tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet.get_tx_info(tx)
     size = tx.estimated_size()
-    # todo: broadcast button based on 'can_broadcast'
     can_sign = not tx.is_complete() and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
-    # todo: something akin to this: self.sign_button.setEnabled(can_sign)
+
+    #print("conf2",conf,"status_",status_,"label_",label,"amount",amount,"timestamp",timestamp,"exp_n",exp_n)
 
     wasNew = False
     if not vc.viewIfLoaded:
@@ -376,7 +377,13 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
 
     statusTit.text = _("Status:")
     if not img:
-        img = UIImage.imageNamed_("empty.png")
+        #try and auto-determine the appropriate image if it has some confirmations and img is still null
+        try:
+            c = min(int(conf), 6)
+            if c >= 0: img = statusImages[c+3]
+        except:
+            pass
+        if not img: img = UIImage.imageNamed_("empty.png")
     statusIV.image = img
     ff = str(status_) #status_str
     try:
@@ -600,10 +607,8 @@ class TxDetail(TxDetailBase):
         def sign_done(success) -> None:
             nonlocal entry
             if success:
-                entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[-2])
                 tx_hash, *dummy = wallet.get_tx_info(tx)
                 entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
-                entry = utils.set_namedtuple_field(entry, 'status_str', _("Signed"))
                 utils.nspy_put_byname(self, entry, 'tx_entry')
                 setup_transaction_detail_view(self) # recreate ui
             #else:

@@ -651,6 +651,7 @@ class SendVC(SendBase):
         tx = Transaction(txraw)
         tx.deserialize()
         tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet().get_tx_info(tx)
+        #print("send: status_",status_,"label_",label_,"amount",amount,"conf",conf)
         size = tx.estimated_size()
         conf = 0 if conf is None else conf
         timestamp = time.time() if timestamp is None else timestamp
@@ -658,8 +659,8 @@ class SendVC(SendBase):
         doFX = fx() and fx().is_enabled()
         ccy = fx().get_currency() if doFX else None
         fiat_amount_str = str(self.fiat.text) if doFX else None 
-        #HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
-        entry = HistoryEntry(tx,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,statusImages[-1])
+        #HistoryEntry = namedtuple("HistoryEntry", "tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
+        entry = HistoryEntry(tx,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,None)#statusImages[-1])
         def newLabel(l):
             self.desc.text = l
             
