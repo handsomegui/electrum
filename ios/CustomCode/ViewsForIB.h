@@ -162,6 +162,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 };
 
 @class WalletsDrawerHelper;
+@class WalletsTxsHelper;
 
 @interface WalletsVCBase : UIViewController
 @property (nonatomic,assign) WalletsStatusMode status;
@@ -173,16 +174,21 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UILabel *walletAmount;
 @property (nonatomic, weak) IBOutlet UILabel *walletUnit;
 @property (nonatomic, strong) IBOutlet WalletsDrawerHelper *drawerHelper;
+@property (nonatomic, strong) IBOutlet WalletsTxsHelper *txsHelper;
 @property (nonatomic, weak) UIView *addWalletView;
 
 #pragma mark Main View Area Related
 @property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
+@property (nonatomic, weak) IBOutlet UIButton *sendBut;
+@property (nonatomic, weak) IBOutlet UIButton *receiveBut;
 @end
 
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsVC : WalletsVCBase
 -(IBAction)toggleDrawer; // declared here for IB, implemented in python wallets.py
 -(IBAction)didChangeSegment:(DZNSegmentedControl *)control; // implemented in python wallets.py
+-(IBAction)onSendBut;
+-(IBAction)onReceiveBut;
 @end
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsNav : WalletsNavBase
@@ -201,4 +207,13 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsDrawerHelper : WalletsDrawerHelperBase
 @end
+
+@interface WalletsTxsHelperBase : NSObject
+@property (nonatomic, weak) IBOutlet WalletsVC *vc;
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@end
+// stub to represent python -- implemented in python wallets.py
+@interface WalletsTxsHelper : WalletsTxsHelperBase
+@end
+
 #endif /* ViewsForIB_h */

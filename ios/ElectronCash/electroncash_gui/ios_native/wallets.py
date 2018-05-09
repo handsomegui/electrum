@@ -37,6 +37,7 @@ class WalletsVC(WalletsVCBase):
         # put additional setup code here
         self.status = StatusOffline # re-does the text/copy and colors
         self.walletAmount.text = "0"
+        # Custom Segmented Control setup
         self.segControl.items = [_("Transactions"), _("Requests")]
         self.segControl.showsCount = False
         cols = [65.0/255.0, 204.0/255.0]
@@ -44,6 +45,8 @@ class WalletsVC(WalletsVCBase):
         self.segControl.setTitleColor_forState_(UIColor.colorWithWhite_alpha_(cols[1], 1.0),UIControlStateNormal)
         self.segControl.font = UIFont.systemFontOfSize_weight_(16.0, UIFontWeightSemibold)
         self.segControl.autoAdjustSelectionIndicatorWidth = False
+        # Can't set this property from IB, so we do it here programmatically to create the stroke around the receive button
+        self.receiveBut.layer.borderColor = self.sendBut.backgroundColor.CGColor
     
     @objc_method
     def viewDidLoad(self) -> None:
@@ -96,6 +99,15 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def didChangeSegment_(self, control : ObjCInstance) -> None:
         print("Did change segment", self.segControl.selectedSegmentIndex)
+        
+    @objc_method
+    def onSendBut(self) -> None:
+        print("Send button clicked, todo: IMPLEMENT")
+
+    @objc_method
+    def onReceiveBut(self) -> None:
+        print("Receive button clicked, todo: IMPLEMENT")
+
 
 class WalletsDrawerHelper(WalletsDrawerHelperBase):
     selectedRow = objc_property()
@@ -117,6 +129,9 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
                 self.vc.addWalletView = obj
             elif isinstance(obj, UIGestureRecognizer):
                 obj.addTarget_action_(self.vc, SEL(b'addWallet'))
+        nib = UINib.nibWithNibName_bundle_("WalletsDrawerCell", None)
+        self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsDrawerCell")
+
         
        
     @objc_method
@@ -184,3 +199,44 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
             iv.image = None
         self.selectedRow = indexPath.row            
         
+class WalletsTxsHelper(WalletsTxsHelperBase):
+        
+    @objc_method
+    def dealloc(self) -> None:
+        #cleanup code here
+        send_super(__class__, self, 'dealloc')
+     
+    @objc_method 
+    def miscSetup(self) -> None:
+        #nib = UINib.nibWithNibName_bundle_("TODO", None)
+        #self.tv.registerNib_forCellReuseIdentifier_(nib, "TODO")
+        pass
+        
+       
+    @objc_method
+    def numberOfSectionsInTableView_(self, tableView) -> int:
+        return 1
+
+    @objc_method
+    def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
+        # TODO: Implement this properly
+        return 1
+
+
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
+        identifier = "Cell"
+        cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+        if cell is None:
+            cell =  UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+        cell.textLabel.text = _("No transactions")
+        cell.detailTextLabel.text = _("No transactions for this wallet exist on the blockchain.")
+        return cell
+
+    #@objc_method
+    #def tableView_heightForRowAtIndexPath_(self, tv : ObjCInstance, indexPath : ObjCInstance) -> float:
+    #    return 86.0
+
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
+        tv.deselectRowAtIndexPath_animated_(indexPath,True)

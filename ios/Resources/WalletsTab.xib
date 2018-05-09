@@ -35,14 +35,25 @@
                                     <constraint firstAttribute="height" constant="32" id="9JB-Fw-gdf"/>
                                 </constraints>
                             </view>
-                            <view clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="UzK-mX-oKs" customClass="DZNSegmentedControl">
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UzK-mX-oKs" customClass="DZNSegmentedControl">
                                 <rect key="frame" x="15" y="64" width="345" height="45"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="45" id="Gu4-I6-xK4"/>
+                                </constraints>
                                 <connections>
                                     <action selector="didChangeSegment:" destination="5hO-gj-WnP" eventType="valueChanged" id="ZBw-XA-toS"/>
                                 </connections>
                             </view>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="u0V-Yv-emp" userLabel="TxsTableView">
+                                <rect key="frame" x="15" y="124" width="345" height="345"/>
+                                <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="tintColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="calibratedRGB"/>
+                                <connections>
+                                    <outlet property="dataSource" destination="qSh-mO-1cK" id="jM7-PQ-VPJ"/>
+                                    <outlet property="delegate" destination="qSh-mO-1cK" id="XDR-6G-QRo"/>
+                                </connections>
+                            </tableView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIH-KO-Jwz">
                                 <rect key="frame" x="15" y="0.0" width="345" height="63"/>
                                 <subviews>
@@ -146,15 +157,67 @@
                                     <userDefinedRuntimeAttribute type="boolean" keyPath="layer.masksToBounds" value="NO"/>
                                 </userDefinedRuntimeAttributes>
                             </view>
+                            <button opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rlV-nI-e8g">
+                                <rect key="frame" x="15" y="488" width="167" height="50"/>
+                                <color key="backgroundColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="50" id="HjB-FK-ybq"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
+                                <state key="normal" title="Send">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                        <integer key="value" value="4"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                                <connections>
+                                    <action selector="onSendBut" destination="5hO-gj-WnP" eventType="primaryActionTriggered" id="4Pv-Pa-PXY"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ncr-lp-w8U">
+                                <rect key="frame" x="193" y="488" width="167" height="50"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
+                                <state key="normal" title="Receive">
+                                    <color key="titleColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                                </state>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                        <integer key="value" value="4"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.borderWidth">
+                                        <real key="value" value="1.5"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                                <connections>
+                                    <action selector="onReceiveBut" destination="5hO-gj-WnP" eventType="primaryActionTriggered" id="Vzp-tL-mEB"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="xTn-fY-y6D" firstAttribute="leading" secondItem="gET-pO-SCv" secondAttribute="leading" id="0ka-Rv-mGL"/>
+                            <constraint firstItem="Ncr-lp-w8U" firstAttribute="centerY" secondItem="rlV-nI-e8g" secondAttribute="centerY" id="10e-j9-BmS"/>
+                            <constraint firstAttribute="trailing" secondItem="UzK-mX-oKs" secondAttribute="trailing" constant="15" id="2wv-rL-TYy"/>
                             <constraint firstItem="VIH-KO-Jwz" firstAttribute="top" secondItem="xr5-ef-fDA" secondAttribute="bottom" id="5Tb-iO-A2B"/>
                             <constraint firstItem="VIH-KO-Jwz" firstAttribute="leading" secondItem="gET-pO-SCv" secondAttribute="leading" constant="15" id="ANO-ol-D8E"/>
+                            <constraint firstItem="u0V-Yv-emp" firstAttribute="leading" secondItem="gET-pO-SCv" secondAttribute="leading" constant="15" id="Dzo-sV-6p4"/>
+                            <constraint firstItem="Ncr-lp-w8U" firstAttribute="height" secondItem="rlV-nI-e8g" secondAttribute="height" id="HZt-uz-EgV"/>
+                            <constraint firstItem="u0V-Yv-emp" firstAttribute="top" secondItem="UzK-mX-oKs" secondAttribute="bottom" constant="15" id="I6I-aX-uvc"/>
                             <constraint firstAttribute="trailing" secondItem="VIH-KO-Jwz" secondAttribute="trailing" constant="15" id="I8e-u6-pcW"/>
+                            <constraint firstItem="UzK-mX-oKs" firstAttribute="leading" secondItem="gET-pO-SCv" secondAttribute="leading" constant="15" id="KRm-4G-red"/>
+                            <constraint firstItem="rlV-nI-e8g" firstAttribute="leading" secondItem="u0V-Yv-emp" secondAttribute="leading" id="OeP-bj-3fy"/>
+                            <constraint firstAttribute="trailing" secondItem="u0V-Yv-emp" secondAttribute="trailing" constant="15" id="QYB-HQ-r2D"/>
+                            <constraint firstItem="rlV-nI-e8g" firstAttribute="top" secondItem="u0V-Yv-emp" secondAttribute="bottom" constant="19" id="RPl-qw-i7k"/>
+                            <constraint firstItem="x1s-vf-ZhE" firstAttribute="top" secondItem="rlV-nI-e8g" secondAttribute="bottom" constant="16" id="o6l-Jh-SBv"/>
+                            <constraint firstItem="Ncr-lp-w8U" firstAttribute="leading" secondItem="rlV-nI-e8g" secondAttribute="trailing" constant="11" id="q5t-UN-2Am"/>
                             <constraint firstItem="xTn-fY-y6D" firstAttribute="top" secondItem="xr5-ef-fDA" secondAttribute="bottom" id="uZB-nQ-cuU"/>
+                            <constraint firstItem="Ncr-lp-w8U" firstAttribute="trailing" secondItem="u0V-Yv-emp" secondAttribute="trailing" id="xl0-D0-pgF"/>
+                            <constraint firstItem="Ncr-lp-w8U" firstAttribute="width" secondItem="rlV-nI-e8g" secondAttribute="width" id="zKE-ql-GYN"/>
                             <constraint firstAttribute="trailing" secondItem="xTn-fY-y6D" secondAttribute="trailing" id="zpm-RN-3v8"/>
+                            <constraint firstItem="UzK-mX-oKs" firstAttribute="top" secondItem="VIH-KO-Jwz" secondAttribute="bottom" constant="1" id="zub-co-hqg"/>
                         </constraints>
                     </view>
                     <toolbarItems/>
@@ -228,9 +291,12 @@
                     </navigationItem>
                     <connections>
                         <outlet property="drawerHelper" destination="5Fi-QJ-VBN" id="6Xp-Cw-0UK"/>
+                        <outlet property="receiveBut" destination="Ncr-lp-w8U" id="r2U-zk-0bh"/>
                         <outlet property="segControl" destination="UzK-mX-oKs" id="E1A-wn-cge"/>
+                        <outlet property="sendBut" destination="rlV-nI-e8g" id="GEu-Yz-kyX"/>
                         <outlet property="statusBlurb" destination="atn-VB-xdN" id="CS2-7V-DjU"/>
                         <outlet property="statusLabel" destination="lYw-Ew-yYB" id="Y5R-MU-vsd"/>
+                        <outlet property="txsHelper" destination="qSh-mO-1cK" id="ab9-o5-bHD"/>
                         <outlet property="walletAmount" destination="BuO-xT-ft9" id="5O7-uc-dXv"/>
                         <outlet property="walletName" destination="Kex-Zb-fxf" id="3Mx-PJ-Jse"/>
                         <outlet property="walletUnit" destination="WuM-H7-ckL" id="afw-e4-6eg"/>
@@ -261,6 +327,12 @@
                 <outlet property="drawerHeight" destination="z2S-er-bZS" id="6v3-li-q4B"/>
                 <outlet property="tv" destination="q82-K5-LwN" id="g7K-J6-oty"/>
                 <outlet property="vc" destination="5hO-gj-WnP" id="aAX-a9-Lw6"/>
+            </connections>
+        </customObject>
+        <customObject id="qSh-mO-1cK" userLabel="Tx History Helper" customClass="WalletsTxsHelper">
+            <connections>
+                <outlet property="tv" destination="u0V-Yv-emp" id="yt8-QG-cpY"/>
+                <outlet property="vc" destination="5hO-gj-WnP" id="eIe-SF-uv2"/>
             </connections>
         </customObject>
     </objects>

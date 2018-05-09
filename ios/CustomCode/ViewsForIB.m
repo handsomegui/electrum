@@ -130,3 +130,8 @@
 
 @end
 
+@implementation WalletsTxsHelperBase
+// auto-sythesized properties
+@end
+
+
