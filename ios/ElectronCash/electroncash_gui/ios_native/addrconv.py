@@ -26,7 +26,7 @@ class AddrConvVC(AddrConvBase):
     def dealloc(self) -> None:
         self.qr = None
         self.qrvc = None
-        send_supert(__class__, self, 'dealloc')
+        send_super(__class__, self, 'dealloc')
     
     @objc_method
     def loadView(self) -> None:

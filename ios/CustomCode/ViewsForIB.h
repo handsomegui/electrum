@@ -149,4 +149,51 @@
 - (IBAction) onCpyBut:(id)sender; // overridden in TxDetail (python)
 - (IBAction) onQRBut:(id)sender; // overridden in TxDetail (python)
 @end
+
+@interface WalletsNavBase : UINavigationController
+@end
+
+typedef NS_ENUM(NSInteger, WalletsStatusMode) {
+    WalletsStatusOffline = 0,
+    WalletsStatusOnline = 1,
+    WalletsStatusDownloadingHeaders = 2,
+    WalletsStatusSynchronizing = 3
+};
+
+@class WalletsDrawerHelper;
+
+@interface WalletsVCBase : UIViewController
+@property (nonatomic,assign) WalletsStatusMode status;
+@property (nonatomic,weak) IBOutlet UILabel *statusLabel;
+@property (nonatomic,weak) IBOutlet UILabel *statusBlurb;
+
+#pragma mark Drawer Related
+@property (nonatomic, weak) IBOutlet UILabel *walletName;
+@property (nonatomic, weak) IBOutlet UILabel *walletAmount;
+@property (nonatomic, weak) IBOutlet UILabel *walletUnit;
+@property (nonatomic, strong) IBOutlet WalletsDrawerHelper *drawerHelper;
+@property (nonatomic, weak) UIView *addWalletView;
+@end
+
+// stub to represent python -- implemented in python wallets.py
+@interface WalletsVC : WalletsVCBase
+-(IBAction)toggleDrawer;
+@end
+// stub to represent python -- implemented in python wallets.py
+@interface WalletsNav : WalletsNavBase
+@end
+@interface WalletsDrawerHelperBase : NSObject
+@property (nonatomic, weak) IBOutlet WalletsVC *vc;
+@property (nonatomic, weak) IBOutlet UIImageView *chevron;
+@property (nonatomic, weak) IBOutlet UIView *drawer; // the wallet 'drawer' dropdown
+@property (nonatomic, weak) IBOutlet UIView *drawerBottom; // the wallet 'drawer' dropdown's bottom (sometimes hidden) area
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *drawerHeight;
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, assign) BOOL isOpen;
+-(void)openAnimated:(BOOL)animated;
+-(void)closeAnimated:(BOOL)animated;
+@end
+// stub to represent python -- implemented in python wallets.py
+@interface WalletsDrawerHelper : WalletsDrawerHelperBase
+@end
 #endif /* ViewsForIB_h */

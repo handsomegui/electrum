@@ -26,6 +26,12 @@
 - (UIImage *) renderToImage;
 /// Same as above, but just for a subrect of the view
 - (UIImage *) renderToImage:(CGRect)rectInView;
+/// Animates a view's background from a particular color to another color (if reverses=YES then it animates it back to start as well)
+-(void) backgroundColorAnimationFromColor:(UIColor *)startColor
+                                  toColor:(UIColor *)destColor
+                                 duration:(CGFloat)duration
+                                 reverses:(BOOL)reverses
+                               completion:(void(^)(void))completion;
 @end
 
 

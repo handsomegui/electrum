@@ -49,6 +49,7 @@ from . import network_dialog
 from . import coins
 from . import addrconv
 from . import contacts
+from . import wallets
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -175,7 +176,7 @@ class GuiHelper(NSObject):
         moreTab = ElectrumGui.gui.tabController.moreNavigationController        
         if moreTab is not None and nav.ptr.value == moreTab.ptr.value:
             depth = 2
-        is_hidden = True if len(nav.viewControllers) > depth else False
+        is_hidden = True if len(nav.viewControllers) > depth or isinstance(nav, wallets.WalletsNav) else False
         #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
         nav.setToolbarHidden_animated_(is_hidden, True)
         
@@ -255,6 +256,8 @@ class ElectrumGui(PrintError):
         self.addrconvVC = None
         self.contactsVC = None
         self.contactsNav = None
+        self.walletsNav = None
+        self.walletsVC = None
         
         self.prefsVC = None
         self.prefsNav = None
@@ -309,6 +312,15 @@ class ElectrumGui(PrintError):
         self.contactsVC = cntcts = contacts.ContactsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
         self.helper.bindRefreshControl_(self.contactsVC.refreshControl)
         
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsTab",None,None)
+        for obj in objs:
+            if isinstance(obj, wallets.WalletsNav):
+                self.walletsNav = nav0 = obj
+                self.walletsVC = self.walletsNav.topViewController
+                break
+        if not self.walletsNav:
+            raise Exception('Wallets Nav is None!')
+
         self.historyNav = nav1 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
         self.sendNav = nav2 = UINavigationController.alloc().initWithRootViewController_(snd).autorelease()
         self.receiveNav = nav3 = UINavigationController.alloc().initWithRootViewController_(rcv).autorelease()
@@ -320,12 +332,12 @@ class ElectrumGui(PrintError):
         unimplemented_navs = []
         #unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
-        self.tabs = [nav1, nav2, nav3, nav4, nav5, nav6, nav7, *unimplemented_navs]
+        self.tabs = [nav0, nav1, nav2, nav3, nav4, nav5, nav6, nav7, *unimplemented_navs]
         self.rootVCs = dict()
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
-            nav.tabBarItem.title = vc.tabBarItem.title
-            nav.tabBarItem.image = vc.tabBarItem.image
+            #nav.tabBarItem.title = vc.tabBarItem.title
+            #nav.tabBarItem.image = vc.tabBarItem.image
             nav.tabBarItem.tag = i
             nav.viewControllers[0].tabBarItem.tag = i
             self.rootVCs[nav.ptr.value] = vc
@@ -681,10 +693,16 @@ class ElectrumGui(PrintError):
         
         if not self.wallet or not self.daemon:
             utils.NSLog("(Returning early.. wallet and/or daemon stopped)")
+            self.walletVC.status = wallets.StatusOffline
             return
+        
+        walletStatus = wallets.StatusOffline
+        walletBalanceTxt = ""
+        walletUnitTxt = ""
 
         if self.daemon.network is None or not self.daemon.network.is_running():
             text = _("Offline")
+            walletUnitTxt = text
             icon = "status_disconnected.png"
 
         elif self.daemon.network.is_connected():
@@ -695,17 +713,28 @@ class ElectrumGui(PrintError):
             # Display the synchronizing message in that case.
             if not self.wallet.up_to_date or server_height == 0:
                 text = _("Synchronizing...")
+                walletUnitTxt = text
                 icon = "status_waiting.png"
+                walletStatus = wallets.StatusSynchronizing
             elif server_lag > 1:
                 text = _("Server is lagging ({} blocks)").format(server_lag)
+                walletUnitTxt = text
                 icon = "status_lagging.png"
+                walletStatus = wallets.StatusSynchronizing
             else:
+                walletStatus = wallets.StatusOnline 
                 c, u, x = self.wallet.get_balance()
+                walletBalanceTxt = self.format_amount(c)
+                walletUnitTxt = self.base_unit()
                 text =  _("Balance" ) + ": %s "%(self.format_amount_and_units(c))
                 if u:
-                    text +=  " [%s unconfirmed]"%(self.format_amount(u, True).strip())
+                    s = " [%s unconfirmed]"%(self.format_amount(u, True).strip())
+                    text +=  s
+                    walletUnitTxt += s
                 if x:
-                    text +=  " [%s unmatured]"%(self.format_amount(x, True).strip())
+                    s = " [%s unmatured]"%(self.format_amount(x, True).strip())
+                    text += s
+                    walletUnitTxt += s
 
                 # append fiat balance and price
                 if self.daemon.fx.is_enabled():
@@ -726,10 +755,13 @@ class ElectrumGui(PrintError):
             '''
             if lh is not None and sh is not None and lh >= 0 and sh > 0 and lh < sh:
                 show_dl_pct = int((lh*100.0)/float(sh))
+                walletStatus = wallets.StatusDownloadingHeaders
                 
         else:
             text = _("Not connected")
+            walletUnitTxt = text
             icon = "status_disconnected.png"
+            walletStatus = wallets.StatusOffline
 
         #self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
         #self.balance_label.setText(text)
@@ -752,6 +784,11 @@ class ElectrumGui(PrintError):
             self.show_downloading_notif(_("Downloading headers {}% ...").format(show_dl_pct) if show_dl_pct > 0 else None)
         else:
             self.dismiss_downloading_notif()
+        
+        self.walletsVC.status = walletStatus
+        self.walletsVC.walletAmount.text = walletBalanceTxt
+        self.walletsVC.walletUnit.text = walletUnitTxt
+
             
     def notify_transactions(self):
         if not self.daemon.network or not self.daemon.network.is_connected():

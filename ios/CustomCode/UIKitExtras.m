@@ -198,6 +198,25 @@ static double Rand(double lo, double hi)
 	return img2;
 }
 
+-(void) backgroundColorAnimationFromColor:(UIColor *)startColor toColor:(UIColor *)destColor duration:(CGFloat)duration reverses:(BOOL)reverses completion:(void(^)(void))completion
+{
+    [self.layer removeAllAnimations];
+    self.backgroundColor = startColor;
+    if (reverses) duration /= 2.0;
+
+    [UIView animateWithDuration:duration delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
+        self.backgroundColor = destColor;
+    } completion:^(BOOL finished) {
+        if (!finished) return;
+        if (reverses) {
+            [UIView animateWithDuration:duration delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
+                self.backgroundColor = startColor;
+            } completion:^(BOOL finished2) {
+                if (completion && finished2) completion();
+            }];
+        } else if (completion) completion();
+    }];
+}
 @end
 
 
