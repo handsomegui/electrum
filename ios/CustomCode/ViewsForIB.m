@@ -98,8 +98,8 @@
 -(void)openAnimated:(BOOL)animated {
 
     CGRect frame = self.drawer.frame, frameBottom = self.drawerBottom.frame;
-    frame.size.height = 302.0;
-    frameBottom.size.height = 240.0;
+    frame.size.height = 300.0;
+    frameBottom.size.height = 237.0;
 
     if (animated && !isRotating) {
 

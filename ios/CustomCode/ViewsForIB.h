@@ -10,6 +10,7 @@
 #define ViewsForIB_h
 
 #import <UIKit/UIKit.h>
+#import "DZNSegmentedControl/DZNSegmentedControl.h"
 
 @interface HistoryCellLarge : UITableViewCell
 @property (nonatomic, weak) IBOutlet UIImageView *icon;
@@ -173,11 +174,15 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UILabel *walletUnit;
 @property (nonatomic, strong) IBOutlet WalletsDrawerHelper *drawerHelper;
 @property (nonatomic, weak) UIView *addWalletView;
+
+#pragma mark Main View Area Related
+@property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
 @end
 
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsVC : WalletsVCBase
--(IBAction)toggleDrawer;
+-(IBAction)toggleDrawer; // declared here for IB, implemented in python wallets.py
+-(IBAction)didChangeSegment:(DZNSegmentedControl *)control; // implemented in python wallets.py
 @end
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsNav : WalletsNavBase
