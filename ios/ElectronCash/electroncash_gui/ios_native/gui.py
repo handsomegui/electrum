@@ -931,10 +931,15 @@ class ElectrumGui(PrintError):
             title = py_from_ns(presented.visibleViewController.title)
         except:
             pass
-        self.tabController.dismissViewControllerAnimated_completion_(True, None)
+        vc = self.tabController
+        if but and but.tag:
+            vc = ObjCInstance(objc_id(but.tag))
+        vc.dismissViewControllerAnimated_completion_(True, None)
         
     def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = False) -> ObjCInstance:
         closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self.helper, SEL(b'onModalClose:')).autorelease()
+        # poor man's weak ref -- used in above on_modal_close() to properly close nested modals
+        closeButton.tag = vc.ptr.value
         if leftSide:
             extra = vc.navigationItem.leftBarButtonItems if vc.navigationItem.leftBarButtonItems else [] 
             vc.navigationItem.leftBarButtonItems = [closeButton, *extra]

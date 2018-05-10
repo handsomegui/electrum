@@ -525,9 +525,7 @@ class AddressesTableVC(UITableViewController):
             if section is not None and indexPath.row < len(section[1]):
                 entry = section[1][indexPath.row]
                 if self.mode == ModeNormal:
-                    addrDetail = AddressDetail.alloc().init().autorelease()
-                    utils.nspy_put_byname(addrDetail, entry, 'entry')
-                    self.navigationController.pushViewController_animated_(addrDetail, True)
+                    PushDetail(entry, self.navigationController)
                 else:
                     cb = utils.get_callback(self, 'on_picked')
                     if callable(cb): cb(entry)
@@ -734,3 +732,31 @@ def present_modal_address_picker(callback) -> None:
     utils.add_callback(avc, 'on_picked', pickedAddress)
     parent.add_navigation_bar_close_to_modal_vc(avc)
     parent.get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)
+
+def EntryForAddress(address : str) -> object:
+    vc = gui.ElectrumGui.gui.addressesVC
+    if not vc:
+        raise ValueError('EntryForAddress: requires a valid ElectrumGui.addressesVC instance!')
+    address = str(address)
+    address = Address.from_string(address)
+    addrData = utils.nspy_get_byname(vc, 'addrData')
+    if not addrData: return
+    d = addrData.getSections()
+    for section in d.keys():
+        title, entries = d[section]
+        for row,entry in enumerate(entries):
+            if str(entry.address) == str(address):
+                return entry
+    return None
+
+def PushDetail(address_or_entry : object, navController : ObjCInstance) -> ObjCInstance:
+    entry = None
+    if isinstance(address_or_entry, (str,Address)): entry = EntryForAddress(str(address_or_entry))
+    elif isinstance(address_or_entry, AddressData.Entry):
+        entry = address_or_entry
+    if not entry:
+        raise ValueError('PushDetailForAddress -- missing entry for address!')
+    addrDetail = AddressDetail.alloc().init().autorelease()
+    utils.nspy_put_byname(addrDetail, entry, 'entry')
+    navController.pushViewController_animated_(addrDetail, True)
+    return addrDetail

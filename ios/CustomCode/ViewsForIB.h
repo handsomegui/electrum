@@ -151,6 +151,10 @@
 - (IBAction) onQRBut:(id)sender; // overridden in TxDetail (python)
 @end
 
+@interface TxInputsOutputsTVCBase : NSObject
+@property (nonatomic, weak) TxDetailBase *txDetailVC; // the TxDetail that is holding us
+@end
+
 @interface WalletsNavBase : UINavigationController
 @end
 

@@ -48,6 +48,8 @@
 - (IBAction) onQRBut:(id)sender {} // overridden in TxDetail (python)
 @end
 
+@implementation TxInputsOutputsTVCBase
+@end
 
 @implementation WalletsNavBase
 // properties auto-synthesized

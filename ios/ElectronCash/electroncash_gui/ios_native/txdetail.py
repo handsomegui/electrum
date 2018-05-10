@@ -1,22 +1,23 @@
 from electroncash.i18n import _, language
 from . import utils
 from . import gui
-from .custom_objc import TxDetailBase
+from .custom_objc import TxDetailBase, TxInputsOutputsTVCBase
 from .uikit_bindings import *
 from .history import HistoryEntry, statusImages
+from . import addresses
 from electroncash.transaction import Transaction
 from electroncash.address import Address, PublicKey
 from electroncash.util import timestamp_to_datetime
 import json
 
 # ViewController used for the TxDetail view's "Inputs" and "Outputs" tables.. not exposed.. managed internally
-class TxInputsOutputsTVC(NSObject):
+class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
     
     tagin = objc_property()
     tagout = objc_property()
     ts = objc_property()
-    modalParentVC = objc_property()
-    
+    # weak properties from Base:
+    #  txDetailVC; // the TxDetail that is holding us
     @objc_method
     def initWithInputTV_outputTV_timestamp_(self, inputTV : ObjCInstance, outputTV : ObjCInstance, ts : float) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
@@ -50,7 +51,6 @@ class TxInputsOutputsTVC(NSObject):
         self.tagin = None
         self.tagout = None
         self.ts = None
-        self.modalParentVC = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
     
@@ -152,7 +152,7 @@ class TxInputsOutputsTVC(NSObject):
                 else:
                     cell.backgroundColor = colorMine
                 
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator#UITableViewCellAccessoryDetailDisclosureButton#UITableViewCellAccessoryDetailButton #
+            cell.accessoryType = UITableViewCellAccessoryNone #UITableViewCellAccessoryDisclosureIndicator#UITableViewCellAccessoryDetailDisclosureButton#UITableViewCellAccessoryDetailButton #
         except Exception as e:
             print("exception in %s: %s"%(__class__.name,str(e)))
             cell.textLabel.attributedText = None
@@ -176,7 +176,7 @@ class TxInputsOutputsTVC(NSObject):
         tx = utils.nspy_get(self)
         isInput = tv.tag == self.tagin
         x = tx.inputs()[indexPath.row] if isInput else tx.get_outputs()[indexPath.row]
-        vc = parent.get_presented_viewcontroller()
+        vc = self.txDetailVC
         title = _("Options")
         message = _("Transaction Input {}").format(indexPath.row) if isInput else _("Transaction Output {}").format(indexPath.row)
         
@@ -209,7 +209,8 @@ class TxInputsOutputsTVC(NSObject):
         def onQR(isAddr : bool) -> None:
             print ("onQR %s"%str(isAddr))
             data = getData(x, isAddr, isInput)
-            qrvc = utils.present_qrcode_vc_for_data(parent.get_current_nav_controller(), data)
+            vc = self.txDetailVC
+            qrvc = utils.present_qrcode_vc_for_data(vc, data)
             parent.add_navigation_bar_close_to_modal_vc(qrvc)
 
         def onBlkXplo() -> None:
@@ -241,15 +242,9 @@ class TxInputsOutputsTVC(NSObject):
                 addy = None
         if addy and parent.wallet and parent.wallet.is_mine(addy):
             def onShowAddy(addy):
-                def doJump() -> None:
-                    parent.jump_to_addresses_with_address(addy)
-                if self.modalParentVC:
-                    print("txdetail was modal, dismissing first then jumping to addresses")
-                    self.modalParentVC.dismissViewControllerAnimated_completion_(True, doJump)
-                else:
-                    #print("txdetail was NOT modal")
-                    doJump()
-            actions.insert(0, [ _("Show in Addresses Tab"), onShowAddy, addy ] )
+                addresses.PushDetail(addy,self.txDetailVC.navigationController)
+                
+            actions.insert(0, [ _("Address Details"), onShowAddy, addy ] )
             
         
         utils.show_alert(vc = vc,
@@ -263,10 +258,12 @@ class TxInputsOutputsTVC(NSObject):
     
 
         
-def CreateTxInputsOutputsTVC(tx : Transaction, itv : ObjCInstance, otv : ObjCInstance, timestamp : float) -> ObjCInstance:
+def CreateTxInputsOutputsTVC(txDetailVC : ObjCInstance, tx : Transaction, itv : ObjCInstance, otv : ObjCInstance, timestamp : float) -> ObjCInstance:
     tvc = TxInputsOutputsTVC.alloc()
     utils.nspy_put(tvc, tx)
-    return tvc.initWithInputTV_outputTV_timestamp_(itv,otv,timestamp).autorelease()
+    tvc = tvc.initWithInputTV_outputTV_timestamp_(itv,otv,timestamp).autorelease()
+    tvc.txDetailVC = txDetailVC
+    return tvc
 
 # returns the view itself, plus the copy button and the qrcode button, plus the (sometimes nil!!) UITextField for the editable description
 #  the copy and the qrcode buttons are so that caller may attach event handing to them
@@ -442,7 +439,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     # refreshes the tableview with data
     if wasNew:
         if ts is None: ts = time.time()
-        tvc = CreateTxInputsOutputsTVC(tx, inputsTV, outputsTV, float(ts))
+        tvc = CreateTxInputsOutputsTVC(vc, tx, inputsTV, outputsTV, float(ts))
     else:
         inputsTV.reloadData()
         outputsTV.reloadData()
@@ -484,8 +481,6 @@ class TxDetail(TxDetailBase):
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         entry = utils.nspy_get_byname(self, 'tx_entry')
         self.descTf.text = entry.label
-        if isinstance(self.inputsTV.delegate, TxInputsOutputsTVC):
-            self.inputsTV.delegate.modalParentVC = self.presentingViewController
         #todo update this stuff in realtime?
         
     @objc_method
@@ -496,10 +491,6 @@ class TxDetail(TxDetailBase):
     @objc_method
     def viewWillDisappear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
-        if isinstance(self.inputsTV.delegate, TxInputsOutputsTVC):
-            self.inputsTV.delegate.modalParentVC = None
-
-
 
     @objc_method
     def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
