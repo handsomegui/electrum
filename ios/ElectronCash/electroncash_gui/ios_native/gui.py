@@ -754,8 +754,9 @@ class ElectrumGui(PrintError):
 
                 # append fiat balance and price
                 if self.daemon.fx.is_enabled():
-                    text += self.daemon.fx.get_fiat_status_text(c + u + x,
-                        self.base_unit(), self.get_decimal_point()) or ''
+                    text += self.daemon.fx.get_fiat_status_text(c + u + x, self.base_unit(), self.get_decimal_point()) or ''
+                    fiatAmtTxt = self.daemon.fx.format_amount_and_units(c)
+                    walletUnitTxt += " (" + fiatAmtTxt + ")" if fiatAmtTxt and not u and not x else ''
                 if not self.daemon.network.proxy:
                     icon = "status_connected.png"
                 else:
