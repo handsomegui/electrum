@@ -134,7 +134,7 @@
 // auto-sythesized properties
 @end
 
-@implementation WalletsHistoryCell
+@implementation WalletsTxCell
 // auto-sythesized properties
 
 - (void) setDesc:(UILabel *)desc {

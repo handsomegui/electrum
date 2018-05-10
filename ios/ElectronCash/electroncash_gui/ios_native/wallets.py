@@ -63,21 +63,13 @@ class WalletsVC(WalletsVCBase):
         self.txsHelper.miscSetup()
 
     @objc_method
-    def updateHistoryFromWallet(self):
-        h = history.get_history(statusImagesOverride = StatusImages, forceNoFX = True)
-        if h is None:
-            # probable backgroundeed and/or wallet is closed
-            return
-        utils.nspy_put_byname(self, h, 'history')
-        utils.NSLog("Wallets: fetched %d entries from history",len(h))
-
-    @objc_method
     def refresh(self):
-        self.updateHistoryFromWallet()
-        if self.txsHelper.tv:
-            if self.txsHelper.tv.refreshControl: self.txsHelper.tv.refreshControl.endRefreshing()
-            self.txsHelper.tv.reloadData()
-        self.needsRefresh = False
+        if self.txsHelper:
+            self.txsHelper.loadTxsFromWallet()
+            if self.txsHelper.tv:
+                if self.txsHelper.tv.refreshControl: self.txsHelper.tv.refreshControl.endRefreshing()
+                self.txsHelper.tv.reloadData()
+            self.needsRefresh = False
 
     @objc_method
     def needUpdate(self):
@@ -258,8 +250,8 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
      
     @objc_method 
     def miscSetup(self) -> None:
-        nib = UINib.nibWithNibName_bundle_("WalletsHistoryCell", None)
-        self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsHistoryCell")
+        nib = UINib.nibWithNibName_bundle_("WalletsTxCell", None)
+        self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsTxCell")
        
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -268,13 +260,13 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         # TODO: Implement this properly
-        h = GetHistory(self.vc)
+        h = GetTxs(self)
         return 1 if not h else len(h)
 
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
-        h = GetHistory(self.vc)
+        h = GetTxs(self)
         if not h:
             identifier = "Cell"
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
@@ -283,10 +275,10 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
             cell.textLabel.text = _("No transactions")
             cell.detailTextLabel.text = _("No transactions for this wallet exist on the blockchain.")
             return cell            
-        identifier = "WalletsHistoryCell"
+        identifier = "WalletsTxCell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
         if cell is None:
-            objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsHistoryCell",None,None)
+            objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsTxCell",None,None)
             for obj in objs:
                 if isinstance(obj, UITableViewCell) and obj.reuseIdentifier == identifier:
                     cell = obj
@@ -312,7 +304,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
 
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv : ObjCInstance, indexPath : ObjCInstance) -> float:
-        return 86.0 if indexPath.row > 0 or GetHistory(self.vc) else 44.0
+        return 86.0 if indexPath.row > 0 or GetTxs(self) else 44.0
 
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
@@ -321,7 +313,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         if parent.wallet is None:
             return
         try:
-            entry = GetHistory(self.vc)[indexPath.row]
+            entry = GetTxs(self)[indexPath.row]
         except:
             return        
         tx = parent.wallet.transactions.get(entry.tx_hash, None)
@@ -330,9 +322,19 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         txd = txdetail.CreateTxDetailWithEntry(entry,tx=tx)        
         self.vc.navigationController.pushViewController_animated_(txd, True)
 
-def GetHistory(vc):
-    h = utils.nspy_get_byname(vc, 'history')
+    @objc_method
+    def loadTxsFromWallet(self) -> None:
+        h = history.get_history(statusImagesOverride = StatusImages, forceNoFX = True)
+        if h is None:
+            # probable backgroundeed and/or wallet is closed, so return early
+            return
+        utils.nspy_put_byname(self, h, 'txs')
+        utils.NSLog("Wallets: fetched %d entries from history",len(h))
+        
+# this should be a method of WalletsTxsHelper but it returns a python object, so it has to be a standalone global function
+def GetTxs(txsHelper):
+    h = utils.nspy_get_byname(txsHelper, 'txs')
     if h is None:
-        vc.updateHistoryFromWallet()
-        h = utils.nspy_get_byname(vc, 'history')            
+        txsHelper.loadTxsFromWallet()
+        h = utils.nspy_get_byname(txsHelper, 'txs')            
     return h

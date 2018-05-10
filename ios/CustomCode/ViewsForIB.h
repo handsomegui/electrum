@@ -216,7 +216,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface WalletsTxsHelper : WalletsTxsHelperBase
 @end
 
-@interface WalletsHistoryCell : UITableViewCell
+@interface WalletsTxCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UIImageView *icon;
 @property (nonatomic, weak) IBOutlet UILabel *amountTit;
 @property (nonatomic, weak) IBOutlet UILabel *amount;
