@@ -61,7 +61,7 @@ class PWChangeVC(UIViewController):
         ret.msg = msg
         ret.modalPresentationStyle = UIModalPresentationOverFullScreen#UIModalPresentationOverCurrentContext
         ret.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
-        ret.disablesAutomaticKeyboardDismissal = False
+        #ret.disablesAutomaticKeyboardDismissal = False #NB: this caused an app crash due to missing selector in some iOS! DO NOT USE!
         return ret
     
     @objc_method
