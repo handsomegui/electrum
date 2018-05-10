@@ -216,4 +216,20 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface WalletsTxsHelper : WalletsTxsHelperBase
 @end
 
+@interface WalletsHistoryCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UIImageView *icon;
+@property (nonatomic, weak) IBOutlet UILabel *amountTit;
+@property (nonatomic, weak) IBOutlet UILabel *amount;
+@property (nonatomic, weak) IBOutlet UILabel *balanceTit;
+@property (nonatomic, weak) IBOutlet UILabel *balance;
+@property (nonatomic, weak) IBOutlet UILabel *date;
+@property (nonatomic, weak) IBOutlet UILabel *desc;
+@property (nonatomic, weak) IBOutlet UILabel *statusTit;
+@property (nonatomic, weak) IBOutlet UIImageView *statusIcon;
+@property (nonatomic, weak) IBOutlet UILabel *status;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *amtTitCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *amtCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *dateCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *descCS;
+@end
 #endif /* ViewsForIB_h */

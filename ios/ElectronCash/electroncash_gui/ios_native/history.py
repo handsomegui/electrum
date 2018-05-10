@@ -294,9 +294,10 @@ def setup_cell_for_history_entry(cell : ObjCInstance, entry : object) -> None:
     cell.detailTextLabel.updateConstraintsIfNeeded()
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
 
-def get_history(domain : list = None) -> list:
+def get_history(domain : list = None, statusImagesOverride : list = None, forceNoFX : bool = False) -> list:
     ''' For a given set of addresses (or None for all addresses), builds a list of
         HistoryEntry '''
+    sImages = statusImages if not statusImagesOverride or len(statusImagesOverride) < len(statusImages) else statusImagesOverride
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     daemon = parent.daemon
@@ -318,7 +319,7 @@ def get_history(domain : list = None) -> list:
         ts = timestamp if conf > 0 else time.time()
         fiat_amount = fiat_balance = 0
         fiat_amount_str = fiat_balance_str = ''
-        if fx:
+        if not forceNoFX and fx:
             if not ccy:
                 ccy = fx.get_currency()
             hdate = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
@@ -330,8 +331,8 @@ def get_history(domain : list = None) -> list:
             htext = fx.historical_value_str(balance, hdate) if hamount else ''
             fiat_balance = hamount if hamount else fiat_balance
             fiat_balance_str = htext if htext else fiat_balance_str
-        if status >= 0 and status < len(statusImages):
-            img = statusImages[status]
+        if status >= 0 and status < len(sImages):
+            img = sImages[status]
         else:
             img = None
         entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)

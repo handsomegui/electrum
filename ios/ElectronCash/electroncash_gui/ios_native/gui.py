@@ -166,6 +166,12 @@ class GuiHelper(NSObject):
             refreshControl.addTarget_action_forControlEvents_(self,SEL('onRefreshControl:'), UIControlEventValueChanged)
             
     @objc_method
+    def createAndBindRefreshControl(self) -> ObjCInstance:
+        rc = UIRefreshControl.alloc().init().autorelease()
+        self.bindRefreshControl_(rc)
+        return rc
+            
+    @objc_method
     def onModalClose_(self,but) -> None:
         if ElectrumGui.gui is not None:
             ElectrumGui.gui.on_modal_close(but)
@@ -317,6 +323,7 @@ class ElectrumGui(PrintError):
             if isinstance(obj, wallets.WalletsNav):
                 self.walletsNav = nav0 = obj
                 self.walletsVC = self.walletsNav.topViewController
+                self.walletsVC.txsHelper.tv.refreshControl = self.helper.createAndBindRefreshControl()
                 break
         if not self.walletsNav:
             raise Exception('Wallets Nav is None!')
@@ -730,11 +737,11 @@ class ElectrumGui(PrintError):
                 if u:
                     s = " [%s unconfirmed]"%(self.format_amount(u, True).strip())
                     text +=  s
-                    walletUnitTxt += s
+                    walletUnitTxt += s.replace('unconfirmed', 'unconf.')
                 if x:
                     s = " [%s unmatured]"%(self.format_amount(x, True).strip())
                     text += s
-                    walletUnitTxt += s
+                    walletUnitTxt += s.replace('unmatured', 'unmat.')
 
                 # append fiat balance and price
                 if self.daemon.fx.is_enabled():
@@ -1224,6 +1231,7 @@ class ElectrumGui(PrintError):
             self.helper.needUpdate()
         if components & {'history', *al}:
             self.historyVC.needUpdate()
+            self.walletsVC.needUpdate()
             if not didCoins:
                 self.coinsVC.needUpdate()
                 didCoins = True
