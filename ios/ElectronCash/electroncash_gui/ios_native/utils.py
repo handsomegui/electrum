@@ -447,7 +447,7 @@ def present_modal_picker(parentVC : ObjCInstance,
         p.selectRow_inComponent_animated_(selectedIndex, 0, False)
         helper.lastSelection = selectedIndex
     helper.modalPresentationStyle = UIModalPresentationOverCurrentContext
-    parentVC.view.endEditing_(True) # NB: do not use setDisablesAutomaticKeyboardDismissal because it is missing on newer iOS! (caused an app crasH) -- so we do this instead
+    parentVC.view.endEditing_(True) # NB: do not use setDisablesAutomaticKeyboardDismissal because it is missing on newer iOS! (caused an app crash) -- so we do this instead
     parentVC.presentViewController_animated_completion_(helper, True, None)
     helper.needsDismiss = True
     return helper
