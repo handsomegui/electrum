@@ -172,6 +172,9 @@ class ReceiveVC(UIViewController):
         def inMain() -> None:
             if self.ui:
                 self.viewWillAppear_(False)
+            else:
+                # HACK for WalletsVC that uses us as a datasource
+                self.updateRequestList()
             self.autorelease()
         self.retain()
         utils.do_in_main_thread(inMain)
@@ -422,7 +425,7 @@ class ReceiveVC(UIViewController):
     
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
-        pass
+        tv.deselectRowAtIndexPath_animated_(indexPath,True)
 
     @objc_method
     def setReceiveAddress_(self, adr) -> None:
@@ -433,7 +436,7 @@ class ReceiveVC(UIViewController):
     def updateRequestList(self) -> None:
         wallet = parent().wallet
         ui = self.ui
-        if not wallet or not self.addr or not ui: return
+        if not wallet: return
         # hide receive tab if no receive requests available
         b = len(wallet.receive_requests) > 0
         #self.setVisible(b)
@@ -443,16 +446,16 @@ class ReceiveVC(UIViewController):
         #    self.parent.expires_combo.show()
 
         
-        # update the receive address if necessary
-        current_address = Address.from_string(self.addr)
         domain = wallet.get_addresses()
-        addr = wallet.get_unused_address()
-        if not current_address in domain and addr:
-            self.setReceiveAddress_(addr.to_ui_string())
-            current_address = addr.to_ui_string()
-        
-        #TODO:
-        #self.parent.new_request_button.setEnabled(addr != current_address)
+        if self.addr:
+            # update the receive address if necessary
+            current_address = Address.from_string(self.addr)
+            addr = wallet.get_unused_address()
+            if not current_address in domain and addr:
+                self.setReceiveAddress_(addr.to_ui_string())
+                current_address = addr.to_ui_string()        
+            #TODO:
+            #self.parent.new_request_button.setEnabled(addr != current_address)
 
         # clear the list and fill it again
         #self.clear()
@@ -489,4 +492,5 @@ class ReceiveVC(UIViewController):
             reqs.append(item)
             #print(item)
         utils.nspy_put_byname(self, reqs, 'request_list') # save it to the global cache since objcinstance lacks the ability to store python objects as attributes :/
-        ui['tv'].reloadData()
+        if ui: ui['tv'].reloadData()
+        utils.NSLog("fetched %d extant payment requests",len(reqs))

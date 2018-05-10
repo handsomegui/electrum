@@ -472,7 +472,7 @@ class PrefsVC(UITableViewController):
         if not fx: return
         fx.set_history_config(s.isOn())
         self.updateExchanges()
-        parent.historyVC.needUpdate()
+        parent.refresh_components('history')
         if fx.is_enabled() and s.isOn():
             # reset timeout to get historical rates
             fx.timeout = 0

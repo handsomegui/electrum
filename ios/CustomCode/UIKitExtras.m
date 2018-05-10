@@ -291,6 +291,13 @@ static long UIButtonBlockKey = 0xb10cb10c;
 @end
 
 
+@implementation UIView (Mogrification)
+- (void) affineScaleX:(CGFloat)scaleX scaleY:(CGFloat)scaleY  {
+    self.transform = CGAffineTransformMakeScale(scaleX, scaleY);
+}
+- (void) affineScale:(CGPoint)xyScale { [self affineScaleX:xyScale.x scaleY:xyScale.y]; }
+@end
+
 @implementation ForwardingDelegate
 @synthesize fwdDelegate;
 - (instancetype) initWithDelegate:(id<NSObject>)fwd {

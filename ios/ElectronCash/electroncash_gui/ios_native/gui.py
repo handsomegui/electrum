@@ -248,8 +248,8 @@ class ElectrumGui(PrintError):
         self.tabController = None
         self.rootVCs = None
         self.tabs = None
-        self.historyNav = None
-        self.historyVC = None
+        #self.historyNav = None
+        #self.historyVC = None
         self.sendVC = None
         self.sendNav = None
         self.receiveVC = None
@@ -298,10 +298,10 @@ class ElectrumGui(PrintError):
                 
         self.tabController = MyTabBarController.alloc().init().autorelease()
 
-        self.historyVC = tbl = history.HistoryTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
-        self.historyVC.setCompactMode_(bool(self.config.get('history_compact_mode', False)))
-        utils.add_callback(self.historyVC, 'on_change_compact_mode', lambda x: self.config.set_key('history_compact_mode',x,True))
-        self.helper.bindRefreshControl_(self.historyVC.refreshControl)
+        #self.historyVC = tbl = history.HistoryTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
+        #self.historyVC.setCompactMode_(bool(self.config.get('history_compact_mode', False)))
+        #utils.add_callback(self.historyVC, 'on_change_compact_mode', lambda x: self.config.set_key('history_compact_mode',x,True))
+        #self.helper.bindRefreshControl_(self.historyVC.refreshControl)
 
         self.sendVC = snd = send.SendVC.alloc().init().autorelease()
         
@@ -318,28 +318,36 @@ class ElectrumGui(PrintError):
         self.contactsVC = cntcts = contacts.ContactsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
         self.helper.bindRefreshControl_(self.contactsVC.refreshControl)
         
+        # Wallets tab
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsTab",None,None)
         for obj in objs:
             if isinstance(obj, wallets.WalletsNav):
-                self.walletsNav = nav0 = obj
+                self.walletsNav = nav1 = obj
                 self.walletsVC = self.walletsNav.topViewController
                 self.walletsVC.txsHelper.tv.refreshControl = self.helper.createAndBindRefreshControl()
+                # HACK -- FIXME -- right now the requests tableview in tallets tab uses the ReceiveVC as its dataSource.. FIX!!
+                self.walletsVC.reqstv.delegate = rcv
+                self.walletsVC.reqstv.dataSource = rcv
+                self.walletsVC.reqstv.refreshControl = self.helper.createAndBindRefreshControl()
                 break
         if not self.walletsNav:
             raise Exception('Wallets Nav is None!')
+        # Send and Receive modals
+        self.sendNav = UINavigationController.alloc().initWithRootViewController_(snd)
+        self.add_navigation_bar_close_to_modal_vc(snd, leftSide = True)
+        self.receiveNav = UINavigationController.alloc().initWithRootViewController_(rcv)
+        self.add_navigation_bar_close_to_modal_vc(rcv, leftSide = True)
 
-        self.historyNav = nav1 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
-        self.sendNav = nav2 = UINavigationController.alloc().initWithRootViewController_(snd).autorelease()
-        self.receiveNav = nav3 = UINavigationController.alloc().initWithRootViewController_(rcv).autorelease()
-        self.addressesNav = nav4 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
-        self.coinsNav = nav5 = UINavigationController.alloc().initWithRootViewController_(cns).autorelease()
-        self.addrconvNav = nav6 = UINavigationController.alloc().initWithRootViewController_(acnv).autorelease()
-        self.contactsNav = nav7 = UINavigationController.alloc().initWithRootViewController_(cntcts).autorelease()
+        #self.historyNav = nav2 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
+        self.addressesNav = nav2 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
+        self.coinsNav = nav3 = UINavigationController.alloc().initWithRootViewController_(cns).autorelease()
+        self.addrconvNav = nav4 = UINavigationController.alloc().initWithRootViewController_(acnv).autorelease()
+        self.contactsNav = nav5 = UINavigationController.alloc().initWithRootViewController_(cntcts).autorelease()
 
         unimplemented_navs = []
         #unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
 
-        self.tabs = [nav0, nav1, nav2, nav3, nav4, nav5, nav6, nav7, *unimplemented_navs]
+        self.tabs = [nav1, nav2, nav3, nav4, nav5, *unimplemented_navs]
         self.rootVCs = dict()
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
@@ -355,11 +363,11 @@ class ElectrumGui(PrintError):
 
         self.setup_toolbar()
         
-        self.prefsVC = prefs.PrefsVC.new()
+        self.prefsVC = prefs.PrefsVC.new().autorelease()
         self.prefsNav = UINavigationController.alloc().initWithRootViewController_(self.prefsVC)
         self.add_navigation_bar_close_to_modal_vc(self.prefsVC)
 
-        tbl.refresh()
+        #tbl.refresh()
         
         self.helper.needUpdate()
 
@@ -530,7 +538,7 @@ class ElectrumGui(PrintError):
                 lbl.text = _("Downloading blockchain headers...")
             activityIndicator = objs[0].viewWithTag_(1)
             if activityIndicator is not None:
-                HelpfulGlue.affineScaleView_scaleX_scaleY_(activityIndicator, 0.5, 0.5)
+                activityIndicator.affineScaleX_scaleY_(0.5, 0.5)
             self.downloadingNotif_view = objs[0].retain()
     
     def __del__(self):
@@ -550,8 +558,7 @@ class ElectrumGui(PrintError):
         if self.downloadingNotif_view is not None:
             self.downloadingNotif_view.autorelease()
             self.downloadingNotif_view = None
-        if self.prefsVC is not None: self.prefsVC.autorelease()
-        if self.prefsNav is not None: self.prefsNav.autorelease()
+        if self.prefsNav is not None: self.prefsNav.release()
         self.networkNav = None
         self.networkVC = None
         self.prefsVC = None
@@ -561,8 +568,10 @@ class ElectrumGui(PrintError):
             self.helperTimer = None
         if self.tabController is not None: 
             self.tabController.viewControllers = None
-        self.historyNav = None
-        self.historyVC = None
+        #self.historyNav = None
+        #self.historyVC = None
+        if self.sendNav: self.sendNav.release()
+        if self.receiveNav: self.receiveNav.release()
         self.sendNav = None
         self.sendVC = None
         self.receiveVC = None
@@ -620,7 +629,7 @@ class ElectrumGui(PrintError):
             
     def on_history(self, b):
         utils.NSLog("ON HISTORY (IsMainThread: %s)",str(NSThread.currentThread.isMainThread))
-        assert self.historyVC is not None
+        assert self.walletsVC is not None
         self.refresh_components('history', 'helper')
         
     def on_quotes(self, event, *args):
@@ -632,7 +641,7 @@ class ElectrumGui(PrintError):
         if not self.daemon:
             utils.NSLog("(Returning early.. daemon stopped)")
             return
-        assert self.historyVC is not None
+        assert self.walletsVC is not None
         if event == 'updated':
             self.refresh_components('helper', 'network')
         elif event == 'new_transaction':
@@ -926,9 +935,11 @@ class ElectrumGui(PrintError):
     def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = False) -> ObjCInstance:
         closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self.helper, SEL(b'onModalClose:')).autorelease()
         if leftSide:
-            vc.navigationItem.leftBarButtonItem = closeButton
+            extra = vc.navigationItem.leftBarButtonItems if vc.navigationItem.leftBarButtonItems else [] 
+            vc.navigationItem.leftBarButtonItems = [closeButton, *extra]
         else:
-            vc.navigationItem.rightBarButtonItem = closeButton
+            extra = vc.navigationItem.rightBarButtonItems if vc.navigationItem.rightBarButtonItems else [] 
+            vc.navigationItem.rightBarButtonItems = [closeButton, *extra]
         return closeButton
         
         
@@ -1188,10 +1199,6 @@ class ElectrumGui(PrintError):
                 else:
                     return
 
-      
-    def show_send_tab(self):
-        self.tabController.selectedViewController = self.sendNav
-
     def pay_to_URI(self, URI, errFunc : callable = None):
         utils.NSLog("PayTo URI: %s", str(URI))
         if not URI:
@@ -1204,7 +1211,7 @@ class ElectrumGui(PrintError):
             else:
                 errFunc()
             return
-        self.show_send_tab()
+        self.show_send_modal()
         r = out.get('r')
         sig = out.get('sig')
         name = out.get('name')
@@ -1230,7 +1237,7 @@ class ElectrumGui(PrintError):
         if components & {'helper', *al}:
             self.helper.needUpdate()
         if components & {'history', *al}:
-            self.historyVC.needUpdate()
+            #self.historyVC.needUpdate()
             self.walletsVC.needUpdate()
             if not didCoins:
                 self.coinsVC.needUpdate()
@@ -1242,8 +1249,9 @@ class ElectrumGui(PrintError):
                 didCoins = True
         if components & {'prefs', 'preferences', 'settings', *al}:
             self.prefsVC.refresh()
-        if components & {'receive', 'paymentrequests', 'pr', *al}:
+        if components & {'receive', 'requests', 'paymentrequests', 'pr', *al}:
             self.receiveVC.refresh()
+            self.walletsVC.refreshReqs()
         if components & {'network', 'servers','connection', 'interfaces', *al}:
             if self.networkVC is not None: # networkVC isn't always around, we create it on-demand and delete it when it's done
                 self.networkVC.refresh()
@@ -1541,17 +1549,21 @@ class ElectrumGui(PrintError):
         self.add_navigation_bar_close_to_modal_vc(self.networkVC)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(self.networkNav, True, None)
      
-    def show_send_tab(self) -> None:
+    def show_send_modal(self, vc = None) -> None:
         if not self.tabController or not self.sendNav: return
-        self.tabController.selectedViewController = self.sendNav
         if self.sendNav.topViewController.ptr.value != self.sendVC.ptr.value:
-            self.sendNav.popToRootViewControllerAnimated_(True)
+            self.sendNav.popToRootViewControllerAnimated_(False)
+        if self.sendNav.presentingViewController: return # already presented, return early
+        if not vc: vc = self.get_presented_viewcontroller()
+        vc.presentViewController_animated_completion_(self.sendNav, True, None)
      
-    def show_receive_tab(self) -> None:
+    def show_receive_modal(self, vc = None) -> None:
         if not self.tabController or not self.receiveNav: return
-        self.tabController.selectedViewController = self.receiveNav
         if self.receiveNav.topViewController.ptr.value != self.receiveVC.ptr.value:
-            self.receiveNav.popToRootViewControllerAnimated_(True)
+            self.receiveNav.popToRootViewControllerAnimated_(False)
+        if self.receiveNav.presentingViewController: return # already presented, return early
+        if not vc: vc = self.get_presented_viewcontroller()
+        vc.presentViewController_animated_completion_(self.receiveNav, True, None)
         
     def show_addresses_tab(self) -> None:
         if not self.tabController or not self.addressesNav: return
@@ -1562,18 +1574,18 @@ class ElectrumGui(PrintError):
     def jump_to_send_with_spend_from(self, coins) -> None:
         if not self.sendVC: return
         utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
-        self.show_send_tab()
+        self.show_send_modal()
 
     def jump_to_send_with_pay_to(self, addr) -> None:
         if not self.sendVC: return
         utils.nspy_put_byname(self.sendVC, addr, 'pay_to')
-        self.show_send_tab()
+        self.show_send_modal()
 
         
     def jump_to_receive_with_address(self, address) -> None:
         if not self.receiveVC or not isinstance(address, (Address, str)): return
         self.receiveVC.addr = (str(address))
-        self.show_receive_tab()
+        self.show_receive_modal()
         
     def jump_to_addresses_with_address(self, address) -> None:
         if not isinstance(address, Address) or not self.addressesNav or not self.wallet or not self.wallet.is_mine(address): return
@@ -1610,7 +1622,7 @@ class ElectrumGui(PrintError):
     
     def get_history_entry(self, tx_hash) -> tuple:
         ''' returns a history.HistoryEntry namedtuple instance if tx_hash exists in history, or None if not found '''
-        history = utils.nspy_get_byname(self.historyVC, 'history')
+        history = wallets.GetTxs()
         if history:
             for entry in history:
                 if entry.tx_hash == tx_hash:

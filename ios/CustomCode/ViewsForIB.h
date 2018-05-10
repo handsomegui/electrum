@@ -174,11 +174,12 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UILabel *walletAmount;
 @property (nonatomic, weak) IBOutlet UILabel *walletUnit;
 @property (nonatomic, strong) IBOutlet WalletsDrawerHelper *drawerHelper;
-@property (nonatomic, strong) IBOutlet WalletsTxsHelper *txsHelper;
 @property (nonatomic, weak) UIView *addWalletView;
 
 #pragma mark Main View Area Related
 @property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
+@property (nonatomic, strong) IBOutlet WalletsTxsHelper *txsHelper;
+@property (nonatomic, weak) IBOutlet UITableView *reqstv; ///< TODO: Move the management of this tableView into its own class -- for now this tv uses the hacky RequestsVC as its tableview delegate/dataSource
 @property (nonatomic, weak) IBOutlet UIButton *sendBut;
 @property (nonatomic, weak) IBOutlet UIButton *receiveBut;
 @end

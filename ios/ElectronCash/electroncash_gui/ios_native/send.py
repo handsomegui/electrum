@@ -211,7 +211,8 @@ class SendVC(SendBase):
         barButPreview.title = _("Preview")
 
         self.navigationItem.rightBarButtonItems = [barButSend, barButPreview]
-        self.navigationItem.leftBarButtonItem = self.clearBut
+        extra = self.navigationItem.leftBarButtonItems if self.navigationItem.leftBarButtonItems else []
+        self.navigationItem.leftBarButtonItems = [*extra, self.clearBut]
         
         
     @objc_method

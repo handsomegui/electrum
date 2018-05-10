@@ -24,6 +24,8 @@ StatusColors = {
 StatusImages = history.statusImages.copy()
 StatusImages[9] = UIImage.imageNamed_("grnchk.png").retain()
 
+VC = None
+
 class WalletsNav(WalletsNavBase):
    
     @objc_method
@@ -32,15 +34,22 @@ class WalletsNav(WalletsNavBase):
 
 class WalletsVC(WalletsVCBase):
     needsRefresh = objc_property()
+    reqsLoadedAtLeastOnce = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
         # cleanup code here..
+        global VC
+        if VC and VC.ptr.value == self.ptr.value:
+            VC = None
         self.needsRefresh = None
+        self.reqsLoadedAtLeastOnce = None
         send_super(__class__, self, 'dealloc')  
 
     @objc_method
     def commonInit(self) -> None:
+        global VC
+        if not VC: VC = self
         # put additional setup code here
         self.status = StatusOffline # re-does the text/copy and colors
         self.walletAmount.text = "0"
@@ -70,6 +79,12 @@ class WalletsVC(WalletsVCBase):
                 if self.txsHelper.tv.refreshControl: self.txsHelper.tv.refreshControl.endRefreshing()
                 self.txsHelper.tv.reloadData()
             self.needsRefresh = False
+
+    @objc_method
+    def refreshReqs(self):
+        if not self.reqstv: return
+        self.reqstv.reloadData() # HACK TODO FIXME: create a real helper class to manage this
+        if self.reqstv.refreshControl: self.reqstv.refreshControl.endRefreshing()
 
     @objc_method
     def needUpdate(self):
@@ -142,15 +157,24 @@ class WalletsVC(WalletsVCBase):
         
     @objc_method
     def didChangeSegment_(self, control : ObjCInstance) -> None:
-        print("Did change segment", self.segControl.selectedSegmentIndex)
+        ix = self.segControl.selectedSegmentIndex
+        if ix == 0:
+            self.txsHelper.tv.setHidden_(False)
+            self.reqstv.setHidden_(True)
+        elif ix == 1:
+            self.txsHelper.tv.setHidden_(True)
+            self.reqstv.setHidden_(False)
+            if not self.reqsLoadedAtLeastOnce:
+                gui.ElectrumGui.gui.refresh_components('requests')
+                self.reqsLoadedAtLeastOnce = True
         
     @objc_method
     def onSendBut(self) -> None:
-        print("Send button clicked, todo: IMPLEMENT")
+        gui.ElectrumGui.gui.show_send_modal()
 
     @objc_method
     def onReceiveBut(self) -> None:
-        print("Receive button clicked, todo: IMPLEMENT")
+        gui.ElectrumGui.gui.show_receive_modal()
 
 
 class WalletsDrawerHelper(WalletsDrawerHelperBase):
@@ -246,6 +270,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     @objc_method
     def dealloc(self) -> None:
         #cleanup code here
+        utils.nspy_pop(self) # clear 'txs' python dict
         send_super(__class__, self, 'dealloc')
      
     @objc_method 
@@ -324,7 +349,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
 
     @objc_method
     def loadTxsFromWallet(self) -> None:
-        h = history.get_history(statusImagesOverride = StatusImages, forceNoFX = True)
+        h = history.get_history(statusImagesOverride = StatusImages) #, forceNoFX = True)
         if h is None:
             # probable backgroundeed and/or wallet is closed, so return early
             return
@@ -332,7 +357,11 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         utils.NSLog("Wallets: fetched %d entries from history",len(h))
         
 # this should be a method of WalletsTxsHelper but it returns a python object, so it has to be a standalone global function
-def GetTxs(txsHelper):
+def GetTxs(txsHelper = None):
+    if not txsHelper and VC:
+        txsHelper = VC.txsHelper
+    if not txsHelper:
+        raise ValueError('GetTxs: You specified no txsHelper instance and we could not find one already active in memory')
     h = utils.nspy_get_byname(txsHelper, 'txs')
     if h is None:
         txsHelper.loadTxsFromWallet()

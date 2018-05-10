@@ -22,10 +22,6 @@ typedef void(^VoidBlock)(void);
     NSLog(@"%@",string);
 }
 
-+ (void) affineScaleView:(UIView *)v scaleX:(CGFloat)scaleX scaleY:(CGFloat)scaleY {
-    v.transform = CGAffineTransformMakeScale(scaleX, scaleY);
-}
-
 + (void) performBlockInMainThread:(VoidBlock)block sync:(BOOL)sync {
     if (!block) return;
     if (sync) {

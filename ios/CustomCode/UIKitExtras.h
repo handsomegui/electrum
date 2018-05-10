@@ -44,6 +44,11 @@ typedef void(^ActionBlock)(UIControl *);
 - (NSArray *) allSubviewsRecursively;
 @end
 
+@interface UIView (Mogrification)
+- (void) affineScaleX:(CGFloat)scaleX scaleY:(CGFloat)scaleY;
+- (void) affineScale:(CGPoint)xyScale;
+@end
+
 @interface ForwardingDelegate : NSObject
 @property (nonatomic, weak) id<NSObject> fwdDelegate;
 - (instancetype) initWithDelegate:(id<NSObject>)fwd;
