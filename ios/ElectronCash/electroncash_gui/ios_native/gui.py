@@ -302,8 +302,6 @@ class ElectrumGui(PrintError):
         #self.historyVC.setCompactMode_(bool(self.config.get('history_compact_mode', False)))
         #utils.add_callback(self.historyVC, 'on_change_compact_mode', lambda x: self.config.set_key('history_compact_mode',x,True))
         #self.helper.bindRefreshControl_(self.historyVC.refreshControl)
-
-        self.sendVC = snd = send.SendVC.alloc().init().autorelease()
         
         self.receiveVC = rcv = receive.ReceiveVC.alloc().init().autorelease()
         
@@ -332,9 +330,7 @@ class ElectrumGui(PrintError):
                 break
         if not self.walletsNav:
             raise Exception('Wallets Nav is None!')
-        # Send and Receive modals
-        self.sendNav = UINavigationController.alloc().initWithRootViewController_(snd)
-        self.add_navigation_bar_close_to_modal_vc(snd, leftSide = True)
+        # Receive modal
         self.receiveNav = UINavigationController.alloc().initWithRootViewController_(rcv)
         self.add_navigation_bar_close_to_modal_vc(rcv, leftSide = True)
 
@@ -1217,7 +1213,6 @@ class ElectrumGui(PrintError):
             else:
                 errFunc()
             return
-        self.show_send_modal()
         r = out.get('r')
         sig = out.get('sig')
         name = out.get('name')
@@ -1225,6 +1220,7 @@ class ElectrumGui(PrintError):
             #self.prepare_for_payment_request()
             print("TODO: prepare_for_payment_request")
             return
+        self.show_send_modal()
         address = out.get('address')
         amount = out.get('amount')
         label = out.get('label')
@@ -1461,7 +1457,8 @@ class ElectrumGui(PrintError):
                         onOk = doneCallback
                     parent.show_message(message=_('Payment sent.') + '\n' + msg, onOk = onOk)
                     #self.invoice_list.update()
-                    self.sendVC.clear()
+                    if self.sendVC:
+                        self.sendVC.clear()
                 else:
                     parent.show_error(msg)
         def on_error(exc_info):
@@ -1554,8 +1551,19 @@ class ElectrumGui(PrintError):
         utils.NSDeallocObserver(self.networkNav).connect(doCleanup)
         self.add_navigation_bar_close_to_modal_vc(self.networkVC)
         self.get_presented_viewcontroller().presentViewController_animated_completion_(self.networkNav, True, None)
+    
+    def send_create_if_none(self) -> None:
+        if self.sendVC: return
+        self.sendVC = send.SendVC.alloc().init().autorelease()
+        self.sendNav = UINavigationController.alloc().initWithRootViewController_(self.sendVC).autorelease()
+        self.add_navigation_bar_close_to_modal_vc(self.sendVC, leftSide = True)
+        def doCleanup(oid : objc_id) -> None:
+            self.sendVC = None
+            self.sendNav = None
+        utils.NSDeallocObserver(self.sendVC).connect(doCleanup)
      
     def show_send_modal(self, vc = None) -> None:
+        self.send_create_if_none()
         if not self.tabController or not self.sendNav: return
         if self.sendNav.topViewController.ptr.value != self.sendVC.ptr.value:
             self.sendNav.popToRootViewControllerAnimated_(False)
@@ -1577,15 +1585,15 @@ class ElectrumGui(PrintError):
         if self.addressesNav.topViewController.ptr.value != self.addressesVC.ptr.value:
             self.addressesNav.popToRootViewControllerAnimated_(True)
         
-    def jump_to_send_with_spend_from(self, coins) -> None:
-        if not self.sendVC: return
+    def jump_to_send_with_spend_from(self, coins, vc = None) -> None:
+        self.send_create_if_none()
         utils.nspy_put_byname(self.sendVC, coins, 'spend_from')
-        self.show_send_modal()
+        self.show_send_modal(vc=vc)
 
-    def jump_to_send_with_pay_to(self, addr) -> None:
-        if not self.sendVC: return
+    def jump_to_send_with_pay_to(self, addr, vc = None) -> None:
+        self.send_create_if_none()
         utils.nspy_put_byname(self.sendVC, addr, 'pay_to')
-        self.show_send_modal()
+        self.show_send_modal(vc=vc)
 
         
     def jump_to_receive_with_address(self, address) -> None:
