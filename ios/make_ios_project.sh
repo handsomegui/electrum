@@ -149,7 +149,7 @@ echo ""
 [ -e scratch ] && rm -fr scratch
 mkdir -v scratch || exit 1
 cd scratch || exit 1
-git clone http://www.github.com/fyookball/rubicon-objc
+git clone http://www.github.com/cculianu/rubicon-objc
 gitexit="$?"
 cd rubicon-objc
 git checkout send_super_fix
