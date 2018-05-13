@@ -35,17 +35,15 @@ VChevronImages = [
 
 VC = None
 
-class WalletsNav(WalletsNavBase):
-    lineHider = objc_property()
-    
+class WalletsNav(WalletsNavBase):    
     @objc_method
     def dealloc(self) -> None:
-        self.lineHider = None
         send_super(__class__, self, 'dealloc')
 
 class WalletsVC(WalletsVCBase):
     needsRefresh = objc_property()
     reqsLoadedAtLeastOnce = objc_property()
+    lineHider = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -55,6 +53,7 @@ class WalletsVC(WalletsVCBase):
             VC = None
         self.needsRefresh = None
         self.reqsLoadedAtLeastOnce = None
+        self.lineHider = None
         send_super(__class__, self, 'dealloc')  
 
     @objc_method
@@ -81,6 +80,24 @@ class WalletsVC(WalletsVCBase):
         self.commonInit()
         self.drawerHelper.miscSetup()
         self.txsHelper.miscSetup()
+
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        f = self.navBar.frame
+        # This line hider is a hack/fix for a weirdness in iOS where there is a white line between the top nav bar and the bottom
+        # 'drawer' area.  This hopefully fixes that.
+        self.lineHider = UIView.alloc().initWithFrame_(CGRectMake(0,f.size.height,f.size.width,1)).autorelease()
+        self.lineHider.backgroundColor = self.blueBarTop.backgroundColor
+        self.navBar.addSubview_(self.lineHider)
+        self.lineHider.autoresizingMask = (1<<6)-1
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if self.lineHider:
+            self.lineHider.removeFromSuperview()
+            self.lineHider = None
 
     @objc_method
     def refresh(self):
@@ -122,24 +139,6 @@ class WalletsVC(WalletsVCBase):
             rc = self.txsHelper.tv.refreshControl
             rc.beginRefreshing()
             tv.setContentOffset_animated_(CGPointMake(0, tv.contentOffset.y-rc.frame.size.height), True)
-
-    @objc_method
-    def viewWillAppear_(self, animated : bool) -> None:
-        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
-        f = self.navBar.frame
-        # This line hider is a hack/fix for a weirdness in iOS where there is a white line between the top nav bar and the bottom
-        # 'drawer' area.  This hopefully fixes that.
-        self.lineHider = UIView.alloc().initWithFrame_(CGRectMake(0,f.size.height,f.size.width,1)).autorelease()
-        self.lineHider.backgroundColor = self.blueBarTop.backgroundColor
-        self.navBar.addSubview_(self.lineHider)
-        self.lineHider.autoresizingMask = (1<<6)-1
-
-    @objc_method
-    def viewWillDisappear_(self, animated : bool) -> None:
-        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
-        if self.lineHider:
-            self.lineHider.removeFromSuperview()
-            self.lineHider = None
 
     @objc_method
     def setStatus_(self, mode : int) -> None:
