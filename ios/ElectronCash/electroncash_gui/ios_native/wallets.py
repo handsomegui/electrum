@@ -370,12 +370,13 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         if entry.conf and entry.conf > 0 and entry.conf < 6:
             ff = "%s %s"%(entry.conf, _('confirmations'))
 
-        cell.amountTit.text = _("Amount")
-        cell.balanceTit.text = _("Balance")
-        cell.statusTit.text = _("Status")
+        kern = -0.5
+        cell.amountTit.setText_withKerning_(_("Amount"), kern)
+        cell.balanceTit.setText_withKerning_(_("Balance"), kern)
+        cell.statusTit.setText_withKerning_(_("Status"), kern)
         cell.amount.text = entry.v_str.translate({ord(i):None for i in '+- '}) #strip +/-
         cell.balance.text = entry.balance_str.translate({ord(i):None for i in '+- '}) # strip +/- from amount
-        cell.desc.text = entry.label.strip() if isinstance(entry.label, str) else ''
+        cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
         cell.date.text = entry.status_str
         cell.status.text = ff #if entry.conf < 6 else ""
@@ -385,7 +386,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
 
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv : ObjCInstance, indexPath : ObjCInstance) -> float:
-        return 86.0 if indexPath.row > 0 or GetTxs(self) else 44.0
+        return 76.0 if indexPath.row > 0 or GetTxs(self) else 44.0
 
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):

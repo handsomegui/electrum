@@ -149,25 +149,28 @@
     if (_desc == desc) return;
     if (_desc) {
         [_desc removeObserver:self forKeyPath:@"text"];
+        [_desc removeObserver:self forKeyPath:@"attributedText"];
     }
     _desc = desc;
     if (_desc) {
         [_desc addObserver:self forKeyPath:@"text" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld|NSKeyValueObservingOptionInitial  context:NULL];
+        [_desc addObserver:self forKeyPath:@"attributedText" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld|NSKeyValueObservingOptionInitial  context:NULL];
     }
 }
-- (void) polishLayout {
-    CGFloat delta = _desc.text.length > 0 ? 9.0 : 0.0;
+- (void) polishLayout:(BOOL)isAttributed {
+    CGFloat delta = (isAttributed ? _desc.attributedText.string : _desc.text).length > 0 ? 9.0 : 0.0;
 
-    self.amtCS.constant = 22.0 - delta;
-    self.amtTitCS.constant = 24.0 - delta;
-    self.dateCS.constant = 23.0 - delta;
-    self.descCS.constant = 0.0 + delta;
+    self.amtCS.constant = 17.0 - delta;
+    self.amtTitCS.constant = 19.0 - delta;
+    self.dateCS.constant = 18.0 - delta;
+    self.descCS.constant = 0.0 + floor(delta/2.0);
     [self layoutIfNeeded];
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
-    if ([keyPath isEqualToString:@"text"] && object == _desc) {
-        [self polishLayout];
+    BOOL isAttributed = [keyPath isEqualToString:@"attributedText"];
+    if ( (isAttributed || [keyPath isEqualToString:@"text"]) && object == _desc) {
+        [self polishLayout:isAttributed];
     }
 }
 @end
