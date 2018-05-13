@@ -221,6 +221,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface WalletsTxsHelperBase : NSObject
 @property (nonatomic, weak) IBOutlet WalletsVC *vc;
 @property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, assign) BOOL compactMode;
 @end
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsTxsHelper : WalletsTxsHelperBase

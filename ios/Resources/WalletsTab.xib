@@ -274,7 +274,7 @@
                                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="2" id="Tk0-sF-YSe"/>
                                     </constraints>
                                 </view>
-                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="All set and good to go." lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="atn-VB-xdN">
+                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="All set and good to go." lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="atn-VB-xdN">
                                     <rect key="frame" x="120" y="5.5" width="130.5" height="14.5"/>
                                     <constraints>
                                         <constraint firstAttribute="height" relation="greaterThanOrEqual" id="g8f-J8-rnC"/>
@@ -369,6 +369,9 @@
             </connections>
         </customObject>
         <customObject id="qSh-mO-1cK" userLabel="Tx History Helper" customClass="WalletsTxsHelper">
+            <userDefinedRuntimeAttributes>
+                <userDefinedRuntimeAttribute type="boolean" keyPath="compactMode" value="YES"/>
+            </userDefinedRuntimeAttributes>
             <connections>
                 <outlet property="tv" destination="u0V-Yv-emp" id="yt8-QG-cpY"/>
                 <outlet property="vc" destination="5hO-gj-WnP" id="eIe-SF-uv2"/>

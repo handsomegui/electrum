@@ -9,7 +9,10 @@
 #import <UIKit/UIKit.h>
 
 
-@interface UIView (AnimExtras) 
+@interface UIView (AnimExtras)
+/// returns true IFF the receiver is currently animating
+@property (nonatomic, readonly) BOOL hasAnimations;
+
 /// Adds this view to parent view, and slides it into existence from the bottom; makes it the first responder.
 - (void) modalSlideFromBottomIntoView:(UIView *)parentView;
 /// Identical to above but also with a callback which is called when done.  Callback takes 1 argument, this view itself.

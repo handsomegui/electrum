@@ -322,7 +322,6 @@ class ElectrumGui(PrintError):
             if isinstance(obj, wallets.WalletsNav):
                 self.walletsNav = nav1 = obj
                 self.walletsVC = self.walletsNav.topViewController
-                self.walletsVC.txsHelper.tv.refreshControl = self.helper.createAndBindRefreshControl()
                 # HACK -- FIXME -- right now the requests tableview in tallets tab uses the ReceiveVC as its dataSource.. FIX!!
                 self.walletsVC.reqstv.delegate = rcv
                 self.walletsVC.reqstv.dataSource = rcv

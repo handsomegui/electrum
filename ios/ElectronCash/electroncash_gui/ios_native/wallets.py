@@ -6,6 +6,7 @@ from electroncash.i18n import _, language
 
 from .uikit_bindings import *
 from .custom_objc import *
+import math
 
 # from ViewsForIB.h, WalletsStatusMode enum
 StatusOffline = 0
@@ -35,7 +36,8 @@ VChevronImages = [
 
 VC = None
 
-_kern = -0.5 # kerning for some of the text labels in the view
+_kern = -0.5 # kerning for some of the text labels in the view in points
+_tx_cell_height = 76.0 # WalletsTxCell height in points
 
 class WalletsNav(WalletsNavBase):    
     @objc_method
@@ -46,6 +48,7 @@ class WalletsVC(WalletsVCBase):
     needsRefresh = objc_property()
     reqsLoadedAtLeastOnce = objc_property()
     lineHider = objc_property()
+    allTxHelpers = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -56,12 +59,14 @@ class WalletsVC(WalletsVCBase):
         self.needsRefresh = None
         self.reqsLoadedAtLeastOnce = None
         self.lineHider = None
+        self.allTxHelpers = None
         send_super(__class__, self, 'dealloc')  
 
     @objc_method
     def commonInit(self) -> None:
         global VC
         if not VC: VC = self
+        self.allTxHelpers = NSMutableArray.new().autorelease()
         # put additional setup code here
         self.status = StatusOffline # re-does the text/copy and colors
         self.walletAmount.text = "0"
@@ -102,13 +107,31 @@ class WalletsVC(WalletsVCBase):
             self.lineHider = None
 
     @objc_method
+    def viewLayoutMarginsDidChange(self) -> None:
+        send_super(__class__, self, 'viewLayoutMarginsDidChange')
+        self.refresh() # this implicitly redoes the central table and the number of preview transactions we see in it
+
+    @objc_method
     def refresh(self):
-        if self.txsHelper:
-            self.txsHelper.loadTxsFromWallet()
-            if self.txsHelper.tv:
-                if self.txsHelper.tv.refreshControl: self.txsHelper.tv.refreshControl.endRefreshing()
-                self.txsHelper.tv.reloadData()
-            self.needsRefresh = False
+        l = list(self.allTxHelpers)
+        h = None
+        ctr = 0
+        for ptrval in l:
+            txsHelper = ObjCInstance(objc_id(ptrval))
+            if txsHelper:
+                if h is None:
+                    txsHelper.loadTxsFromWallet()
+                    h = utils.nspy_get_byname(txsHelper, 'txs')
+                else:
+                    # avoid redundant loads of the same data.. reuse the same history data for child txsHelper views
+                    utils.nspy_put_byname(txsHelper, h, 'txs')
+                if txsHelper.tv:
+                    if txsHelper.tv.refreshControl: txsHelper.tv.refreshControl.endRefreshing()
+                    txsHelper.tv.reloadData()
+                ctr += 1
+                self.needsRefresh = False
+        if ctr > 1:
+            utils.NSLog("Wallets: re-used history data for %d child tables.",ctr)
 
     @objc_method
     def refreshReqs(self):
@@ -178,7 +201,7 @@ class WalletsVC(WalletsVCBase):
 
     @objc_method
     def addWallet(self) -> None:
-        if self.addWalletView.layer.animationKeys():
+        if self.addWalletView.hasAnimations:
             print("addWalletView animation already active, ignoring spurious second tap....")
             return
         c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
@@ -214,7 +237,7 @@ class WalletsVC(WalletsVCBase):
     # pops up the network setup dialog and also does a little animation on the status label
     @objc_method
     def onTopNavTap(self) -> None:
-        if self.statusLabel.layer.animationKeys():
+        if self.statusLabel.hasAnimations:
             print("status label animation already active, ignoring spurious second tap....")
             return
         c1 = self.statusLabel.backgroundColor.colorWithAlphaComponent_(0.50)
@@ -251,7 +274,9 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
             if isinstance(obj, UIView) and obj.tag == 2000:
                 self.tv.tableFooterView = obj
                 self.vc.addWalletView = obj
-            elif isinstance(obj, UIGestureRecognizer):
+        for obj in objs:
+            if isinstance(obj, UIGestureRecognizer) and obj.view and self.vc.addWalletView \
+                   and obj.view.ptr.value == self.vc.addWalletView.ptr.value:
                 obj.addTarget_action_(self.vc, SEL(b'addWallet'))
         nib = UINib.nibWithNibName_bundle_("WalletsDrawerCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsDrawerCell")
@@ -351,10 +376,15 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
         
         
 class WalletsTxsHelper(WalletsTxsHelperBase):
+    haveShowMoreTxs = objc_property()
         
     @objc_method
     def dealloc(self) -> None:
         #cleanup code here
+        print("WalletsTxsHelper dealloc")
+        if self.vc and self.vc.allTxHelpers:
+            self.vc.allTxHelpers.removeObject_(self.ptr.value)
+        self.haveShowMoreTxs = None
         utils.nspy_pop(self) # clear 'txs' python dict
         send_super(__class__, self, 'dealloc')
      
@@ -362,6 +392,8 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     def miscSetup(self) -> None:
         nib = UINib.nibWithNibName_bundle_("WalletsTxCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsTxCell")
+        self.vc.allTxHelpers.addObject_(self.ptr.value)
+        self.tv.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
        
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -371,8 +403,70 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         # TODO: Implement this properly
         h = GetTxs(self)
-        return 1 if not h else len(h)
+        rows = 0
+        self.haveShowMoreTxs = False
+        len_h = len(h) if h else 0
+        if not self.compactMode:
+            rows = len_h
+        else:
+            rows = math.floor(tableView.bounds.size.height / _tx_cell_height)
+            if not rows: rows = 1
+            if not h: rows = 0
+            else:
+                rows = min(rows,len_h)
+                self.haveShowMoreTxs = len_h > rows
+        return 1 if not rows else rows
 
+    @objc_method
+    def tableView_viewForFooterInSection_(self, tv, section : int) -> ObjCInstance:
+        if self.haveShowMoreTxs:
+            v = None
+            objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsMisc",None,None)
+            for o in objs:
+                if not v and isinstance(o,UIView) and o.tag == 3000:
+                    v = o
+                    l = v.viewWithTag_(1)
+                    if l: l.text = _("Show All Transactions")
+            for o in objs:
+                if isinstance(o, UIGestureRecognizer) and o.view and v \
+                       and o.view.ptr.value == v.ptr.value:
+                    o.addTarget_action_(self, SEL(b'onSeeAllTxs:'))
+            return v
+        return UIVew.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
+
+    @objc_method
+    def onSeeAllTxs_(self, gr : ObjCInstance) -> None:
+        if gr.view.hasAnimations:
+            print("onSeeAllTxs: animation already active, ignoring spurious second tap....")
+            return
+        def seeAllTxs() -> None:
+            # Push a new viewcontroller that contains just a tableview.. we create another instance of this
+            # class to manage the tableview and set it up properly.  This should be fast as we are sharing tx history
+            # data with the child instance via our "nspy_put" mechanism.
+            vc = UIViewController.new().autorelease()
+            vc.title = _("All Transactions")
+            vc.view = UITableView.alloc().initWithFrame_style_(self.vc.view.frame, UITableViewStylePlain).autorelease()
+            helper = WalletsTxsHelper.new().autorelease()
+            vc.view.dataSource = helper
+            vc.view.delegate = helper
+            helper.tv = vc.view
+            helper.vc = self.vc
+            helper.miscSetup()
+            # optimization to share the same history data with the new helper class we just created for the full mode view
+            # .. hopefully this will keep the UI peppy and responsive!
+            utils.nspy_put_byname(helper, GetTxs(self), 'txs')
+            from rubicon.objc.runtime import libobjc            
+            libobjc.objc_setAssociatedObject(vc.view.ptr, helper.ptr, helper.ptr, 0x301)
+            self.vc.navigationController.pushViewController_animated_(vc, True)
+        c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
+        gr.view.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,seeAllTxs)
+        
+    
+    @objc_method
+    def tableView_heightForFooterInSection_(self, tv, section : int) -> float:
+        if self.haveShowMoreTxs:
+            return 50.0
+        return 0.0
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
@@ -414,7 +508,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
 
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv : ObjCInstance, indexPath : ObjCInstance) -> float:
-        return 76.0 if indexPath.row > 0 or GetTxs(self) else 44.0
+        return _tx_cell_height if indexPath.row > 0 or GetTxs(self) else 44.0
 
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):

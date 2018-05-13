@@ -164,9 +164,9 @@ rm -fr scratch
 
 xcode_file="Electron-Cash.xcodeproj/project.pbxproj" 
 echo ""
-echo "Mogrifying Xcode .pbxproj file to use iOS 9.0 deployment target..."
+echo "Mogrifying Xcode .pbxproj file to use iOS 10.0 deployment target..."
 echo ""
-sed  -E -i original1 's/(.*)IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+(.*)/\1IPHONEOS_DEPLOYMENT_TARGET = 9.0\2/g' "iOS/${xcode_file}" && \
+sed  -E -i original1 's/(.*)IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+(.*)/\1IPHONEOS_DEPLOYMENT_TARGET = 10.0\2/g' "iOS/${xcode_file}" && \
   sed  -n -i original2 '/ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME/!p' "iOS/${xcode_file}"
 if [ "$?" != 0 ]; then
 	echo "Error modifying Xcode project file iOS/$xcode_file... aborting."

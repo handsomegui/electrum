@@ -39,6 +39,9 @@ static double Rand(double lo, double hi)
 
 @implementation UIView (AnimExtras)
 
+// property accessor
+- (BOOL) hasAnimations { return [self.layer animationKeys].count; }
+
 - (void) animExtrasAnimationDidStopSelector:(NSString *)animId finished:(NSNumber *)finished context:(void *)context {
     if (context) {
         NSInvocation *inv = (__bridge_transfer NSInvocation *)context; // implicit release
