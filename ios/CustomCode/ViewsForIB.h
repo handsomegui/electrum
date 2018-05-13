@@ -186,8 +186,10 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 #pragma mark Main View Area Related
 @property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
-@property (nonatomic, strong) IBOutlet WalletsTxsHelper *txsHelper;
+@property (nonatomic, strong) IBOutlet WalletsTxsHelper *txsHelper; ///< txsHelper.tv is the tableView
 @property (nonatomic, weak) IBOutlet UITableView *reqstv; ///< TODO: Move the management of this tableView into its own class -- for now this tv uses the hacky RequestsVC as its tableview delegate/dataSource
+@property (nonatomic, weak) IBOutlet UIView *noTXsView; ///< displays a message and shows an image when the txsHelper.tv table is empty
+@property (nonatomic, weak) IBOutlet UIView *noReqsView; ///< displays a message and shows an image when the reqstv table is empty
 @property (nonatomic, weak) IBOutlet UIButton *sendBut;
 @property (nonatomic, weak) IBOutlet UIButton *receiveBut;
 @end

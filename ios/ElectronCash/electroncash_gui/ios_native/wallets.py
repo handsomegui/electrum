@@ -98,6 +98,7 @@ class WalletsVC(WalletsVCBase):
         self.lineHider.backgroundColor = self.blueBarTop.backgroundColor
         self.navBar.addSubview_(self.lineHider)
         self.lineHider.autoresizingMask = (1<<6)-1
+        self.doChkTableViewCounts()
 
     @objc_method
     def viewWillDisappear_(self, animated : bool) -> None:
@@ -132,12 +133,15 @@ class WalletsVC(WalletsVCBase):
                 self.needsRefresh = False
         if ctr > 1:
             utils.NSLog("Wallets: re-used history data for %d child tables.",ctr)
+        self.doChkTableViewCounts()
+
 
     @objc_method
     def refreshReqs(self):
         if not self.reqstv: return
         self.reqstv.reloadData() # HACK TODO FIXME: create a real helper class to manage this
         if self.reqstv.refreshControl: self.reqstv.refreshControl.endRefreshing()
+        self.doChkTableViewCounts()
 
     @objc_method
     def needUpdate(self):
@@ -221,6 +225,7 @@ class WalletsVC(WalletsVCBase):
             if not self.reqsLoadedAtLeastOnce:
                 gui.ElectrumGui.gui.refresh_components('requests')
                 self.reqsLoadedAtLeastOnce = True
+        self.doChkTableViewCounts()
 
     # Detects if a tap was in the status label or on the status blurb
     @objc_method
@@ -254,6 +259,23 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def onReceiveBut(self) -> None:
         gui.ElectrumGui.gui.show_receive_modal()
+        
+    @objc_method
+    def doChkTableViewCounts(self) -> None:
+        if not self.reqstv or not self.txsHelper or not self.txsHelper.tv or not self.segControl or not self.reqstv.dataSource:
+            return
+        if self.segControl.selectedSegmentIndex == 0:
+            # Transactions
+            ntx = self.txsHelper.tableView_numberOfRowsInSection_(self.txsHelper.tv, 0)
+            self.noTXsView.setHidden_(bool(ntx))
+            self.noReqsView.setHidden_(True)
+            self.txsHelper.tv.setHidden_(not bool(ntx))
+        elif self.segControl.selectedSegmentIndex == 1:
+            # Requests
+            nreq = self.reqstv.dataSource.tableView_numberOfRowsInSection_(self.reqstv, 0)
+            self.noTXsView.setHidden_(True)
+            self.noReqsView.setHidden_(bool(nreq))
+            self.reqstv.setHidden_(not bool(nreq))
 
 
 class WalletsDrawerHelper(WalletsDrawerHelperBase):
@@ -409,13 +431,10 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         if not self.compactMode:
             rows = len_h
         else:
-            rows = math.floor(tableView.bounds.size.height / _tx_cell_height)
-            if not rows: rows = 1
-            if not h: rows = 0
-            else:
-                rows = min(rows,len_h)
-                self.haveShowMoreTxs = len_h > rows
-        return 1 if not rows else rows
+            rows = max(math.floor(tableView.bounds.size.height / _tx_cell_height), 1)
+            rows = min(rows,len_h)
+            self.haveShowMoreTxs = len_h > rows
+        return rows
 
     @objc_method
     def tableView_viewForFooterInSection_(self, tv, section : int) -> ObjCInstance:
@@ -432,7 +451,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
                        and o.view.ptr.value == v.ptr.value:
                     o.addTarget_action_(self, SEL(b'onSeeAllTxs:'))
             return v
-        return UIVew.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
+        return UIView.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
 
     @objc_method
     def onSeeAllTxs_(self, gr : ObjCInstance) -> None:
@@ -464,7 +483,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     
     @objc_method
     def tableView_heightForFooterInSection_(self, tv, section : int) -> float:
-        if self.haveShowMoreTxs:
+        if self.compactMode:
             return 50.0
         return 0.0
 
@@ -534,7 +553,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
             return
         utils.nspy_put_byname(self, h, 'txs')
         utils.NSLog("Wallets: fetched %d entries from history",len(h))
-        
+
 # this should be a method of WalletsTxsHelper but it returns a python object, so it has to be a standalone global function
 def GetTxs(txsHelper = None):
     if not txsHelper and VC:
