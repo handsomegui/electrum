@@ -35,6 +35,8 @@ VChevronImages = [
 
 VC = None
 
+_kern = -0.5 # kerning for some of the text labels in the view
+
 class WalletsNav(WalletsNavBase):    
     @objc_method
     def dealloc(self) -> None:
@@ -276,8 +278,8 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
             if isinstance(obj, UIView) and obj.tag == 1000:
                 name = obj.viewWithTag_(1)
                 size = obj.viewWithTag_(2)
-                name.text = _("Name") + ":"
-                size.text = _("Size:")
+                name.setText_withKerning_(_("Name"), _kern) 
+                size.setText_withKerning_(_("Size:").translate({ord(i):None for i in ':'}), _kern)
                 return obj
         return None
 
@@ -397,13 +399,12 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         if entry.conf and entry.conf > 0 and entry.conf < 6:
             ff = "%s %s"%(entry.conf, _('confirmations'))
 
-        kern = -0.5
-        cell.amountTit.setText_withKerning_(_("Amount"), kern)
-        cell.balanceTit.setText_withKerning_(_("Balance"), kern)
-        cell.statusTit.setText_withKerning_(_("Status"), kern)
+        cell.amountTit.setText_withKerning_(_("Amount"), _kern)
+        cell.balanceTit.setText_withKerning_(_("Balance"), _kern)
+        cell.statusTit.setText_withKerning_(_("Status"), _kern)
         cell.amount.text = entry.v_str.translate({ord(i):None for i in '+- '}) #strip +/-
         cell.balance.text = entry.balance_str.translate({ord(i):None for i in '+- '}) # strip +/- from amount
-        cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', kern)
+        cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', _kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
         cell.date.text = entry.status_str
         cell.status.text = ff #if entry.conf < 6 else ""
