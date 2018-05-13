@@ -173,6 +173,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic,weak) IBOutlet UILabel *statusLabel;
 @property (nonatomic,weak) IBOutlet UILabel *statusBlurb;
 
+#pragma mark Top Nav Bar related
 @property (nonatomic, weak) IBOutlet UINavigationBar *navBar;
 @property (nonatomic, weak) IBOutlet UIView *blueBarTop;
 
@@ -197,6 +198,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 -(IBAction)didChangeSegment:(DZNSegmentedControl *)control; // implemented in python wallets.py
 -(IBAction)onSendBut;
 -(IBAction)onReceiveBut;
+-(IBAction)onTopNavTap;
 @end
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsNav : WalletsNavBase

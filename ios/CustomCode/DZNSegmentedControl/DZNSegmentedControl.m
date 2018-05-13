@@ -101,21 +101,23 @@
 
 - (CGSize)sizeThatFits:(CGSize)size
 {
-    return CGSizeMake((self.width ? self.width : self.superview.bounds.size.width), self.height);
+    //return CGSizeMake((self.width ? self.width : self.superview.bounds.size.width), self.height);
+    return CGSizeMake(self.width ? self.width : size.width, size.height);
 }
 
-- (void)sizeToFit
+/*- (void)sizeToFit
 {
     CGRect rect = self.frame;
     rect.size = [self sizeThatFits:rect.size];
     self.frame = rect;
 }
+*/
 
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
-    [self sizeToFit];
+    //[self sizeToFit];
     
     if ([self buttons].count == 0) {
         _selectedSegmentIndex = -1;
@@ -123,6 +125,8 @@
     else if (self.selectedSegmentIndex < 0) {
         _selectedSegmentIndex = 0;
     }
+
+    //NSLog(@"w = %f, h = %f",self.bounds.size.width, self.bounds.size.height);
     
     [[self buttons] enumerateObjectsUsingBlock:^(UIButton *button, NSUInteger idx, BOOL *stop) {
         
@@ -131,7 +135,9 @@
         CGFloat x = width*idx;
 
         CGRect rect = CGRectMake(x, 0.0f, width, height);
-        
+
+        //NSLog(@"Button %lu rect=(%f,%f,%f,%f)",idx,rect.origin.x,rect.origin.y,rect.size.width,rect.size.height);
+
         [button setFrame:rect];
         
         if (_adjustsButtonTopInset) {

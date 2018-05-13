@@ -176,11 +176,13 @@ class WalletsVC(WalletsVCBase):
 
     @objc_method
     def addWallet(self) -> None:
-        c1 = UIColor.whiteColor
-        c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
+        if self.addWalletView.layer.animationKeys():
+            print("addWalletView animation already active, ignoring spurious second tap....")
+            return
+        c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
         def doAddWallet() -> None:
             gui.ElectrumGui.gui.show_message(message="'Add Wallet' is not yet implemented.", title="Coming Soon!")
-        self.addWalletView.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1,c2,0.2,True,doAddWallet)
+        self.addWalletView.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,doAddWallet)
         
     @objc_method
     def didChangeSegment_(self, control : ObjCInstance) -> None:
@@ -194,6 +196,31 @@ class WalletsVC(WalletsVCBase):
             if not self.reqsLoadedAtLeastOnce:
                 gui.ElectrumGui.gui.refresh_components('requests')
                 self.reqsLoadedAtLeastOnce = True
+
+    # Detects if a tap was in the status label or on the status blurb
+    @objc_method
+    def gestureRecognizerShouldBegin_(self, gr : ObjCInstance) -> bool:
+        s = self.statusLabel.bounds.size
+        s2 = self.statusBlurb.bounds.size
+        p = gr.locationInView_(self.statusLabel)
+        p2 = gr.locationInView_(self.statusBlurb)
+        return self.navigationController.visibleViewController.ptr.value == self.ptr.value and \
+                ( (p.x >= 0 and p.y >= 0 and p.x <= s.width and p.y <= s.height) \
+                  or (p2.x >= 0 and p2.y >= 0 and p2.x <= s2.width and p2.y <= s2.height) )
+                  
+
+    # pops up the network setup dialog and also does a little animation on the status label
+    @objc_method
+    def onTopNavTap(self) -> None:
+        if self.statusLabel.layer.animationKeys():
+            print("status label animation already active, ignoring spurious second tap....")
+            return
+        c1 = self.statusLabel.backgroundColor.colorWithAlphaComponent_(0.50)
+        c2 = self.statusBlurb.textColor.colorWithAlphaComponent_(0.10)
+        def doShowNetworkDialog() -> None:
+            gui.ElectrumGui.gui.show_network_dialog()
+        self.statusLabel.backgroundColorAnimationToColor_duration_reverses_completion_(c1,0.2,True,doShowNetworkDialog)
+        self.statusBlurb.textColorAnimationToColor_duration_reverses_completion_(c2,0.2,True,None)
         
     @objc_method
     def onSendBut(self) -> None:

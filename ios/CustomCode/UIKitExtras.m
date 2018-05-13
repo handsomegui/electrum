@@ -201,21 +201,84 @@ static double Rand(double lo, double hi)
 -(void) backgroundColorAnimationFromColor:(UIColor *)startColor toColor:(UIColor *)destColor duration:(CGFloat)duration reverses:(BOOL)reverses completion:(void(^)(void))completion
 {
     [self.layer removeAllAnimations];
-    self.backgroundColor = startColor;
+    const BOOL uilabelHack = [self isKindOfClass:[UILabel class]];
+    if (uilabelHack) {
+        self.backgroundColor = UIColor.clearColor;
+        self.layer.backgroundColor = startColor.CGColor;
+    } else
+        self.backgroundColor = startColor;
     if (reverses) duration /= 2.0;
 
     [UIView animateWithDuration:duration delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
-        self.backgroundColor = destColor;
+        if (uilabelHack) {
+            self.layer.backgroundColor = destColor.CGColor;
+        } else
+            self.backgroundColor = destColor;
     } completion:^(BOOL finished) {
         if (!finished) return;
         if (reverses) {
+            [self.layer removeAllAnimations];
+            if (uilabelHack) {
+                self.layer.backgroundColor = destColor.CGColor;
+            } else
+                self.backgroundColor = destColor;
             [UIView animateWithDuration:duration delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
-                self.backgroundColor = startColor;
+                if (uilabelHack) {
+                    self.layer.backgroundColor = startColor.CGColor;
+                } else
+                    self.backgroundColor = startColor;
             } completion:^(BOOL finished2) {
-                if (completion && finished2) completion();
+                if (!finished2) return;
+                [self.layer removeAllAnimations];
+                self.backgroundColor = startColor;
+                if (completion) completion();
             }];
-        } else if (completion) completion();
+        } else {
+            self.backgroundColor = destColor;
+            if (completion) completion();
+        }
     }];
+}
+
+-(void) backgroundColorAnimationToColor:(UIColor *)destColor
+                               duration:(CGFloat)duration
+                               reverses:(BOOL)reverses
+                             completion:(void(^)(void))completion {
+    return [self backgroundColorAnimationFromColor:self.backgroundColor toColor:destColor duration:duration reverses:reverses completion:completion];
+}
+@end
+
+@implementation UILabel(MiscEffects)
+-(void) textColorAnimationFromColor:(UIColor *)startColor toColor:(UIColor *)destColor duration:(CGFloat)duration reverses:(BOOL)reverses completion:(void(^)(void))completion {
+    [self.layer removeAllAnimations];
+    if (reverses) duration /= 2.0;
+    self.textColor = startColor;
+    [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        self.textColor = destColor;
+    } completion:^(BOOL finished) {
+        if (!finished) return;
+        if (reverses) {
+            [self.layer removeAllAnimations];
+            self.textColor = destColor;
+            [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+                self.textColor = startColor;
+            } completion:^(BOOL finished2) {
+                if (!finished2) return;
+                self.textColor = startColor;
+                if (completion) completion();
+            }];
+        } else {
+            self.textColor = destColor;
+            if (completion) completion();
+        }
+    }];
+}
+
+-(void) textColorAnimationToColor:(UIColor *)destColor
+                         duration:(CGFloat)duration
+                         reverses:(BOOL)reverses
+                       completion:(void(^)(void))completion {
+    return [self textColorAnimationFromColor:self.textColor toColor:destColor duration:duration reverses:reverses completion:completion];
 }
 @end
 

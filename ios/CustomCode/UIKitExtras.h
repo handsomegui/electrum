@@ -30,10 +30,27 @@
 -(void) backgroundColorAnimationFromColor:(UIColor *)startColor
                                   toColor:(UIColor *)destColor
                                  duration:(CGFloat)duration
+                                 reverses:(BOOL)reverses /**< iff true will go startColor -> destColor and back in duration seconds */
+                               completion:(void(^)(void))completion;
+
+-(void) backgroundColorAnimationToColor:(UIColor *)destColor
+                                 duration:(CGFloat)duration
                                  reverses:(BOOL)reverses
                                completion:(void(^)(void))completion;
 @end
 
+@interface UILabel (MiscEffects)
+-(void) textColorAnimationFromColor:(UIColor *)startColor
+                            toColor:(UIColor *)destColor
+                           duration:(CGFloat)duration
+                           reverses:(BOOL)reverses
+                         completion:(void(^)(void))completion;
+
+-(void) textColorAnimationToColor:(UIColor *)destColor
+                         duration:(CGFloat)duration
+                         reverses:(BOOL)reverses
+                       completion:(void(^)(void))completion;
+@end
 
 typedef void(^ActionBlock)(UIControl *);
 @interface UIControl (UIControlBlockAction)

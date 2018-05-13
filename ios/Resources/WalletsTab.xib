@@ -20,6 +20,9 @@
                 <color key="backgroundColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
                 <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                 <color key="barTintColor" red="0.33333333333333331" green="0.54509803921568623" blue="1" alpha="1" colorSpace="deviceRGB"/>
+                <connections>
+                    <outletCollection property="gestureRecognizers" destination="1Xa-I9-r22" appends="YES" id="S4V-cy-DGz"/>
+                </connections>
             </navigationBar>
             <viewControllers>
                 <viewController title="Wallets" id="5hO-gj-WnP" userLabel="ViewController" customClass="WalletsVC">
@@ -252,12 +255,12 @@
                     <toolbarItems/>
                     <navigationItem key="navigationItem" id="kcT-cH-aZz">
                         <nil key="title"/>
-                        <view key="titleView" contentMode="scaleToFill" id="ep6-FU-Njz">
-                            <rect key="frame" x="17" y="10" width="342" height="24"/>
+                        <view key="titleView" opaque="NO" contentMode="scaleToFill" id="ep6-FU-Njz">
+                            <rect key="frame" x="36" y="10" width="304" height="24"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
                             <subviews>
                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="jth-tL-V5a" userLabel="BlueBarBot">
-                                    <rect key="frame" x="-829" y="12" width="2000" height="24"/>
+                                    <rect key="frame" x="-848" y="12" width="2000" height="24"/>
                                     <color key="backgroundColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
                                     <constraints>
                                         <constraint firstAttribute="width" constant="2000" id="UJ6-up-oYe"/>
@@ -265,11 +268,11 @@
                                     </constraints>
                                 </view>
                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="zCo-Wb-ZLh" userLabel="LSpacer">
-                                    <rect key="frame" x="0.0" y="0.0" width="73" height="24"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="54" height="24"/>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 </view>
                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="999" text="All set and good to go." lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="atn-VB-xdN">
-                                    <rect key="frame" x="139" y="5.5" width="130.5" height="14.5"/>
+                                    <rect key="frame" x="120" y="5.5" width="130.5" height="14.5"/>
                                     <constraints>
                                         <constraint firstAttribute="height" relation="greaterThanOrEqual" id="g8f-J8-rnC"/>
                                         <constraint firstAttribute="width" relation="greaterThanOrEqual" id="hhM-W6-Wj1"/>
@@ -278,8 +281,8 @@
                                     <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                     <nil key="highlightedColor"/>
                                 </label>
-                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="Online" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="lYw-Ew-yYB">
-                                    <rect key="frame" x="73" y="2" width="56" height="21"/>
+                                <label opaque="NO" clipsSubviews="YES" contentMode="left" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="Online" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="lYw-Ew-yYB">
+                                    <rect key="frame" x="54" y="2" width="56" height="21"/>
                                     <color key="backgroundColor" red="0.73333333333333328" green="1" blue="0.23137254901960785" alpha="1" colorSpace="deviceRGB"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="21" id="Fuy-HI-CWn"/>
@@ -295,11 +298,12 @@
                                     </userDefinedRuntimeAttributes>
                                 </label>
                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="s5a-Kp-FHa" userLabel="RSpacer">
-                                    <rect key="frame" x="269.5" y="0.0" width="73" height="24"/>
+                                    <rect key="frame" x="250.5" y="0.0" width="54" height="24"/>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 </view>
                             </subviews>
                             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                            <gestureRecognizers/>
                             <constraints>
                                 <constraint firstAttribute="bottom" secondItem="s5a-Kp-FHa" secondAttribute="bottom" id="2Da-es-5s2"/>
                                 <constraint firstAttribute="bottom" secondItem="jth-tL-V5a" secondAttribute="bottom" constant="-12" id="2fl-CI-XtG"/>
@@ -326,7 +330,7 @@
                         <outlet property="reqstv" destination="SEd-Hd-vMb" id="Q5k-cP-9bE"/>
                         <outlet property="segControl" destination="UzK-mX-oKs" id="E1A-wn-cge"/>
                         <outlet property="sendBut" destination="rlV-nI-e8g" id="GEu-Yz-kyX"/>
-                        <outlet property="statusBlurb" destination="atn-VB-xdN" id="CS2-7V-DjU"/>
+                        <outlet property="statusBlurb" destination="atn-VB-xdN" id="GJh-hZ-2ps"/>
                         <outlet property="statusLabel" destination="lYw-Ew-yYB" id="Y5R-MU-vsd"/>
                         <outlet property="txsHelper" destination="qSh-mO-1cK" id="ab9-o5-bHD"/>
                         <outlet property="walletAmount" destination="BuO-xT-ft9" id="5O7-uc-dXv"/>
@@ -341,7 +345,7 @@
             </toolbar>
             <point key="canvasLocation" x="28.5" y="59.5"/>
         </navigationController>
-        <tapGestureRecognizer id="pa5-zC-5FB">
+        <tapGestureRecognizer id="pa5-zC-5FB" userLabel="Drawer Tap Gesture Recognizer">
             <connections>
                 <action selector="toggleDrawer" destination="5hO-gj-WnP" id="ILi-Q6-WY1"/>
             </connections>
@@ -367,6 +371,12 @@
                 <outlet property="vc" destination="5hO-gj-WnP" id="eIe-SF-uv2"/>
             </connections>
         </customObject>
+        <tapGestureRecognizer id="1Xa-I9-r22" userLabel="TopNav Tap Gesture Recognizer">
+            <connections>
+                <action selector="onTopNavTap" destination="5hO-gj-WnP" id="PQa-IP-c7s"/>
+                <outlet property="delegate" destination="5hO-gj-WnP" id="cpY-fN-2Z7"/>
+            </connections>
+        </tapGestureRecognizer>
     </objects>
     <resources>
         <image name="chevron_00000.png" width="44" height="44"/>
