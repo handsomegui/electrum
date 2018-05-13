@@ -173,6 +173,9 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic,weak) IBOutlet UILabel *statusLabel;
 @property (nonatomic,weak) IBOutlet UILabel *statusBlurb;
 
+@property (nonatomic, weak) IBOutlet UINavigationBar *navBar;
+@property (nonatomic, weak) IBOutlet UIView *blueBarTop;
+
 #pragma mark Drawer Related
 @property (nonatomic, weak) IBOutlet UILabel *walletName;
 @property (nonatomic, weak) IBOutlet UILabel *walletAmount;

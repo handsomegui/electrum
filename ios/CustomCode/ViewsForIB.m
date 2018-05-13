@@ -69,13 +69,15 @@
     CGRect frame = self.drawer.frame, frameBottom = self.drawerBottom.frame;
     frame.size.height = 63.0;
     frameBottom.size.height = 0.0;
+    const BOOL doChevron = !self.chevron.animationImages.count;
 
     if (animated && !isRotating) {
 
         isRotating = YES;
 
         [UIView animateWithDuration:0.2 delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
-            self.chevron.transform = CGAffineTransformIdentity;
+            if (doChevron)
+                self.chevron.transform = CGAffineTransformIdentity;
             self.drawer.frame = frame;
             self.drawerHeight.constant = 63.0;
             self.drawerBottom.frame = frameBottom;
@@ -87,7 +89,8 @@
 
     } else {
         [self.chevron.layer removeAllAnimations];
-        self.chevron.transform = CGAffineTransformIdentity;
+        if (doChevron)
+            self.chevron.transform = CGAffineTransformIdentity;
         self.drawer.frame = frame;
         self.drawerHeight.constant = 63.0;
         isRotating = NO;
@@ -102,13 +105,15 @@
     CGRect frame = self.drawer.frame, frameBottom = self.drawerBottom.frame;
     frame.size.height = 300.0;
     frameBottom.size.height = 237.0;
+    const BOOL doChevron = !self.chevron.animationImages.count;
 
     if (animated && !isRotating) {
 
         isRotating = YES;
 
         [UIView animateWithDuration:0.2 delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
-            self.chevron.transform = CGAffineTransformMakeRotation(DEGREES_TO_RADIANS(179.9f));
+            if (doChevron)
+                self.chevron.transform = CGAffineTransformMakeRotation(DEGREES_TO_RADIANS(179.9f));
             self.drawerHeight.constant = frame.size.height;
             self.drawer.frame = frame;
             self.drawerBottom.frame = frameBottom;
@@ -120,7 +125,8 @@
 
     } else {
         [self.chevron.layer removeAllAnimations];
-        self.chevron.transform = CGAffineTransformMakeRotation(DEGREES_TO_RADIANS(179.9f));
+        if (doChevron)
+            self.chevron.transform = CGAffineTransformMakeRotation(DEGREES_TO_RADIANS(179.9f));
         self.drawerHeight.constant = frame.size.height;
         self.drawer.frame = frame;
         isRotating = NO;

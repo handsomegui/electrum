@@ -24,12 +24,23 @@ StatusColors = {
 StatusImages = history.statusImages.copy()
 StatusImages[9] = UIImage.imageNamed_("grnchk.png").retain()
 
+VChevronImages = [
+    UIImage.imageNamed_("chevron_00000").retain(),
+    UIImage.imageNamed_("chevron_00001").retain(),
+    UIImage.imageNamed_("chevron_00002").retain(),
+    UIImage.imageNamed_("chevron_00003").retain(),
+    UIImage.imageNamed_("chevron_00004").retain(),
+    UIImage.imageNamed_("chevron_00005").retain(),
+]
+
 VC = None
 
 class WalletsNav(WalletsNavBase):
-   
+    lineHider = objc_property()
+    
     @objc_method
     def dealloc(self) -> None:
+        self.lineHider = None
         send_super(__class__, self, 'dealloc')
 
 class WalletsVC(WalletsVCBase):
@@ -112,6 +123,23 @@ class WalletsVC(WalletsVCBase):
             rc.beginRefreshing()
             tv.setContentOffset_animated_(CGPointMake(0, tv.contentOffset.y-rc.frame.size.height), True)
 
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        f = self.navBar.frame
+        # This line hider is a hack/fix for a weirdness in iOS where there is a white line between the top nav bar and the bottom
+        # 'drawer' area.  This hopefully fixes that.
+        self.lineHider = UIView.alloc().initWithFrame_(CGRectMake(0,f.size.height,f.size.width,1)).autorelease()
+        self.lineHider.backgroundColor = self.blueBarTop.backgroundColor
+        self.navBar.addSubview_(self.lineHider)
+        self.lineHider.autoresizingMask = (1<<6)-1
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if self.lineHider:
+            self.lineHider.removeFromSuperview()
+            self.lineHider = None
 
     @objc_method
     def setStatus_(self, mode : int) -> None:
@@ -263,7 +291,36 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
         old = tv.cellForRowAtIndexPath_(NSIndexPath.indexPathForRow_inSection_(self.selectedRow,indexPath.section))
         if old: old.viewWithTag_(1).image = None
         iv.image = self.bluchk
-        self.selectedRow = indexPath.row            
+        self.selectedRow = indexPath.row
+        
+    # overrides base
+    @objc_method
+    def openAnimated_(self, animated : bool) -> None:
+        self.chevron.animationImages = VChevronImages
+        if not self.chevron.isAnimating() and animated:
+            self.chevron.animationDuration = 0.2
+            self.chevron.animationRepeatCount = 1
+            self.chevron.startAnimating()
+        else:
+            self.chevron.stopAnimating()
+        self.chevron.image = VChevronImages[-1]
+        #self.isOpen = True
+        send_super(__class__, self, 'openAnimated:', animated, argtypes=[c_bool])
+
+    # overrides base
+    @objc_method
+    def closeAnimated_(self, animated : bool) -> None:
+        self.chevron.animationImages = list(reversed(VChevronImages))
+        if not self.chevron.isAnimating() and animated:
+            self.chevron.animationDuration = 0.2
+            self.chevron.animationRepeatCount = 1
+            self.chevron.startAnimating()
+        else:
+            self.chevron.stopAnimating()
+        self.chevron.image = VChevronImages[0]
+        #self.isOpen = False
+        send_super(__class__, self, 'closeAnimated:', animated, argtypes=[c_bool])
+        
         
 class WalletsTxsHelper(WalletsTxsHelperBase):
         
