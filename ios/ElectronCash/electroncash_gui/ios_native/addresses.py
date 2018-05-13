@@ -86,6 +86,10 @@ class AddressDetail(UIViewController):
         tv = v.viewWithTag_(1000)
         tv.delegate = self
         tv.dataSource = self
+        
+        # Testing re-use of WalletsTxsHelper below...
+        #from . import wallets 
+        #helper = wallets.NewWalletsTxsHelper(tv = tv, vc = self, txs = utils.nspy_get_byname(self, 'history'), noRefreshControl = True, domain = [entry.address])
 
         self.view = v
                 
