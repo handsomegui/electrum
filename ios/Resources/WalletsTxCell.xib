@@ -12,7 +12,7 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
         <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
-        <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="WalletsTxCell" rowHeight="66" id="OiJ-Re-K5P" customClass="WalletsTxCell">
+        <tableViewCell opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="WalletsTxCell" rowHeight="66" id="OiJ-Re-K5P" customClass="WalletsTxCell">
             <rect key="frame" x="0.0" y="0.0" width="375" height="76"/>
             <autoresizingMask key="autoresizingMask"/>
             <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="OiJ-Re-K5P" id="xYx-Vg-Aqb">
@@ -118,6 +118,7 @@
                         <nil key="highlightedColor"/>
                     </label>
                 </subviews>
+                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                 <constraints>
                     <constraint firstAttribute="trailingMargin" secondItem="x0o-IR-hMC" secondAttribute="trailing" id="1ty-Py-R1g"/>
                     <constraint firstItem="Fvm-yr-x95" firstAttribute="leading" secondItem="F5k-7z-KJd" secondAttribute="leading" id="2Ey-52-ppx"/>
@@ -152,6 +153,7 @@
                     <constraint firstItem="kKt-Cj-GZi" firstAttribute="top" secondItem="xYx-Vg-Aqb" secondAttribute="top" constant="18" id="zxd-7n-evB"/>
                 </constraints>
             </tableViewCellContentView>
+            <color key="backgroundColor" white="1" alpha="0.74659700920245398" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
             <connections>
                 <outlet property="amount" destination="F5k-7z-KJd" id="XKb-vR-PGe"/>
                 <outlet property="amountTit" destination="gAF-Dw-KNw" id="phy-NP-NJ9"/>

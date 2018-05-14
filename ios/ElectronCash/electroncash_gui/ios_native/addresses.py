@@ -3,7 +3,7 @@ from . import gui
 from . import history
 from . import private_key_dialog
 from . import sign_decrypt_dialog
-from . import txdetail
+from . import wallets
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 import electroncash.exchange_rate
@@ -87,14 +87,10 @@ class AddressDetail(UIViewController):
         butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy) # bind actin to closure 
         butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)  # bind action to closure
         
-        utils.nspy_put_byname(self, history.get_history([entry.address]), 'history')
         tv = v.viewWithTag_(1000)
-        tv.delegate = self
-        tv.dataSource = self
         
-        # Testing re-use of WalletsTxsHelper below...
-        #from . import wallets 
-        #helper = wallets.NewWalletsTxsHelper(tv = tv, vc = self, txs = utils.nspy_get_byname(self, 'history'), noRefreshControl = True, domain = [entry.address])
+        # Re-use of WalletsTxsHelper below...
+        helper = wallets.NewWalletsTxsHelper(tv = tv, vc = self, txs = history.get_history([entry.address]), noRefreshControl = True, domain = [entry.address])
 
         self.view = v
                 
@@ -152,10 +148,9 @@ class AddressDetail(UIViewController):
         
         tv = v.viewWithTag_(1000)
         tv.backgroundColor = bgColor
-        utils.nspy_put_byname(self, history.get_history([entry.address]), 'history')
         
         self.refreshButs()
-        tv.reloadData()
+        tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
         
     @objc_method
     def onTapAddress(self) -> None:
@@ -304,55 +299,6 @@ class AddressDetail(UIViewController):
         #utils.call_later(0.250, lambda: self.refresh())
         self.refresh()
         
-    @objc_method
-    def tableView_numberOfRowsInSection_(self, tv, section : int) -> int:
-        h = utils.nspy_get_byname(self, 'history')
-        return len(h) if h else 1
-    
-    @objc_method
-    def tableView_titleForHeaderInSection_(self, tv, section : int) -> ObjCInstance:
-        return _("Transaction History")
-    
-    @objc_method
-    def numberOfSectionsInTableView_(self, tv) -> int:
-        return 1
-    
-    @objc_method
-    def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
-        identifier = str(__class__)
-        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-        if cell is None:
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
-            cell.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,1.0,1.0,0.7)
-        try:
-            hstry = utils.nspy_get_byname(self, 'history')
-            if hstry and len(hstry):
-                cell.opaque = False
-                hentry = hstry[indexPath.row]
-                history.setup_cell_for_history_entry(cell, hentry)
-            else:
-                history.empty_cell(cell, _("No transactions"), True)
-        except Exception as e:
-            print("exception in AddressDetail.tableView_cellForRowAtIndexPath_: %s"%str(e))
-            history.empty_cell(cell)
-        return cell
-
-    @objc_method
-    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
-        #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
-        parent = gui.ElectrumGui.gui
-        if parent.wallet is None:
-            return
-        try:
-            entry = utils.nspy_get_byname(self, 'history')[indexPath.row]
-        except:
-            tv.deselectRowAtIndexPath_animated_(indexPath,True)
-            return        
-        tx = parent.wallet.transactions.get(entry.tx_hash, None)
-        if tx is None:
-            raise Exception("Could not find Transaction for tx '%s'"%str(entry.tx_hash))
-        self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(entry, tx=tx), True)
-
 ModeNormal = 0
 ModePicker = 1
 

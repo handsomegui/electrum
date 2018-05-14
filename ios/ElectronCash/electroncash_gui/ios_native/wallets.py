@@ -22,9 +22,6 @@ StatusColors = {
     StatusSynchronizing : UIColor.colorWithRed_green_blue_alpha_(104.0/255.0,255.0/255.0,179.0/255.0,1.0).retain(),
 }
 
-StatusImages = history.statusImages.copy()
-StatusImages[9] = UIImage.imageNamed_("grnchk.png").retain()
-
 VChevronImages = [
     UIImage.imageNamed_("chevron_00000").retain(),
     UIImage.imageNamed_("chevron_00001").retain(),
@@ -542,7 +539,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     @objc_method
     def loadTxsFromWallet(self) -> None:
         domain = utils.nspy_get_byname(self, 'domain') # optionally set the domain associateed with this class for address detail view...
-        h = history.get_history(statusImagesOverride = StatusImages, domain = domain)
+        h = history.get_history(domain = domain)
         if h is None:
             # probable backgroundeed and/or wallet is closed, so return early
             return

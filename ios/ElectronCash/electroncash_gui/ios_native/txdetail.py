@@ -3,7 +3,7 @@ from . import utils
 from . import gui
 from .custom_objc import TxDetailBase, TxInputsOutputsTVCBase
 from .uikit_bindings import *
-from .history import HistoryEntry, statusImages
+from .history import HistoryEntry, StatusImages
 from . import addresses
 from electroncash.transaction import Transaction
 from electroncash.address import Address, PublicKey
@@ -331,12 +331,12 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         vc.noBlkXplo = True
         rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Sign"), UIBarButtonItemStylePlain, vc, SEL(b'onSign')).autorelease())
         if not img:
-            img = statusImages[-1]
+            img = StatusImages[-1]
     if can_broadcast:
         vc.noBlkXplo = True
         rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Broadcast"), UIBarButtonItemStylePlain, vc, SEL(b'onBroadcast')).autorelease())
         if not img:
-            img = statusImages[-2]
+            img = StatusImages[-2]
         
     if tx_hash == _("Unknown") or tx_hash is None: #unsigned tx
         txHash.text = tx_hash_str
@@ -377,7 +377,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         #try and auto-determine the appropriate image if it has some confirmations and img is still null
         try:
             c = min(int(conf), 6)
-            if c >= 0: img = statusImages[c+3]
+            if c >= 0: img = StatusImages[c+3]
         except:
             pass
         if not img: img = UIImage.imageNamed_("empty.png")
@@ -630,8 +630,8 @@ class TxDetail(TxDetailBase):
             if self.cbTimer: self.cbTimer.invalidate()
             self.cbTimer = None
             status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
-            if status is not None and status >= 0 and status < len(statusImages):
-                entry = utils.set_namedtuple_field(entry, 'status_image', statusImages[status])
+            if status is not None and status >= 0 and status < len(StatusImages):
+                entry = utils.set_namedtuple_field(entry, 'status_image', StatusImages[status])
                 utils.nspy_put_byname(self, entry, 'tx_entry')
             setup_transaction_detail_view(self)
             
@@ -666,8 +666,8 @@ def CreateTxDetailWithTx(tx : Transaction, on_label = None, on_appear = None, as
     if conf is not None:
         if tx_hash is not None and height is not None and timestamp is not None:
             status, status_str = wallet.get_tx_status(tx_hash, height, conf, timestamp)
-            if status is not None and status >= 0 and status < len(statusImages):
-                img = statusImages[status]
+            if status is not None and status >= 0 and status < len(StatusImages):
+                img = StatusImages[status]
     else:
         conf = 0
     timestamp = time.time() if timestamp is None else timestamp

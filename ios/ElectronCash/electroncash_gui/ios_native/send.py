@@ -1,6 +1,6 @@
 from . import utils
 from . import gui
-from .history import HistoryEntry, statusImages
+from .history import HistoryEntry
 from . import txdetail
 from . import contacts
 from electroncash import WalletStorage, Wallet
@@ -661,7 +661,7 @@ class SendVC(SendBase):
         ccy = fx().get_currency() if doFX else None
         fiat_amount_str = str(self.fiat.text) if doFX else None 
         #HistoryEntry = namedtuple("HistoryEntry", "tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
-        entry = HistoryEntry(tx,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,None)#statusImages[-1])
+        entry = HistoryEntry(tx,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,None)
         def newLabel(l):
             self.desc.text = l
             
