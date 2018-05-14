@@ -167,6 +167,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 @class WalletsDrawerHelper;
 @class TxHistoryHelper;
+@class ReqTVD;
 
 @interface WalletsVCBase : UIViewController
 @property (nonatomic,assign) WalletsStatusMode status;
@@ -187,7 +188,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 #pragma mark Main View Area Related
 @property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
 @property (nonatomic, strong) IBOutlet TxHistoryHelper *txsHelper; ///< txsHelper.tv is the tableView
-@property (nonatomic, weak) IBOutlet UITableView *reqstv; ///< TODO: Move the management of this tableView into its own class -- for now this tv uses the hacky RequestsVC as its tableview delegate/dataSource
+@property (nonatomic, strong) IBOutlet ReqTVD *reqTVD; ///< reqstv is the tableView
+@property (nonatomic, weak) IBOutlet UITableView *reqstv;
 @property (nonatomic, weak) IBOutlet UIView *noTXsView; ///< displays a message and shows an image when the txsHelper.tv table is empty
 @property (nonatomic, weak) IBOutlet UIView *noReqsView; ///< displays a message and shows an image when the reqstv table is empty
 @property (nonatomic, weak) IBOutlet UIButton *sendBut;
@@ -244,5 +246,13 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *amtCS;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *dateCS;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *descCS;
+@end
+
+@interface ReqTVDBase : NSObject
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@end
+
+// stub to represent python -- implemented in python receive.py
+@interface ReqTVD : ReqTVDBase
 @end
 #endif /* ViewsForIB_h */

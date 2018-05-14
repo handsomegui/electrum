@@ -228,6 +228,7 @@ class ElectrumGui(PrintError):
         self.set_language()
   
         self.historyMgr = history.HistoryMgr()
+        self.reqMgr = receive.RequestMgr()
         
         # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
         self.sigHelper = utils.PySig()
@@ -295,18 +296,12 @@ class ElectrumGui(PrintError):
 
     def createAndShowUI(self):
         self.historyMgr.subscribe(None) # default subscription to 'all' history domain always active
+        self.reqMgr.subscribe(None) # keep the only domain -- None -- alive the whole time
 
         self.helper = GuiHelper.alloc().init()
                 
         self.tabController = MyTabBarController.alloc().init().autorelease()
-
-        #self.historyVC = tbl = history.HistoryTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
-        #self.historyVC.setCompactMode_(bool(self.config.get('history_compact_mode', False)))
-        #utils.add_callback(self.historyVC, 'on_change_compact_mode', lambda x: self.config.set_key('history_compact_mode',x,True))
-        #self.helper.bindRefreshControl_(self.historyVC.refreshControl)
-        
-        self.receiveVC = rcv = receive.ReceiveVC.alloc().init().autorelease()
-        
+            
         self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
@@ -324,16 +319,10 @@ class ElectrumGui(PrintError):
             if isinstance(obj, wallets.WalletsNav):
                 self.walletsNav = nav1 = obj
                 self.walletsVC = self.walletsNav.topViewController
-                # HACK -- FIXME -- right now the requests tableview in tallets tab uses the ReceiveVC as its dataSource.. FIX!!
-                self.walletsVC.reqstv.delegate = rcv
-                self.walletsVC.reqstv.dataSource = rcv
                 self.walletsVC.reqstv.refreshControl = self.helper.createAndBindRefreshControl()
                 break
         if not self.walletsNav:
             raise Exception('Wallets Nav is None!')
-        # Receive modal
-        self.receiveNav = UINavigationController.alloc().initWithRootViewController_(rcv)
-        self.add_navigation_bar_close_to_modal_vc(rcv, leftSide = True)
 
         #self.historyNav = nav2 = UINavigationController.alloc().initWithRootViewController_(tbl).autorelease()
         self.addressesNav = nav2 = UINavigationController.alloc().initWithRootViewController_(adr).autorelease()
@@ -602,6 +591,7 @@ class ElectrumGui(PrintError):
         self.sigContacts.clear()
         self.sigCoins.clear()
         
+        self.reqMgr.clear()
         self.historyMgr.clear()
     
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
@@ -1268,6 +1258,7 @@ class ElectrumGui(PrintError):
             signalled.add(self.sigPrefs)
             self.sigPrefs.emit()
         if components & {'receive', 'requests', 'paymentrequests', 'pr', *al} and self.sigRequests not in signalled:
+            self.reqMgr.reloadAll()
             signalled.add(self.sigRequests)
             self.sigRequests.emit()
         if components & {'network', 'servers','connection', 'interfaces', *al} and self.sigNetwork not in signalled:
@@ -1589,6 +1580,7 @@ class ElectrumGui(PrintError):
         vc.presentViewController_animated_completion_(self.sendNav, True, None)
      
     def show_receive_modal(self, vc = None) -> None:
+        self.receive_create_if_none()
         if not self.tabController or not self.receiveNav: return
         if self.receiveNav.topViewController.ptr.value != self.receiveVC.ptr.value:
             self.receiveNav.popToRootViewControllerAnimated_(False)
@@ -1612,9 +1604,20 @@ class ElectrumGui(PrintError):
         utils.nspy_put_byname(self.sendVC, addr, 'pay_to')
         self.show_send_modal(vc=vc)
 
+    def receive_create_if_none(self) -> None:
+        if self.receiveVC: return
+        # Receive modal
+        self.receiveVC = receive.ReceiveVC.alloc().init().autorelease()
+        self.receiveNav = UINavigationController.alloc().initWithRootViewController_(self.receiveVC).autorelease()
+        self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True)
+        def doCleanup(oid : objc_id) -> None:
+            self.receiveVC = None
+            self.receiveNav = None
+        utils.NSDeallocObserver(self.receiveVC).connect(doCleanup)
         
     def jump_to_receive_with_address(self, address) -> None:
-        if not self.receiveVC or not isinstance(address, (Address, str)): return
+        self.receive_create_if_none()
+        if not isinstance(address, (Address, str)): return
         self.receiveVC.addr = (str(address))
         self.show_receive_modal()
         

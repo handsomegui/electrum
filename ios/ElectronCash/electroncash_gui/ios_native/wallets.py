@@ -37,7 +37,6 @@ class WalletsNav(WalletsNavBase):
         send_super(__class__, self, 'dealloc')
 
 class WalletsVC(WalletsVCBase):
-    reqsLoadedAtLeastOnce = objc_property()
     lineHider = objc_property()
 
     @objc_method
@@ -46,7 +45,6 @@ class WalletsVC(WalletsVCBase):
         gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
         gui.ElectrumGui.gui.sigRequests.disconnect(self.ptr.value)
 
-        self.reqsLoadedAtLeastOnce = None
         self.lineHider = None
         send_super(__class__, self, 'dealloc')  
 
@@ -65,9 +63,9 @@ class WalletsVC(WalletsVCBase):
         self.segControl.autoAdjustSelectionIndicatorWidth = False
         # Can't set this property from IB, so we do it here programmatically to create the stroke around the receive button
         self.receiveBut.layer.borderColor = self.sendBut.backgroundColor.CGColor
-        
-        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.refreshTXs(), self.ptr.value)
-        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.refreshReqs(), self.ptr.value)
+
+        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.doChkTableViewCounts(), self.ptr.value)
+        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.doChkTableViewCounts(), self.ptr.value)
     
     @objc_method
     def viewDidLoad(self) -> None:
@@ -98,19 +96,9 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def viewLayoutMarginsDidChange(self) -> None:
         send_super(__class__, self, 'viewLayoutMarginsDidChange')
-        self.refreshTXs() # this implicitly redoes the central table and the number of preview transactions we see in it
-
-    @objc_method
-    def refreshTXs(self):
-        self.doChkTableViewCounts()
-
-
-    @objc_method
-    def refreshReqs(self):
-        if not self.reqstv: return
-        self.reqstv.reloadData() # HACK TODO FIXME: create a real helper class to manage this
-        if self.reqstv.refreshControl: self.reqstv.refreshControl.endRefreshing()
-        self.doChkTableViewCounts()
+        if self.txsHelper and self.txsHelper.tv:
+            self.txsHelper.tv.reloadData() # this implicitly redoes the central table and the number of preview transactions we see in it
+            self.doChkTableViewCounts()
 
     @objc_method
     def showRefreshControl(self):
@@ -174,9 +162,7 @@ class WalletsVC(WalletsVCBase):
         elif ix == 1:
             self.txsHelper.tv.setHidden_(True)
             self.reqstv.setHidden_(False)
-            if not self.reqsLoadedAtLeastOnce:
-                gui.ElectrumGui.gui.refresh_components('requests')
-                self.reqsLoadedAtLeastOnce = True
+            self.reqstv.reloadData()
         self.doChkTableViewCounts()
 
     # Detects if a tap was in the status label or on the status blurb

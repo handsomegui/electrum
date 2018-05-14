@@ -152,6 +152,10 @@
                                 <rect key="frame" x="0.0" y="124" width="375" height="345"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                <connections>
+                                    <outlet property="dataSource" destination="vtb-qn-tmr" id="wMA-Uc-W4b"/>
+                                    <outlet property="delegate" destination="vtb-qn-tmr" id="B51-sC-9ed"/>
+                                </connections>
                             </tableView>
                             <button opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rlV-nI-e8g">
                                 <rect key="frame" x="15" y="488" width="167" height="50"/>
@@ -420,6 +424,7 @@
                         <outlet property="noReqsView" destination="Mg4-cl-SaW" id="YTK-dF-hbx"/>
                         <outlet property="noTXsView" destination="heh-Ue-jMi" id="DRv-wf-VM4"/>
                         <outlet property="receiveBut" destination="Ncr-lp-w8U" id="r2U-zk-0bh"/>
+                        <outlet property="reqTVD" destination="vtb-qn-tmr" id="PNS-8q-LXd"/>
                         <outlet property="reqstv" destination="SEd-Hd-vMb" id="Q5k-cP-9bE"/>
                         <outlet property="segControl" destination="UzK-mX-oKs" id="E1A-wn-cge"/>
                         <outlet property="sendBut" destination="rlV-nI-e8g" id="GEu-Yz-kyX"/>
@@ -465,6 +470,11 @@
             <connections>
                 <outlet property="tv" destination="u0V-Yv-emp" id="yt8-QG-cpY"/>
                 <outlet property="vc" destination="5hO-gj-WnP" id="4VJ-cx-X1v"/>
+            </connections>
+        </customObject>
+        <customObject id="vtb-qn-tmr" customClass="ReqTVD">
+            <connections>
+                <outlet property="tv" destination="SEd-Hd-vMb" id="OQt-Pj-8NS"/>
             </connections>
         </customObject>
         <tapGestureRecognizer id="1Xa-I9-r22" userLabel="TopNav Tap Gesture Recognizer">

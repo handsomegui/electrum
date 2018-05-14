@@ -13,6 +13,8 @@ import electroncash.web as web
 import time
 import html
 from .uikit_bindings import *
+from .custom_objc import *
+
 from decimal import Decimal
 from collections import namedtuple
 
@@ -52,6 +54,7 @@ class ReceiveVC(UIViewController):
     addr = objc_property() # string repr of address
     fxIsEnabled = objc_property()
     lastQRData = objc_property()
+    tvd = objc_property()
     
     @objc_method
     def init(self):
@@ -82,6 +85,7 @@ class ReceiveVC(UIViewController):
         self.addr = None
         self.view = None
         self.lastQRData = None
+        self.tvd = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
     
@@ -97,6 +101,7 @@ class ReceiveVC(UIViewController):
                 
         if not self.view:
             raise Exception("Could not build view -- Receive.xib is missing a UIScrollView as a root object!")
+        self.tvd = ReqTVD.new().autorelease()
     
     @objc_method
     def viewDidLoad(self) -> None:
@@ -126,8 +131,9 @@ class ReceiveVC(UIViewController):
         ui['qr'] = v.viewWithTag_(600)
         
         ui['tv'] = v.viewWithTag_(700)
-        ui['tv'].delegate = self
-        ui['tv'].dataSource = self
+        ui['tv'].delegate = self.tvd
+        ui['tv'].dataSource = self.tvd
+        self.tvd.tv = ui['tv'] # weak ref because class is using obj-c weak property in ViewsForIB.h
 
         def onAmtChg(amtEdit) -> None:
             print("onAmtChg tag = ", amtEdit.tag)
@@ -173,9 +179,6 @@ class ReceiveVC(UIViewController):
     def refresh(self) -> None:
         if self.ui:
             self.viewWillAppear_(False)
-        else:
-            # HACK for WalletsVC that uses us as a datasource
-            self.updateRequestList()
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -379,52 +382,6 @@ class ReceiveVC(UIViewController):
         tf.resignFirstResponder()
         return True
     
-    ## TABLEVIEW related methods.. TODO: implement
-    @objc_method
-    def numberOfSectionsInTableView_(self, tv) -> int:
-        return 1
-    
-    @objc_method
-    def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
-        return _("Requests")
-            
-    @objc_method
-    def tableView_numberOfRowsInSection_(self, tv : ObjCInstance, section : int) -> int:
-        reqs = utils.nspy_get_byname(self, 'request_list')
-        return len(reqs) if reqs else 0
- 
-    @objc_method
-    def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
-        reqs = utils.nspy_get_byname(self, 'request_list')
-        if not reqs: return None
-        assert indexPath.row >= 0 and indexPath.row < len(reqs)
-        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
-        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-        if cell is None:
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()        
-        item = reqs[indexPath.row]
-        #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
-        cell.textLabel.text = ((item.dateStr + " - ") if item.dateStr else "") + (item.message if item.message else "")
-        cell.textLabel.numberOfLines = 1
-        cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
-        cell.textLabel.adjustsFontSizeToFitWidth = True
-        cell.textLabel.minimumScaleFactor = 0.3
-        cell.detailTextLabel.text = ((item.addrStr + " ") if item.addrStr else "") + (item.amountStr if item.amountStr else "") + " - " + item.statusStr
-        cell.detailTextLabel.numberOfLines = 1
-        cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
-        cell.detailTextLabel.adjustsFontSizeToFitWidth = True
-        cell.detailTextLabel.minimumScaleFactor = 0.3        
-        return cell
-
-    # Below 2 methods conform to UITableViewDelegate protocol
-    @objc_method
-    def tableView_accessoryButtonTappedForRowWithIndexPath_(self, tv, indexPath) -> None:
-        pass
-    
-    @objc_method
-    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
-        tv.deselectRowAtIndexPath_animated_(indexPath,True)
-
     @objc_method
     def setReceiveAddress_(self, adr) -> None:
         self.ui['addr'].text = adr
@@ -455,13 +412,24 @@ class ReceiveVC(UIViewController):
             #TODO:
             #self.parent.new_request_button.setEnabled(addr != current_address)
 
-        # clear the list and fill it again
-        #self.clear()
-        reqs = []
+        if ui: ui['tv'].reloadData()
+
+
+def _GetReqs() -> list:
+    return parent().reqMgr.get(None)
+    
+class RequestMgr(utils.DataMgr):
+    def doReloadForKey(self, ignored):
+        wallet = parent().wallet
+        if not wallet: return # wallet not open for whatever reason (can happen due to app backgrounding)
+        
+        domain = wallet.get_addresses()
+
+        reqs = list()
         for req in wallet.get_sorted_requests(parent().config):
             address = req['address']
             if address not in domain:
-                print("addr not in domain!")
+                print("addr '%s' not in domain!"%str(address))
                 continue
             timestamp = req.get('time', 0)
             amount = req.get('amount')
@@ -489,6 +457,70 @@ class ReceiveVC(UIViewController):
             #self.addTopLevelItem(item)
             reqs.append(item)
             #print(item)
-        utils.nspy_put_byname(self, reqs, 'request_list') # save it to the global cache since objcinstance lacks the ability to store python objects as attributes :/
-        if ui: ui['tv'].reloadData()
-        utils.NSLog("fetched %d extant payment requests",len(reqs))
+        utils.NSLog("ReqMgr: fetched %d extant payment requests",len(reqs))
+        return reqs
+
+class ReqTVD(ReqTVDBase):
+    ''' Request TableView Datasource/Delegate -- generic handler to provide data and cells to the req table view '''
+    
+    @objc_method
+    def init(self) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'init'))
+        if self:
+            def doRefresh() -> None:
+                if self.tv:
+                    self.tv.reloadData()
+                    if self.tv.refreshControl: self.tv.refreshControl.endRefreshing()
+            parent().sigRequests.connect(doRefresh, self.ptr.value)
+        return self
+    
+    @objc_method
+    def dealloc(self) -> None:
+        parent().sigRequests.disconnect(self.ptr.value)
+        send_super(__class__, self, 'dealloc')
+    
+    ## TABLEVIEW related methods..
+    @objc_method
+    def numberOfSectionsInTableView_(self, tv) -> int:
+        return 1
+    
+    @objc_method
+    def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
+        return _("Requests")
+            
+    @objc_method
+    def tableView_numberOfRowsInSection_(self, tv : ObjCInstance, section : int) -> int:
+        reqs = _GetReqs()
+        return len(reqs) if reqs else 0
+ 
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        reqs = _GetReqs()
+        if not reqs: return None
+        assert indexPath.row >= 0 and indexPath.row < len(reqs)
+        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
+        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
+        if cell is None:
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()        
+        item = reqs[indexPath.row]
+        #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
+        cell.textLabel.text = ((item.dateStr + " - ") if item.dateStr else "") + (item.message if item.message else "")
+        cell.textLabel.numberOfLines = 1
+        cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
+        cell.textLabel.adjustsFontSizeToFitWidth = True
+        cell.textLabel.minimumScaleFactor = 0.3
+        cell.detailTextLabel.text = ((item.addrStr + " ") if item.addrStr else "") + (item.amountStr if item.amountStr else "") + " - " + item.statusStr
+        cell.detailTextLabel.numberOfLines = 1
+        cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
+        cell.detailTextLabel.adjustsFontSizeToFitWidth = True
+        cell.detailTextLabel.minimumScaleFactor = 0.3        
+        return cell
+
+    # Below 2 methods conform to UITableViewDelegate protocol
+    @objc_method
+    def tableView_accessoryButtonTappedForRowWithIndexPath_(self, tv, indexPath) -> None:
+        pass
+    
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
+        tv.deselectRowAtIndexPath_animated_(indexPath,True)
