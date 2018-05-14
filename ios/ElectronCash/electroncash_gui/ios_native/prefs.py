@@ -44,6 +44,7 @@ class PrefsVC(UITableViewController):
         self.warnButtonColor = UIColor.colorWithRed_green_blue_alpha_(0.8,0.0,0.0,1.0)
         self.updateCurrencies()
         self.updateExchanges()
+        gui.ElectrumGui.gui.sigPrefs.connect(lambda:self.refresh(), self.ptr.value)
         return self
     
     @objc_method
@@ -54,6 +55,7 @@ class PrefsVC(UITableViewController):
         
     @objc_method
     def dealloc(self) -> None:
+        gui.ElectrumGui.gui.sigPrefs.disconnect(self.ptr.value)
         self.warnButtonColor = None
         self.normalButtonColor = None
         self.currencies = None
@@ -62,16 +64,12 @@ class PrefsVC(UITableViewController):
 
     @objc_method
     def refresh(self):
-        def inMain() -> None:    
-            if self.refreshControl: self.refreshControl.endRefreshing()
-            if self.viewIfLoaded is not None:
-                self.updateCurrencies()
-                self.updateExchanges()
-                self.tableView.reloadData()
-            self.autorelease()
-        self.retain()
-        utils.do_in_main_thread(inMain)
-
+        if self.refreshControl: self.refreshControl.endRefreshing()
+        if self.viewIfLoaded is not None:
+            self.updateCurrencies()
+            self.updateExchanges()
+            self.tableView.reloadData()
+ 
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:
         # do polish here?
@@ -482,7 +480,7 @@ class PrefsVC(UITableViewController):
         fx = parent.daemon.fx
         if not fx: return
         fx.set_fiat_address_config(s.isOn())
-        parent.addressesVC.needUpdate()
+        parent.refresh_components('addresses')
 
 def get_max_static_fee_str(parent) -> str:
     fee = parent.prefs_get_max_fee_rate()

@@ -69,10 +69,12 @@ class ReceiveVC(UIViewController):
         self.fxIsEnabled = None
         self.addr = None
         self.lastQRData = ""
+        parent().sigRequests.connect(lambda:self.refresh(), self.ptr.value)
         return self
     
     @objc_method
     def dealloc(self) -> None:
+        parent().sigRequests.disconnect(self.ptr.value)
         self.ui = None
         self.expiresList = None
         self.expiresIdx = None
@@ -169,15 +171,11 @@ class ReceiveVC(UIViewController):
 
     @objc_method
     def refresh(self) -> None:
-        def inMain() -> None:
-            if self.ui:
-                self.viewWillAppear_(False)
-            else:
-                # HACK for WalletsVC that uses us as a datasource
-                self.updateRequestList()
-            self.autorelease()
-        self.retain()
-        utils.do_in_main_thread(inMain)
+        if self.ui:
+            self.viewWillAppear_(False)
+        else:
+            # HACK for WalletsVC that uses us as a datasource
+            self.updateRequestList()
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:

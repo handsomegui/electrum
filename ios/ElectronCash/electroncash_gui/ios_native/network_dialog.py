@@ -76,6 +76,7 @@ class NetworkDialogVC(UIViewController):
 
     @objc_method
     def dealloc(self) -> None:
+        parent().sigNetwork.disconnect(self.ptr.value)
         self.connectedTV = None
         self.untranslatedMap = None
         self.peersTV = None
@@ -96,6 +97,7 @@ class NetworkDialogVC(UIViewController):
     
     @objc_method
     def loadView(self) -> None:
+        parent().sigNetwork.connect(lambda:self.refresh(), self.ptr.value)
         self.protocol = 't'
         self.cellIdentifier = "ServerPortCell22px"
         uinib = UINib.nibWithNibName_bundle_(self.cellIdentifier, None)
@@ -123,7 +125,7 @@ class NetworkDialogVC(UIViewController):
         showHelpBlock = Block(showHelpForButton)
         def onAutoServerSW(oid : objc_id) -> None:
             self.doSetServer()
-            self.doUpdate()
+            self.refresh()
             self.updateAutoServerSWStuff()
         def onTfChg(oid : objc_id) -> None:
             tf = ObjCInstance(oid)
@@ -207,10 +209,10 @@ class NetworkDialogVC(UIViewController):
 
         
     @objc_method
-    def doUpdate(self) -> None:
+    def refresh(self) -> None:
         utils.NSLog("NETOWRK VC UPDATE, isMainThread = %s",str(NSThread.currentThread.isMainThread))
         if not parent() or not parent().daemon or not parent().daemon.network:
-            utils.NSLog("NetworkDialogVC: No network defined, returning early from doUpdate")
+            utils.NSLog("NetworkDialogVC: No network defined, returning early from refresh")
             return
         if not parent().networkVC or not self.viewIfLoaded:
             utils.NSLog("NetworkDialogVC: Returning early, view has been deallocated")
@@ -286,7 +288,7 @@ class NetworkDialogVC(UIViewController):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__,self,'viewWillAppear:', c_bool(animated), argtypes=[c_bool])
-        self.doUpdate()
+        self.refresh()
     
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:
@@ -449,15 +451,7 @@ class NetworkDialogVC(UIViewController):
         #print("textFieldShouldReturn", tf.tag)
         tf.resignFirstResponder()
         return True
-    
-    @objc_method
-    def refresh(self) -> None:
-        def inMain() -> None:
-            self.doUpdate()
-            self.autorelease()
-        self.retain()
-        utils.do_in_main_thread(inMain)
-        
+            
     @objc_method
     def followBranch_(self, index : int) -> None:
         network = parent().daemon.network if parent() and parent().daemon else None

@@ -44,10 +44,13 @@ class CoinsTableVC(UITableViewController):
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
 
+        gui.ElectrumGui.gui.sigCoins.connect(lambda: self.needUpdate(), self.ptr.value)
+
         return self
 
     @objc_method
     def dealloc(self) -> None:
+        gui.ElectrumGui.gui.sigCoins.disconnect(self.ptr.value)
         self.needsRefresh = None
         self.blockRefresh = None
         self.selected = None

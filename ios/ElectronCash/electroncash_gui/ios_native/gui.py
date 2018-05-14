@@ -94,7 +94,6 @@ class MyTabBarController(UITabBarController):
 
 
 class GuiHelper(NSObject):
-    updateNeeded = objc_property()
     butsStatus = objc_property()
     butsStatusLabel = objc_property()
     butsPasswd = objc_property() # array of buttons, one per tab
@@ -106,7 +105,6 @@ class GuiHelper(NSObject):
     @objc_method
     def init(self):
         self = ObjCInstance(send_super(__class__, self, 'init'))
-        self.updateNeeded = False
         self.butsStatus = []
         self.butsStatusLabel = []
         self.butsPasswd = []
@@ -114,11 +112,12 @@ class GuiHelper(NSObject):
         self.butsSeed = []
         self.butsPrefs = []
         self.butsSend = []
+        ElectrumGui.gui.sigHelper.connect(lambda: self.doUpdate(), self.ptr.value)
         return self
     
     @objc_method
     def dealloc(self) -> None:
-        self.updateNeeded = None
+        ElectrumGui.gui.sigHelper.disconnect(self.ptr.value)
         self.butsStatus = None
         self.butsStatusLabel = None
         self.butsPasswd = None
@@ -133,20 +132,9 @@ class GuiHelper(NSObject):
         pass
     
     @objc_method
-    def doUpdateIfNeeded(self):
-        if self.updateNeeded and ElectrumGui.gui is not None:
+    def doUpdate(self):
+        if ElectrumGui.gui is not None:
             ElectrumGui.gui.on_status_update()
-            self.updateNeeded = False
-
-    @objc_method
-    def needUpdate(self):
-        if self.updateNeeded: return
-        self.updateNeeded = True
-        self.retain()
-        def inMain() -> None:
-            self.doUpdateIfNeeded()
-            self.autorelease()
-        utils.do_in_main_thread(inMain)
         
     @objc_method
     def onToolButton_(self,but) -> None:
@@ -239,6 +227,16 @@ class ElectrumGui(PrintError):
         self.appDomain = 'com.c3-soft.ElectronCash'
         self.set_language()
 
+        # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
+        self.sigHelper = utils.PySig()
+        self.sigHistory = utils.PySig()
+        self.sigAddresses = utils.PySig()
+        self.sigPrefs = utils.PySig()
+        self.sigRequests = utils.PySig()
+        self.sigNetwork = utils.PySig()
+        self.sigContacts = utils.PySig()
+        self.sigCoins = utils.PySig()
+        
         #todo: support multiple wallets in 1 UI?
         self.config = config
         self.daemon = daemon
@@ -287,7 +285,7 @@ class ElectrumGui(PrintError):
         self.downloadingNotif = None
         self.downloadingNotif_view = None
         self.queued_ext_txn = None
-        
+                
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
         NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
         self.window.makeKeyAndVisible()
@@ -364,7 +362,7 @@ class ElectrumGui(PrintError):
 
         #tbl.refresh()
         
-        self.helper.needUpdate()
+        self.helper.doUpdate()
 
         self.lowMemoryToken = NSNotificationCenter.defaultCenter.addObserverForName_object_queue_usingBlock_(
             UIApplicationDidReceiveMemoryWarningNotification,
@@ -591,6 +589,15 @@ class ElectrumGui(PrintError):
         self.cash_addr_sig = None
         if self.moreMogrifier is not None: self.moreMogrifier.release()
         self.moreMogrifier = None
+        
+        self.sigHelper = None
+        self.sigHistory = None
+        self.sigAddresses = None
+        self.sigPrefs = None
+        self.sigRequests = None
+        self.sigNetwork = None
+        self.sigContacts = None
+        self.sigCoins = None
     
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
         #update status bar label width
@@ -1233,31 +1240,36 @@ class ElectrumGui(PrintError):
     def refresh_components(self, *args) -> None:
         if not args: args = ['*']
         components = set(map(lambda x: str(x).strip().lower(),args))
+        signalled = set()
+        
         al = {'*','all','world','everything'}
-        didCoins = False
-        if components & {'helper', *al}:
-            self.helper.needUpdate()
-        if components & {'history', *al}:
-            #self.historyVC.needUpdate()
-            self.walletsVC.needUpdate()
-            if not didCoins:
-                self.coinsVC.needUpdate()
-                didCoins = True
-        if components & {'address', 'addresses', *al}:
-            self.addressesVC.needUpdate()
-            if not didCoins:
-                self.coinsVC.needUpdate()
-                didCoins = True
-        if components & {'prefs', 'preferences', 'settings', *al}:
-            self.prefsVC.refresh()
-        if components & {'receive', 'requests', 'paymentrequests', 'pr', *al}:
-            self.receiveVC.refresh()
-            self.walletsVC.refreshReqs()
-        if components & {'network', 'servers','connection', 'interfaces', *al}:
-            if self.networkVC is not None: # networkVC isn't always around, we create it on-demand and delete it when it's done
-                self.networkVC.refresh()
-        if components & {'contact', 'contacts', *al}:
-            self.contactsVC.needUpdate()
+        if components & {'helper', *al} and self.sigHelper not in signalled:
+            signalled.add(self.sigHelper)
+            self.sigHelper.emit()
+        if components & {'history', *al} and self.sigHistory not in signalled:
+            signalled.add(self.sigHistory)
+            self.sigHistory.emit()
+            if self.sigCoins not in signalled:
+                signalled.add(self.sigCoins)
+                self.sigCoins.emit()
+        if components & {'address', 'addresses', *al} and self.sigAddresses not in signalled:
+            signalled.add(self.sigAddresses)
+            self.sigAddresses.emit()
+            if self.sigCoins not in signalled:
+                signalled.add(self.sigCoins)
+                self.sigCoins.emit()
+        if components & {'prefs', 'preferences', 'settings', *al} and self.sigPrefs not in signalled:
+            signalled.add(self.sigPrefs)
+            self.sigPrefs.emit()
+        if components & {'receive', 'requests', 'paymentrequests', 'pr', *al} and self.sigRequests not in signalled:
+            signalled.add(self.sigRequests)
+            self.sigRequests.emit()
+        if components & {'network', 'servers','connection', 'interfaces', *al} and self.sigNetwork not in signalled:
+            signalled.add(self.sigNetwork)
+            self.sigNetwork.emit()
+        if components & {'contact', 'contacts', *al} and self.sigContacts not in signalled:
+            signalled.add(self.sigContacts)
+            self.sigContacts.emit()
 
     def on_new_daemon(self):
         self.daemon.gui = self

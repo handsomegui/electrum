@@ -66,6 +66,8 @@ class ContactsTableVC(UITableViewController):
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
         
+        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.needUpdate(), self.ptr.value)
+        
 
     @objc_method
     def initWithStyle_mode_(self, style : int, mode : int) -> ObjCInstance:
@@ -83,6 +85,7 @@ class ContactsTableVC(UITableViewController):
 
     @objc_method
     def dealloc(self) -> None:
+        gui.ElectrumGui.gui.sigContacts.disconnect(self.ptr.value)
         self.needsRefresh = None
         self.blockRefresh = None
         self.selected = None

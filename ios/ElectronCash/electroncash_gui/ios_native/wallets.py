@@ -45,7 +45,6 @@ class WalletsNav(WalletsNavBase):
         send_super(__class__, self, 'dealloc')
 
 class WalletsVC(WalletsVCBase):
-    needsRefresh = objc_property()
     reqsLoadedAtLeastOnce = objc_property()
     lineHider = objc_property()
     allTxHelpers = objc_property()
@@ -53,10 +52,12 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def dealloc(self) -> None:
         # cleanup code here..
+        gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigRequests.disconnect(self.ptr.value)
+
         global VC
         if VC and VC.ptr.value == self.ptr.value:
             VC = None
-        self.needsRefresh = None
         self.reqsLoadedAtLeastOnce = None
         self.lineHider = None
         self.allTxHelpers = None
@@ -80,6 +81,9 @@ class WalletsVC(WalletsVCBase):
         self.segControl.autoAdjustSelectionIndicatorWidth = False
         # Can't set this property from IB, so we do it here programmatically to create the stroke around the receive button
         self.receiveBut.layer.borderColor = self.sendBut.backgroundColor.CGColor
+        
+        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.refreshTXs(), self.ptr.value)
+        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.refreshReqs(), self.ptr.value)
     
     @objc_method
     def viewDidLoad(self) -> None:
@@ -110,10 +114,10 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def viewLayoutMarginsDidChange(self) -> None:
         send_super(__class__, self, 'viewLayoutMarginsDidChange')
-        self.refresh() # this implicitly redoes the central table and the number of preview transactions we see in it
+        self.refreshTXs() # this implicitly redoes the central table and the number of preview transactions we see in it
 
     @objc_method
-    def refresh(self):
+    def refreshTXs(self):
         l = list(self.allTxHelpers)
         hdict = dict()
         ctr = 0
@@ -137,7 +141,6 @@ class WalletsVC(WalletsVCBase):
                 if txsHelper.tv:
                     if txsHelper.tv.refreshControl: txsHelper.tv.refreshControl.endRefreshing()
                     txsHelper.tv.reloadData()
-                self.needsRefresh = False
         if ctr > 0:
             utils.NSLog("Wallets: re-used history data for %d child tableviews.",ctr)
         self.doChkTableViewCounts()
@@ -149,23 +152,6 @@ class WalletsVC(WalletsVCBase):
         self.reqstv.reloadData() # HACK TODO FIXME: create a real helper class to manage this
         if self.reqstv.refreshControl: self.reqstv.refreshControl.endRefreshing()
         self.doChkTableViewCounts()
-
-    @objc_method
-    def needUpdate(self):
-        if self.needsRefresh: return
-        self.needsRefresh = True
-        self.retain()
-        def inMain() -> None:
-            self.doRefreshIfNeeded()
-            self.autorelease()
-        utils.do_in_main_thread(inMain)
-
-    # This method runs in the main thread as it's enqueue using our hacky "Heartbeat" mechanism/workaround for iOS
-    @objc_method
-    def doRefreshIfNeeded(self):
-        if self.needsRefresh:
-            self.refresh()
-            #print ("HISTORY REFRESHED")
 
     @objc_method
     def showRefreshControl(self):
