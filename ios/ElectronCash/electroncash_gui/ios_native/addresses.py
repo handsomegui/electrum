@@ -2,7 +2,7 @@ from . import utils
 from . import gui
 from . import private_key_dialog
 from . import sign_decrypt_dialog
-from . import wallets
+from . import history
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 import electroncash.exchange_rate
@@ -88,8 +88,8 @@ class AddressDetail(UIViewController):
         
         tv = v.viewWithTag_(1000)
         
-        # Re-use of WalletsTxsHelper below...
-        helper = wallets.NewWalletsTxsHelper(tv = tv, vc = self, noRefreshControl = True, domain = [entry.address])
+        # Re-use of TxHistoryHelper below...
+        helper = history.NewTxHistoryHelper(tv = tv, vc = self, noRefreshControl = True, domain = [entry.address])
 
         self.view = v
                 

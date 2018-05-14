@@ -458,7 +458,7 @@
                 <outlet property="vc" destination="5hO-gj-WnP" id="aAX-a9-Lw6"/>
             </connections>
         </customObject>
-        <customObject id="qSh-mO-1cK" userLabel="Tx History Helper" customClass="WalletsTxsHelper">
+        <customObject id="qSh-mO-1cK" userLabel="Tx History Helper" customClass="TxHistoryHelper">
             <userDefinedRuntimeAttributes>
                 <userDefinedRuntimeAttribute type="boolean" keyPath="compactMode" value="YES"/>
             </userDefinedRuntimeAttributes>

@@ -966,6 +966,8 @@ class DataMgr:
             self.datas.pop(key, None)
             self.realKeys.pop(key, None)
             print("DataMgr: removed (%s)"%(str(key)))
+        else:
+            self.subs[key] = ctr
         print("DataMgr: unsubscribed (%s), total ctr now=%d"%(str(key),ctr))
     
     def get(self, realkey : Any) -> Any:

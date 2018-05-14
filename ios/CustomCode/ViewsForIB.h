@@ -166,7 +166,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 };
 
 @class WalletsDrawerHelper;
-@class WalletsTxsHelper;
+@class TxHistoryHelper;
 
 @interface WalletsVCBase : UIViewController
 @property (nonatomic,assign) WalletsStatusMode status;
@@ -186,7 +186,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 #pragma mark Main View Area Related
 @property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
-@property (nonatomic, strong) IBOutlet WalletsTxsHelper *txsHelper; ///< txsHelper.tv is the tableView
+@property (nonatomic, strong) IBOutlet TxHistoryHelper *txsHelper; ///< txsHelper.tv is the tableView
 @property (nonatomic, weak) IBOutlet UITableView *reqstv; ///< TODO: Move the management of this tableView into its own class -- for now this tv uses the hacky RequestsVC as its tableview delegate/dataSource
 @property (nonatomic, weak) IBOutlet UIView *noTXsView; ///< displays a message and shows an image when the txsHelper.tv table is empty
 @property (nonatomic, weak) IBOutlet UIView *noReqsView; ///< displays a message and shows an image when the reqstv table is empty
@@ -220,16 +220,16 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface WalletsDrawerHelper : WalletsDrawerHelperBase
 @end
 
-@interface WalletsTxsHelperBase : NSObject
+@interface TxHistoryHelperBase : NSObject
 @property (nonatomic, weak) IBOutlet UIViewController *vc;
 @property (nonatomic, weak) IBOutlet UITableView *tv;
 @property (nonatomic, assign) BOOL compactMode;
 @end
 // stub to represent python -- implemented in python wallets.py
-@interface WalletsTxsHelper : WalletsTxsHelperBase
+@interface TxHistoryHelper : TxHistoryHelperBase
 @end
 
-@interface WalletsTxCell : UITableViewCell
+@interface TxHistoryCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UIImageView *icon;
 @property (nonatomic, weak) IBOutlet UILabel *amountTit;
 @property (nonatomic, weak) IBOutlet UILabel *amount;

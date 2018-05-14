@@ -138,11 +138,11 @@
 
 @end
 
-@implementation WalletsTxsHelperBase
+@implementation TxHistoryHelperBase
 // auto-sythesized properties
 @end
 
-@implementation WalletsTxCell
+@implementation TxHistoryCell
 // auto-sythesized properties
 
 - (void) setDesc:(UILabel *)desc {

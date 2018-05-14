@@ -3,9 +3,12 @@ from . import gui
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
-import time
-from .uikit_bindings import *
+
+import time, math, sys
 from collections import namedtuple
+
+from .uikit_bindings import *
+from .custom_objc import *
 
 HistoryEntry = namedtuple("HistoryEntry", "tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
 #######################################################################
@@ -25,6 +28,8 @@ StatusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
     UIImage.imageNamed_("signed.png").retain(),
     UIImage.imageNamed_("unsigned.png").retain(),
 ]
+
+from . import txdetail
 
 def get_history(domain : list = None, statusImagesOverride : list = None, forceNoFX : bool = False) -> list:
     ''' For a given set of addresses (or None for all addresses), builds a list of
@@ -79,3 +84,187 @@ class HistoryMgr(utils.DataMgr):
         hist = get_history(domain = key)
         utils.NSLog("HistoryMgr refresh for domain: %s", str(key))
         return hist
+
+_tx_cell_height = 76.0 # TxHistoryCell height in points
+_kern = -0.5 # kerning for some of the text labels in the view in points
+
+class TxHistoryHelper(TxHistoryHelperBase):
+    haveShowMoreTxs = objc_property()
+
+    @objc_method
+    def dealloc(self) -> None:
+        #cleanup code here
+        print("TxHistoryHelper dealloc")
+        gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
+        try:
+            domain = _GetDomain(self)
+            if domain is not None:
+                gui.ElectrumGui.gui.historyMgr.unsubscribe(domain)
+        except: utils.NSLog("TxHistoryHelper: Could not remove self from historyMgr domain!\n%s",str(sys.exc_info()[1]))
+        self.haveShowMoreTxs = None
+        utils.nspy_pop(self) # clear 'txs' python dict
+        send_super(__class__, self, 'dealloc')
+     
+    @objc_method 
+    def miscSetup(self) -> None:
+        nib = UINib.nibWithNibName_bundle_("TxHistoryCell", None)
+        self.tv.registerNib_forCellReuseIdentifier_(nib, "TxHistoryCell")
+        try:
+            domain = _GetDomain(self)
+            if domain is not None:
+                gui.ElectrumGui.gui.historyMgr.subscribe(domain)
+        except: utils.NSLog("TxHistoryHelper: Could not add self to historyMgr domain!:\n%s",str(sys.exc_info()[1]))
+        self.tv.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
+        def gotRefresh() -> None:
+            if self.tv:
+                if self.tv.refreshControl: self.tv.refreshControl.endRefreshing()
+                self.tv.reloadData()
+        gui.ElectrumGui.gui.sigHistory.connect(gotRefresh, self.ptr.value)
+       
+    @objc_method
+    def numberOfSectionsInTableView_(self, tableView) -> int:
+        return 1
+
+    @objc_method
+    def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
+        # TODO: Implement this properly
+        h = _GetTxs(self)
+        rows = 0
+        self.haveShowMoreTxs = False
+        len_h = len(h) if h else 0
+        if not self.compactMode:
+            rows = len_h
+        else:
+            rows = max(math.floor(tableView.bounds.size.height / _tx_cell_height), 1)
+            rows = min(rows,len_h)
+            self.haveShowMoreTxs = len_h > rows
+        return rows
+
+    @objc_method
+    def tableView_viewForFooterInSection_(self, tv, section : int) -> ObjCInstance:
+        if self.haveShowMoreTxs:
+            v = None
+            objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsMisc",None,None)
+            for o in objs:
+                if not v and isinstance(o,UIView) and o.tag == 3000:
+                    v = o
+                    l = v.viewWithTag_(1)
+                    if l: l.text = _("Show All Transactions")
+            for o in objs:
+                if isinstance(o, UIGestureRecognizer) and o.view and v \
+                       and o.view.ptr.value == v.ptr.value:
+                    o.addTarget_action_(self, SEL(b'onSeeAllTxs:'))
+            return v
+        return UIView.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
+
+    @objc_method
+    def onSeeAllTxs_(self, gr : ObjCInstance) -> None:
+        if gr.view.hasAnimations:
+            print("onSeeAllTxs: animation already active, ignoring spurious second tap....")
+            return
+        def seeAllTxs() -> None:
+            # Push a new viewcontroller that contains just a tableview.. we create another instance of this
+            # class to manage the tableview and set it up properly.  This should be fast as we are sharing tx history
+            # data with the child instance via our "nspy_put" mechanism.
+            vc = UIViewController.new().autorelease()
+            vc.title = _("All Transactions")
+            vc.view = UITableView.alloc().initWithFrame_style_(self.vc.view.frame, UITableViewStylePlain).autorelease()
+            helper = NewTxHistoryHelper(tv = vc.view, vc = self.vc)
+            self.vc.navigationController.pushViewController_animated_(vc, True)
+        c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
+        gr.view.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,seeAllTxs)
+ 
+    @objc_method
+    def tableView_heightForFooterInSection_(self, tv, section : int) -> float:
+        if self.compactMode:
+            return 50.0
+        return 0.0
+
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
+        h = _GetTxs(self)
+        if not h:
+            identifier = "Cell"
+            cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+            if cell is None:
+                cell =  UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+            cell.textLabel.text = _("No transactions")
+            cell.detailTextLabel.text = _("No transactions for this wallet exist on the blockchain.")
+            return cell            
+        identifier = "TxHistoryCell"
+        cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+        if cell is None:
+            objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TxHistoryCell",None,None)
+            for obj in objs:
+                if isinstance(obj, UITableViewCell) and obj.reuseIdentifier == identifier:
+                    cell = obj
+                    break
+        #HistoryEntry = tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image
+        entry = h[indexPath.row]
+        ff = '' #str(entry.date)
+        if entry.conf and entry.conf > 0 and entry.conf < 6:
+            ff = "%s %s"%(entry.conf, _('confirmations'))
+
+        cell.amountTit.setText_withKerning_(_("Amount"), _kern)
+        cell.balanceTit.setText_withKerning_(_("Balance"), _kern)
+        cell.statusTit.setText_withKerning_(_("Status"), _kern)
+        cell.amount.text = entry.v_str.translate({ord(i):None for i in '+- '}) #strip +/-
+        cell.balance.text = entry.balance_str.translate({ord(i):None for i in '+- '}) # strip +/- from amount
+        cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', _kern)
+        cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
+        cell.date.text = entry.status_str
+        cell.status.text = ff #if entry.conf < 6 else ""
+        cell.statusIcon.image = entry.status_image
+        
+        return cell
+
+    @objc_method
+    def tableView_heightForRowAtIndexPath_(self, tv : ObjCInstance, indexPath : ObjCInstance) -> float:
+        return _tx_cell_height if indexPath.row > 0 or _GetTxs(self) else 44.0
+
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
+        tv.deselectRowAtIndexPath_animated_(indexPath,True)
+        parent = gui.ElectrumGui.gui
+        if parent.wallet is None:
+            return
+        if not self.vc:
+            utils.NSLog("TxHistoryHelper: No self.vc defined, cannot proceed to tx detail screen")
+            return
+        try:
+            entry = _GetTxs(self)[indexPath.row]
+        except:
+            return        
+        tx = parent.wallet.transactions.get(entry.tx_hash, None)
+        if tx is None:
+            raise Exception("Wallets: Could not find Transaction for tx '%s'"%str(entry.tx_hash))
+        txd = txdetail.CreateTxDetailWithEntry(entry,tx=tx)        
+        self.vc.navigationController.pushViewController_animated_(txd, True)
+
+def NewTxHistoryHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = None, noRefreshControl = False) -> ObjCInstance:
+    helper = TxHistoryHelper.new().autorelease()
+    tv.dataSource = helper
+    tv.delegate = helper
+    helper.tv = tv
+    helper.vc = vc
+    # optimization to share the same history data with the new helper class we just created for the full mode view
+    # .. hopefully this will keep the UI peppy and responsive!
+    if domain is not None:
+        utils.nspy_put_byname(helper, domain, 'domain')
+    helper.miscSetup()
+    if noRefreshControl: helper.tv.refreshControl = None
+    from rubicon.objc.runtime import libobjc            
+    libobjc.objc_setAssociatedObject(tv.ptr, helper.ptr, helper.ptr, 0x301)
+    return helper
+
+# this should be a method of TxHistoryHelper but it returns a python object, so it has to be a standalone global function
+def _GetTxs(txsHelper : object) -> list:
+    if not txsHelper:
+        raise ValueError('GetTxs: Need to specify a TxHistoryHelper instance')
+    h = gui.ElectrumGui.gui.historyMgr.get(_GetDomain(txsHelper))
+    return h
+
+def _GetDomain(txsHelper : object) -> list:
+    if not txsHelper:
+        raise ValueError('GetDomain: Need to specify a TxHistoryHelper instance')
+    return utils.nspy_get_byname(txsHelper, 'domain')    
