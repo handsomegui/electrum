@@ -71,3 +71,11 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
         history.insert(0,entry) # reverse order
     utils.NSLog("history: retrieved %d entries",len(history))
     return history
+
+from typing import Any
+
+class HistoryMgr(utils.DataMgr):
+    def doReloadForKey(self, key : Any) -> Any:
+        hist = get_history(domain = key)
+        utils.NSLog("HistoryMgr refresh for domain: %s", str(key))
+        return hist

@@ -6,7 +6,7 @@ from electroncash.i18n import _, language
 
 from .uikit_bindings import *
 from .custom_objc import *
-import math
+import math, sys
 
 # from ViewsForIB.h, WalletsStatusMode enum
 StatusOffline = 0
@@ -44,7 +44,6 @@ class WalletsNav(WalletsNavBase):
 class WalletsVC(WalletsVCBase):
     reqsLoadedAtLeastOnce = objc_property()
     lineHider = objc_property()
-    allTxHelpers = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -57,14 +56,12 @@ class WalletsVC(WalletsVCBase):
             VC = None
         self.reqsLoadedAtLeastOnce = None
         self.lineHider = None
-        self.allTxHelpers = None
         send_super(__class__, self, 'dealloc')  
 
     @objc_method
     def commonInit(self) -> None:
         global VC
         if not VC: VC = self
-        self.allTxHelpers = NSMutableArray.new().autorelease()
         # put additional setup code here
         self.status = StatusOffline # re-does the text/copy and colors
         self.walletAmount.text = "0"
@@ -115,31 +112,6 @@ class WalletsVC(WalletsVCBase):
 
     @objc_method
     def refreshTXs(self):
-        l = list(self.allTxHelpers)
-        hdict = dict()
-        ctr = 0
-        for ptrval in l:
-            txsHelper = ObjCInstance(objc_id(ptrval))
-            if txsHelper:
-                dlist = utils.nspy_get_byname(txsHelper, 'domain')
-                domain = ''
-                if isinstance(dlist, list): 
-                    for d in dlist: domain += str(d)
-                domain = None if not domain else domain
-                h = hdict.get(domain, None)
-                if h is None:
-                    txsHelper.loadTxsFromWallet()
-                    h = utils.nspy_get_byname(txsHelper, 'txs')
-                    hdict[domain] = h
-                else:
-                    # avoid redundant loads of the same data.. reuse the same history data for child txsHelper views
-                    utils.nspy_put_byname(txsHelper, h, 'txs')
-                    ctr += 1
-                if txsHelper.tv:
-                    if txsHelper.tv.refreshControl: txsHelper.tv.refreshControl.endRefreshing()
-                    txsHelper.tv.reloadData()
-        if ctr > 0:
-            utils.NSLog("Wallets: re-used history data for %d child tableviews.",ctr)
         self.doChkTableViewCounts()
 
 
@@ -394,12 +366,12 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
     def dealloc(self) -> None:
         #cleanup code here
         print("WalletsTxsHelper dealloc")
+        gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
         try:
-            theVC = self.vc
-            if not isinstance(theVC, WalletsVC):
-                theVC = VC
-            theVC.allTxHelpers.removeObject_(self.ptr.value)
-        except: utils.NSLog("WalletsTxsHelper: Could not remove self from vc.allTxHelpers")
+            domain = GetDomain(self)
+            if domain is not None:
+                gui.ElectrumGui.gui.historyMgr.unsubscribe(domain)
+        except: utils.NSLog("WalletsTxsHelper: Could not remove self from historyMgr domain!\n%s",str(sys.exc_info()[1]))
         self.haveShowMoreTxs = None
         utils.nspy_pop(self) # clear 'txs' python dict
         send_super(__class__, self, 'dealloc')
@@ -409,12 +381,16 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         nib = UINib.nibWithNibName_bundle_("WalletsTxCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsTxCell")
         try:
-            theVC = self.vc
-            if not isinstance(theVC, WalletsVC):
-                theVC = VC
-            theVC.allTxHelpers.addObject_(self.ptr.value)
-        except: utils.NSLog("WalletsTxsHelper: Could not add self to vc.allTxHelpers")
+            domain = GetDomain(self)
+            if domain is not None:
+                gui.ElectrumGui.gui.historyMgr.subscribe(domain)
+        except: utils.NSLog("WalletsTxsHelper: Could not add self to historyMgr domain!:\n%s",str(sys.exc_info()[1]))
         self.tv.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
+        def gotRefresh() -> None:
+            if self.tv:
+                if self.tv.refreshControl: self.tv.refreshControl.endRefreshing()
+                self.tv.reloadData()
+        gui.ElectrumGui.gui.sigHistory.connect(gotRefresh, self.ptr.value)
        
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -464,7 +440,7 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
             vc = UIViewController.new().autorelease()
             vc.title = _("All Transactions")
             vc.view = UITableView.alloc().initWithFrame_style_(self.vc.view.frame, UITableViewStylePlain).autorelease()
-            helper = NewWalletsTxsHelper(tv = vc.view, vc = self.vc, txs = GetTxs(self))
+            helper = NewWalletsTxsHelper(tv = vc.view, vc = self.vc)
             self.vc.navigationController.pushViewController_animated_(vc, True)
         c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
         gr.view.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,seeAllTxs)
@@ -536,40 +512,34 @@ class WalletsTxsHelper(WalletsTxsHelperBase):
         txd = txdetail.CreateTxDetailWithEntry(entry,tx=tx)        
         self.vc.navigationController.pushViewController_animated_(txd, True)
 
-    @objc_method
-    def loadTxsFromWallet(self) -> None:
-        domain = utils.nspy_get_byname(self, 'domain') # optionally set the domain associateed with this class for address detail view...
-        h = history.get_history(domain = domain)
-        if h is None:
-            # probable backgroundeed and/or wallet is closed, so return early
-            return
-        utils.nspy_put_byname(self, h, 'txs')
-        utils.NSLog("WalletsTxsHelper: fetched %d entries from history",len(h))
-
-def NewWalletsTxsHelper(tv : ObjCInstance, vc : ObjCInstance, txs : list = None, noRefreshControl = False, domain : list = None) -> ObjCInstance:
+def NewWalletsTxsHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = None, noRefreshControl = False) -> ObjCInstance:
     helper = WalletsTxsHelper.new().autorelease()
     tv.dataSource = helper
     tv.delegate = helper
     helper.tv = tv
     helper.vc = vc
-    helper.miscSetup()
-    if noRefreshControl: helper.tv.refreshControl = None
     # optimization to share the same history data with the new helper class we just created for the full mode view
     # .. hopefully this will keep the UI peppy and responsive!
-    if txs is not None:    utils.nspy_put_byname(helper, txs, 'txs')
-    if domain is not None: utils.nspy_put_byname(helper, domain, 'domain')
+    if domain is not None:
+        utils.nspy_put_byname(helper, domain, 'domain')
+    helper.miscSetup()
+    if noRefreshControl: helper.tv.refreshControl = None
     from rubicon.objc.runtime import libobjc            
     libobjc.objc_setAssociatedObject(tv.ptr, helper.ptr, helper.ptr, 0x301)
     return helper
 
 # this should be a method of WalletsTxsHelper but it returns a python object, so it has to be a standalone global function
-def GetTxs(txsHelper = None):
+def GetTxs(txsHelper = None) -> list:
     if not txsHelper and VC:
         txsHelper = VC.txsHelper
     if not txsHelper:
         raise ValueError('GetTxs: You specified no txsHelper instance and we could not find one already active in memory')
-    h = utils.nspy_get_byname(txsHelper, 'txs')
-    if h is None:
-        txsHelper.loadTxsFromWallet()
-        h = utils.nspy_get_byname(txsHelper, 'txs')            
+    h = gui.ElectrumGui.gui.historyMgr.get(GetDomain(txsHelper))
     return h
+
+def GetDomain(txsHelper = None) -> list:
+    if not txsHelper and VC:
+        txsHelper = VC.txsHelper
+    if not txsHelper:
+        raise ValueError('GetDomain: You specified no txsHelper instance and we could not find one already active in memory')
+    return utils.nspy_get_byname(txsHelper, 'domain')    

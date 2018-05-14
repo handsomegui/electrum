@@ -221,7 +221,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface WalletsTxsHelperBase : NSObject
-@property (nonatomic, weak) IBOutlet WalletsVC *vc;
+@property (nonatomic, weak) IBOutlet UIViewController *vc;
 @property (nonatomic, weak) IBOutlet UITableView *tv;
 @property (nonatomic, assign) BOOL compactMode;
 @end

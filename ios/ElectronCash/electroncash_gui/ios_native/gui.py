@@ -227,6 +227,10 @@ class ElectrumGui(PrintError):
         self.appDomain = 'com.c3-soft.ElectronCash'
         self.set_language()
 
+        
+        self.historyMgr = history.HistoryMgr()
+        self.historyMgr.subscribe(None) # default subscription to 'all' history domain always active
+        
         # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
         self.sigHelper = utils.PySig()
         self.sigHistory = utils.PySig()
@@ -586,18 +590,19 @@ class ElectrumGui(PrintError):
         if self.helper is not None: self.helper.release()
         self.helper = None
         self.cash_addr_sig.clear()
-        self.cash_addr_sig = None
         if self.moreMogrifier is not None: self.moreMogrifier.release()
         self.moreMogrifier = None
         
-        self.sigHelper = None
-        self.sigHistory = None
-        self.sigAddresses = None
-        self.sigPrefs = None
-        self.sigRequests = None
-        self.sigNetwork = None
-        self.sigContacts = None
-        self.sigCoins = None
+        self.sigHelper.clear()
+        self.sigHistory.clear()
+        self.sigAddresses.clear()
+        self.sigPrefs.clear()
+        self.sigRequests.clear()
+        self.sigNetwork.clear()
+        self.sigContacts.clear()
+        self.sigCoins.clear()
+        
+        self.historyMgr.clear()
     
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
         #update status bar label width
@@ -1248,6 +1253,7 @@ class ElectrumGui(PrintError):
             self.sigHelper.emit()
         if components & {'history', *al} and self.sigHistory not in signalled:
             signalled.add(self.sigHistory)
+            self.historyMgr.reloadAll()
             self.sigHistory.emit()
             if self.sigCoins not in signalled:
                 signalled.add(self.sigCoins)

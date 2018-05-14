@@ -1,6 +1,5 @@
 from . import utils
 from . import gui
-from . import history
 from . import private_key_dialog
 from . import sign_decrypt_dialog
 from . import wallets
@@ -90,7 +89,7 @@ class AddressDetail(UIViewController):
         tv = v.viewWithTag_(1000)
         
         # Re-use of WalletsTxsHelper below...
-        helper = wallets.NewWalletsTxsHelper(tv = tv, vc = self, txs = history.get_history([entry.address]), noRefreshControl = True, domain = [entry.address])
+        helper = wallets.NewWalletsTxsHelper(tv = tv, vc = self, noRefreshControl = True, domain = [entry.address])
 
         self.view = v
                 

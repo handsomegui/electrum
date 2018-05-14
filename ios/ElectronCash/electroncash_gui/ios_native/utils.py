@@ -929,3 +929,65 @@ def set_namedtuple_field(nt : object, fieldname : str, newval : Any) -> object:
     else:
         d[fieldname] = newval
         return type(nt)(**d)
+
+#########################################################################################################
+# Data Manager -- subscription/domain based data cache -- Used by tx history (and other app mechanisms) #
+#########################################################################################################
+class DataMgr:
+    def __init__(self):
+        self.clear()
+        
+    def clear(self):
+        self.datas = dict()
+        self.subs = dict()
+        self.realKeys = dict()
+        
+    def keyify(self, key: Any) -> Any:
+        if isinstance(key, (list,tuple,dict,set)):
+            key = str(key)
+        return key
+    
+    def subscribe(self, realkey : Any) -> None:
+        key = self.keyify(realkey)
+        ctr = self.subs.get(key, 0)
+        ctr += 1
+        self.subs[key] = ctr
+        if ctr == 1:
+            self.realKeys[key] = realkey
+            print("DataMgr: added (%s)"%(str(key)))
+        print("DataMgr: subscribed (%s), total ctr now=%d"%(str(key),ctr))
+    
+    def unsubscribe(self, realkey : Any) -> None:
+        key = self.keyify(realkey)
+        ctr = self.subs.get(key, 0)
+        ctr -= 1
+        if ctr <= 0:
+            self.subs.pop(key, None)
+            self.datas.pop(key, None)
+            self.realKeys.pop(key, None)
+            print("DataMgr: removed (%s)"%(str(key)))
+        print("DataMgr: unsubscribed (%s), total ctr now=%d"%(str(key),ctr))
+    
+    def get(self, realkey : Any) -> Any:
+        key = self.keyify(realkey)
+        if key in self.subs:
+            if key not in self.datas:
+                print("DataMgr: domain (%s) not in cache, calling doReload"%(str(key)))
+                self.datas[key] = self.doReloadForKey(realkey)    
+            return self.datas.get(self.keyify(key), None)
+        else:
+            NSLog("DataMgr: WARNING -- get() called on a domain that is not subscribed: '%s'", str(key))
+        return None
+    
+    def reloadAll(self) -> None:
+        self.datas = dict()
+        ctr = 0
+        for k in self.subs:
+            #self.datas[k] = self.doReloadForKey(self.realKeys.get(k, None))
+            self.datas.pop(k, None)
+            ctr += 1
+        print("DataMgr: reloadAll for %d datas, deferring reload until requested (on-demand optimization)"%ctr)
+    
+    def doReloadForKey(self, key : Any) -> Any:
+        NSLog("DataMgr: UNIMPLEMENTED -- doReloadForKey() needs to be overridden in a child class!")
+        return None

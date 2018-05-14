@@ -464,7 +464,7 @@
             </userDefinedRuntimeAttributes>
             <connections>
                 <outlet property="tv" destination="u0V-Yv-emp" id="yt8-QG-cpY"/>
-                <outlet property="vc" destination="5hO-gj-WnP" id="eIe-SF-uv2"/>
+                <outlet property="vc" destination="5hO-gj-WnP" id="4VJ-cx-X1v"/>
             </connections>
         </customObject>
         <tapGestureRecognizer id="1Xa-I9-r22" userLabel="TopNav Tap Gesture Recognizer">
