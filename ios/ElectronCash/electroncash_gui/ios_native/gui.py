@@ -226,10 +226,8 @@ class ElectrumGui(PrintError):
         self.appName = 'Electron-Cash'
         self.appDomain = 'com.c3-soft.ElectronCash'
         self.set_language()
-
-        
+  
         self.historyMgr = history.HistoryMgr()
-        self.historyMgr.subscribe(None) # default subscription to 'all' history domain always active
         
         # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
         self.sigHelper = utils.PySig()
@@ -296,6 +294,8 @@ class ElectrumGui(PrintError):
         utils.NSLog("GUI instance created, splash screen 2 presented")
 
     def createAndShowUI(self):
+        self.historyMgr.subscribe(None) # default subscription to 'all' history domain always active
+
         self.helper = GuiHelper.alloc().init()
                 
         self.tabController = MyTabBarController.alloc().init().autorelease()

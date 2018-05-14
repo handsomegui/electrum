@@ -954,8 +954,8 @@ class DataMgr:
         self.subs[key] = ctr
         if ctr == 1:
             self.realKeys[key] = realkey
-            print("DataMgr: added (%s)"%(str(key)))
-        print("DataMgr: subscribed (%s), total ctr now=%d"%(str(key),ctr))
+            #print("DataMgr: added (%s)"%(str(key)))
+        #print("DataMgr: subscribed (%s), total ctr now=%d"%(str(key),ctr))
     
     def unsubscribe(self, realkey : Any) -> None:
         key = self.keyify(realkey)
@@ -965,16 +965,16 @@ class DataMgr:
             self.subs.pop(key, None)
             self.datas.pop(key, None)
             self.realKeys.pop(key, None)
-            print("DataMgr: removed (%s)"%(str(key)))
+            #print("DataMgr: removed (%s)"%(str(key)))
         else:
             self.subs[key] = ctr
-        print("DataMgr: unsubscribed (%s), total ctr now=%d"%(str(key),ctr))
+        #print("DataMgr: unsubscribed (%s), total ctr now=%d"%(str(key),ctr))
     
     def get(self, realkey : Any) -> Any:
         key = self.keyify(realkey)
         if key in self.subs:
             if key not in self.datas:
-                print("DataMgr: domain (%s) not in cache, calling doReload"%(str(key)))
+                #print("DataMgr: domain (%s) not in cache, calling doReload"%(str(key)))
                 self.datas[key] = self.doReloadForKey(realkey)    
             return self.datas.get(self.keyify(key), None)
         else:
@@ -985,10 +985,10 @@ class DataMgr:
         self.datas = dict()
         ctr = 0
         for k in self.subs:
-            #self.datas[k] = self.doReloadForKey(self.realKeys.get(k, None))
+            # We just remove the data and load it on-demoand in get() above..
             self.datas.pop(k, None)
             ctr += 1
-        print("DataMgr: reloadAll for %d datas, deferring reload until requested (on-demand optimization)"%ctr)
+        #print("DataMgr: reloadAll for %d datas, deferring reload until requested (on-demand optimization)"%ctr)
     
     def doReloadForKey(self, key : Any) -> Any:
         NSLog("DataMgr: UNIMPLEMENTED -- doReloadForKey() needs to be overridden in a child class!")
