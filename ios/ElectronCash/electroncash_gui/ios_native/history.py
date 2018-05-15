@@ -80,7 +80,8 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
         else:
             img = None
         entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)
-        history.insert(0,entry) # reverse order
+        history.append(entry) # appending is O(1)
+    history.reverse() # finally, reverse the order to keep most recent first
     utils.NSLog("history: retrieved %d entries",len(history))
     return history
 
