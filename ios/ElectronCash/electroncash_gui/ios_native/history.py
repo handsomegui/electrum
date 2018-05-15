@@ -56,6 +56,7 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
         ts = timestamp if conf > 0 else time.time()
         fiat_amount = fiat_balance = 0
         fiat_amount_str = fiat_balance_str = ''
+        if fx: fx.history_used_spot = False
         if not forceNoFX and fx:
             if not ccy:
                 ccy = fx.get_currency()
