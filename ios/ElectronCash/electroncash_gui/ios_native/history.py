@@ -4,7 +4,7 @@ from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 
-import time, math, sys
+import time, math, sys, traceback
 from collections import namedtuple
 
 from .uikit_bindings import *
@@ -59,15 +59,21 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
         if not forceNoFX and fx:
             if not ccy:
                 ccy = fx.get_currency()
-            hdate = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
-            hamount = fx.historical_value(value, hdate)
-            htext = fx.historical_value_str(value, hdate) if hamount else ''
-            fiat_amount = hamount if hamount else fiat_amount
-            fiat_amount_str = htext if htext else fiat_amount_str
-            hamount = fx.historical_value(balance, hdate)
-            htext = fx.historical_value_str(balance, hdate) if hamount else ''
-            fiat_balance = hamount if hamount else fiat_balance
-            fiat_balance_str = htext if htext else fiat_balance_str
+            try:
+                hdate = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
+                hamount = fx.historical_value(value, hdate)
+                htext = fx.historical_value_str(value, hdate) if hamount else ''
+                fiat_amount = hamount if hamount else fiat_amount
+                fiat_amount_str = htext if htext else fiat_amount_str
+                hamount = fx.historical_value(balance, hdate) if balance else 0
+                htext = fx.historical_value_str(balance, hdate) if hamount else ''
+                fiat_balance = hamount if hamount else fiat_balance
+                fiat_balance_str = htext if htext else fiat_balance_str
+            except:
+                utils.NSLog("Exception in get_history computing fiat amounts!\n%s",str(sys.exc_info()[1]))
+                traceback.print_exc(file=sys.stderr)
+                fiat_amount = fiat_balance = 0
+                fiat_amount_str = fiat_balance_str = ''
         if status >= 0 and status < len(sImages):
             img = sImages[status]
         else:
@@ -87,6 +93,11 @@ class HistoryMgr(utils.DataMgr):
 
 _tx_cell_height = 76.0 # TxHistoryCell height in points
 _kern = -0.5 # kerning for some of the text labels in the view in points
+_f1 = UIFont.systemFontOfSize_weight_(16.0,UIFontWeightBold).retain()
+_f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
+_f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
+_s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
+_date_width = None
 
 class TxHistoryHelper(TxHistoryHelperBase):
     haveShowMoreTxs = objc_property()
@@ -169,7 +180,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
             vc = UIViewController.new().autorelease()
             vc.title = _("All Transactions")
             vc.view = UITableView.alloc().initWithFrame_style_(self.vc.view.frame, UITableViewStylePlain).autorelease()
-            helper = NewTxHistoryHelper(tv = vc.view, vc = self.vc)
+            helper = NewTxHistoryHelper(tv = vc.view, vc = self.vc, domain = _GetDomain(self))
             self.vc.navigationController.pushViewController_animated_(vc, True)
         c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
         gr.view.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,seeAllTxs)
@@ -199,6 +210,9 @@ class TxHistoryHelper(TxHistoryHelperBase):
                 if isinstance(obj, UITableViewCell) and obj.reuseIdentifier == identifier:
                     cell = obj
                     break
+        global _date_width
+        if _date_width is None:
+            _date_width = cell.dateWidthCS.constant
         #HistoryEntry = tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image
         entry = h[indexPath.row]
         ff = '' #str(entry.date)
@@ -208,8 +222,53 @@ class TxHistoryHelper(TxHistoryHelperBase):
         cell.amountTit.setText_withKerning_(_("Amount"), _kern)
         cell.balanceTit.setText_withKerning_(_("Balance"), _kern)
         cell.statusTit.setText_withKerning_(_("Status"), _kern)
-        cell.amount.text = entry.v_str.translate({ord(i):None for i in '+- '}) #strip +/-
-        cell.balance.text = entry.balance_str.translate({ord(i):None for i in '+- '}) # strip +/- from amount
+        def strp(s : str) -> str:
+            return s.translate({ord(i):None for i in '+- '}) #strip +/-
+        cell.amount.text = strp(entry.v_str)
+        cell.balance.text = strp(entry.balance_str)
+        '''
+        # begin experimental fiat history rates zone
+        cell.amount.numberOfLines = 0
+        cell.balance.numberOfLines = 0
+        cell.dateWidthCS.constant = _date_width
+        def nsattrstring(amtStr, fiatStr, ccy, pad) -> ObjCInstance:
+            #print("str=",amtStr,"pad=",pad,"spacesize=",s3.width)
+            p = ''
+            if fiatStr and not self.compactMode:
+                if pad > 0.0:
+                    n = round(pad / _s3.width)
+                    p = ''.join([' ' for i in range(0, n)])
+                fiatStr = p + '  ' +  fiatStr + ' ' + ccy
+            else:
+                fiatStr = ''
+            ats = NSMutableAttributedString.alloc().initWithString_(amtStr + fiatStr).autorelease()
+            ats.addAttribute_value_range_(NSFontAttributeName,_f1,NSRange(0,len(amtStr)))
+            if fiatStr:
+                cell.dateWidthCS.constant = _date_width - 24.0
+                r0 = NSRange(len(amtStr),len(p))
+                ats.addAttribute_value_range_(NSFontAttributeName,_f3,r0)
+                r = NSRange(len(amtStr)+len(p),len(fiatStr)-len(p))
+                r2 = NSRange(ats.length()-(len(ccy)+1),len(ccy))
+                ats.addAttribute_value_range_(NSFontAttributeName,_f2,r)
+                ats.addAttribute_value_range_(NSKernAttributeName,_kern*1.25,r)
+                #ats.addAttribute_value_range_(NSBaselineOffsetAttributeName,3.0,r)
+                ats.addAttribute_value_range_(NSForegroundColorAttributeName,cell.amountTit.textColor,r)
+                #ats.addAttribute_value_range_(NSFontAttributeName,_f3,r2)
+                #ats.addAttribute_value_range_(NSObliquenessAttributeName,0.1,r)
+                ps = NSMutableParagraphStyle.new().autorelease()
+                ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
+                ps.alignment = NSJustifiedTextAlignment
+                #ps.lineBreakMode = NSLineBreakByWordWrapping
+                ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+            return ats
+        amtStr = strp(entry.v_str)
+        balStr = strp(entry.balance_str)
+        s1 = ns_from_py(amtStr).sizeWithAttributes_({NSFontAttributeName:_f1})
+        s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:_f1})
+        cell.amount.attributedText = nsattrstring(amtStr,strp(entry.fiat_amount_str),entry.ccy,s2.width-s1.width) 
+        cell.balance.attributedText = nsattrstring(balStr,strp(entry.fiat_balance_str),entry.ccy,s1.width-s2.width)
+        # end experimental zone...
+        '''
         cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', _kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
         cell.date.text = entry.status_str

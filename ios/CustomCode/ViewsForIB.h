@@ -246,6 +246,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *amtCS;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *dateCS;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *descCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *dateWidthCS;
 @end
 
 @interface ReqTVDBase : NSObject

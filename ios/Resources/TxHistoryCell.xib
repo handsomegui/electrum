@@ -76,7 +76,7 @@
                         <rect key="frame" x="203" y="18" width="144" height="18"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="18" id="370-nF-vNT"/>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="750" constant="144" id="Mu0-SE-o7F"/>
+                            <constraint firstAttribute="width" constant="144" id="Mu0-SE-o7F"/>
                         </constraints>
                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
@@ -163,6 +163,7 @@
                 <outlet property="balanceTit" destination="IHa-C9-Oqc" id="43q-1y-hEM"/>
                 <outlet property="date" destination="kKt-Cj-GZi" id="uvg-xT-wUM"/>
                 <outlet property="dateCS" destination="zxd-7n-evB" id="THz-gA-MlY"/>
+                <outlet property="dateWidthCS" destination="Mu0-SE-o7F" id="gz2-zB-PcD"/>
                 <outlet property="desc" destination="ERw-lj-3Wx" id="sOz-1e-SMN"/>
                 <outlet property="descCS" destination="kHQ-Bc-64b" id="zie-ff-9FH"/>
                 <outlet property="icon" destination="WB6-RX-el1" id="7J2-vZ-WL9"/>

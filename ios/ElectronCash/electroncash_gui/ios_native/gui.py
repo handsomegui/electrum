@@ -1737,4 +1737,3 @@ class ElectrumGui(PrintError):
         
         self.createAndShowUI()
         self.ext_txn_check()
-
