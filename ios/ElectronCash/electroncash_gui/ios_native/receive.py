@@ -10,8 +10,7 @@ from electroncash.address import Address, ScriptOutput
 from electroncash.paymentrequest import PR_UNPAID, PR_EXPIRED, PR_UNKNOWN, PR_PAID
 from electroncash import bitcoin
 import electroncash.web as web
-import time
-import html
+import sys, traceback
 from .uikit_bindings import *
 from .custom_objc import *
 
@@ -30,7 +29,7 @@ pr_tooltips = {
     PR_EXPIRED:'Expired'
 }
 
-ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr")
+ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr timestamp")
 
 def parent():
     return gui.ElectrumGui.gui
@@ -415,6 +414,21 @@ class ReceiveVC(UIViewController):
 
 def _GetReqs() -> list:
     return parent().reqMgr.get(None)
+
+def _DelReqAtIndex(index : int, showErrorBox : bool = True, refreshDelay : float = -1.0) -> bool:
+    wasDeleted = False
+    try:
+        reqs = _GetReqs()
+        if index < len(reqs):
+            req = reqs[index]
+            wasDeleted =  parent().delete_payment_request(req.addr, refreshDelay)
+    except:
+        utils.NSLog("Got exception deleting payment request: %s", str(sys.exc_info()[1]))
+        traceback.print_exc(file=sys.stderr)
+    if not wasDeleted and showErrorBox:
+        parent().show_error("Unspecified error deleting payment request.")
+    return wasDeleted
+
     
 class RequestMgr(utils.DataMgr):
     def doReloadForKey(self, ignored):
@@ -458,11 +472,12 @@ class RequestMgr(utils.DataMgr):
             except:
                 utils.NSLog("ReqMgr: could not get fiat amount")
                 fiatStr = ''
-            #ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr")
-            item = ReqItem(date, address.to_ui_string(), signedBy, message, amount_str, pr_tooltips.get(status,''), address, iconSign, iconStatus, fiatStr)
+            #ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr, timestamp")
+            item = ReqItem(date, address.to_ui_string(), signedBy, message, amount_str, pr_tooltips.get(status,''), address, iconSign, iconStatus, fiatStr, timestamp)
             #self.addTopLevelItem(item)
             reqs.append(item)
             #print(item)
+        reqs = sorted(reqs, key=lambda x: -x.timestamp)
         utils.NSLog("ReqMgr: fetched %d extant payment requests",len(reqs))
         return reqs
 
@@ -530,7 +545,7 @@ class ReqTVD(ReqTVDBase):
         cell.status.text = item.statusStr if item.statusStr else _('Unknown')
         return cell
 
-    # Below 2 methods conform to UITableViewDelegate protocol
+    # Below 3 methods conform to UITableViewDelegate protocol
     @objc_method
     def tableView_accessoryButtonTappedForRowWithIndexPath_(self, tv, indexPath) -> None:
         pass
@@ -538,6 +553,39 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
+    
+    @objc_method
+    def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv : ObjCInstance, es : int, indexPath : ObjCInstance) -> None:
+        ''' iOS 10 and below method for deleting table rows '''
+        if es == UITableViewCellEditingStyleDelete:
+            _DelReqAtIndex(indexPath.row, refreshDelay = 0.25)
+     
+    
+    @objc_method
+    def tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        ''' This method is called in iOS 11.0+ only .. so we only create this UISwipeActionsConfiguration ObjCClass
+            here rather than in uikit_bindings.py
+        '''
+        try:
+            UISwipeActionsConfiguration = ObjCClass('UISwipeActionsConfiguration')
+            UIContextualAction = ObjCClass('UIContextualAction')
+            UIContextualActionStyleNormal = 0
+            UIContextualActionStyleDestructive = 1
+            row = int(indexPath.row) # save param outside objcinstance object and into python for 'handler' closure
+            def handler(a : objc_id, v : objc_id, c : objc_id) -> None:
+                result = _DelReqAtIndex(row, refreshDelay=0.4)
+                ObjCBlock(c)(bool(result)) # inform UIKit if we deleted it or not by calling the block handler callback
+            action = UIContextualAction.contextualActionWithStyle_title_handler_(UIContextualActionStyleDestructive,
+                                                                                 _("Remove"),
+                                                                                 Block(handler))
+            action.image = UIImage.imageNamed_("trashcan_red.png")
+            action.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(255.0/255.0,97.0/255.0,97.0/255.0,1.0)
+            return UISwipeActionsConfiguration.configurationWithActions_([action])
+        except:
+            utils.NSLog("ReqTV.tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_, got exception: %s", str(sys.exc_info()[1]))
+            traceback.print_exc(file=sys.stderr)
+        return None
+
 
 class ReqTVDTiny(ReqTVD):
     @objc_method

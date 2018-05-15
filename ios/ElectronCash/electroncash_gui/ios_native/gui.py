@@ -1173,6 +1173,16 @@ class ElectrumGui(PrintError):
         if localRunLoop: return utils.do_in_main_thread_sync(func)
         return utils.do_in_main_thread(func)
 
+    def delete_payment_request(self, addr : Address, refreshDelay : float = -1.0) -> bool:
+        if self.wallet and self.wallet.remove_payment_request(addr, self.config):
+            self.wallet.storage.write() # commit it to disk
+            if refreshDelay <= 0.0:
+                self.refresh_components('requests')
+            else:
+                utils.call_later(refreshDelay, lambda: self.refresh_components('requests'))
+            return True
+        return False
+
     def on_pr(self, request):
         #self.payment_request = request
         #if self.payment_request.verify(self.contacts):
@@ -1184,6 +1194,7 @@ class ElectrumGui(PrintError):
     def sign_payment_request(self, addr):
         ''' No-op for now -- needs to be IMPLEMENTED -- requires the alias functionality '''
         assert isinstance(addr, Address)
+        if not self.wallet: return
         alias = self.config.get('alias')
         alias_privkey = None
         if alias and self.alias_info:
@@ -1205,7 +1216,7 @@ class ElectrumGui(PrintError):
 
     def pay_to_URI(self, URI, errFunc : callable = None):
         utils.NSLog("PayTo URI: %s", str(URI))
-        if not URI:
+        if not URI or not self.wallet:
             return
         try:
             out = web.parse_URI(URI, self.on_pr)

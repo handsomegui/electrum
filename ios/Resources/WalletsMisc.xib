@@ -57,7 +57,7 @@
             <nil key="simulatedTopBarMetrics"/>
             <nil key="simulatedBottomBarMetrics"/>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
-            <point key="canvasLocation" x="-20" y="86"/>
+            <point key="canvasLocation" x="-473" y="-271"/>
         </view>
         <view opaque="NO" tag="2000" contentMode="scaleToFill" id="VDu-6t-SZS" userLabel="DrawerTableFooter">
             <rect key="frame" x="0.0" y="0.0" width="375" height="60"/>
@@ -105,7 +105,7 @@
             <connections>
                 <outletCollection property="gestureRecognizers" destination="7PU-io-kNg" appends="YES" id="PAu-n1-fwP"/>
             </connections>
-            <point key="canvasLocation" x="-20" y="196"/>
+            <point key="canvasLocation" x="-472" y="-168"/>
         </view>
         <tapGestureRecognizer id="7PU-io-kNg" userLabel="Drawer Tap Gesture Recognizer"/>
         <view tag="3000" contentMode="scaleToFill" id="UYH-64-BOl" userLabel="ShowMoreTransactions">
@@ -144,7 +144,7 @@
             <connections>
                 <outletCollection property="gestureRecognizers" destination="ezp-2a-QKN" appends="YES" id="8XH-BR-9CL"/>
             </connections>
-            <point key="canvasLocation" x="-21" y="-35"/>
+            <point key="canvasLocation" x="-471" y="-364"/>
         </view>
         <tapGestureRecognizer id="ezp-2a-QKN" userLabel="ShowMoreTX Tap Gesture Recognizer"/>
     </objects>
