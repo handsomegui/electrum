@@ -1017,7 +1017,7 @@ def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCIn
         ats.addAttribute_value_range_(NSFontAttributeName,font,r)
     return ats
 def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance, cb : Callable = None, kern : float = None) -> ObjCInstance:
-    #print("str=",amtStr,"pad=",pad,"spacesize=",s3.width)
+    #print("str=",amtStr,"pad=",pad,"spacesize=",_s3.width)
     p = ''
     if fiatStr:
         if pad > 0.0:
