@@ -99,6 +99,7 @@ _kern = -0.5 # kerning for some of the text labels in the view in points
 _f1 = UIFont.systemFontOfSize_weight_(16.0,UIFontWeightBold).retain()
 _f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
 _f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
+_f4 = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightLight).retain()
 _s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
 _date_width = None
 
@@ -258,11 +259,11 @@ class TxHistoryHelper(TxHistoryHelperBase):
                 ats.addAttribute_value_range_(NSForegroundColorAttributeName,cell.amountTit.textColor,r)
                 #ats.addAttribute_value_range_(NSFontAttributeName,_f3,r2)
                 #ats.addAttribute_value_range_(NSObliquenessAttributeName,0.1,r)
-                ps = NSMutableParagraphStyle.new().autorelease()
-                ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
-                ps.alignment = NSJustifiedTextAlignment
+                #ps = NSMutableParagraphStyle.new().autorelease()
+                #ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
+                #ps.alignment = NSJustifiedTextAlignment
                 #ps.lineBreakMode = NSLineBreakByWordWrapping
-                ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+                #ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
             return ats
         amtStr = strp(entry.v_str)
         balStr = strp(entry.balance_str)
@@ -274,7 +275,20 @@ class TxHistoryHelper(TxHistoryHelperBase):
         '''
         cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', _kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
-        cell.date.text = entry.status_str
+        def makeFancyDateAttrString(datestr : str) -> ObjCInstance:
+            ''' Make the ending MM:SS of the date field be 'light' text as per Max's UI spec '''
+            datestr = datestr.strip()
+            ats = NSMutableAttributedString.alloc().initWithString_(datestr).autorelease()
+            l = len(datestr)
+            ix = datestr.rfind(' ', 0, l)
+            if ix >= 0:
+                r = NSRange(ix,l-ix)
+                ats.addAttribute_value_range_(NSFontAttributeName,_f4,r)
+            return ats
+        if entry.conf > 0:
+            cell.date.attributedText = makeFancyDateAttrString(entry.status_str)
+        else:
+            cell.date.text = entry.status_str
         cell.status.text = ff #if entry.conf < 6 else ""
         cell.statusIcon.image = entry.status_image
         
@@ -303,8 +317,24 @@ class TxHistoryHelper(TxHistoryHelperBase):
         txd = txdetail.CreateTxDetailWithEntry(entry,tx=tx)        
         self.vc.navigationController.pushViewController_animated_(txd, True)
 
-def NewTxHistoryHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = None, noRefreshControl = False) -> ObjCInstance:
-    helper = TxHistoryHelper.new().autorelease()
+class TxHistoryHelperWithHeader(TxHistoryHelper):
+    @objc_method
+    def tableView_viewForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TableHeaders", None, None)
+        for o in objs:
+            if isinstance(o, UIView) and o.tag == 10000:
+                label = o.viewWithTag_(1)
+                if label: label.text = _("Transaction History")
+                return o
+        return UIView.alloc().initWithFrame_(CGRectMake(0.0,0.0,0.0,0.0)).autorelease()
+    @objc_method
+    def tableView_heightForHeaderInSection_(self, tv : ObjCInstance,section : int) -> float:
+        return 28.0
+
+def NewTxHistoryHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = None, noRefreshControl = False, cls : ObjCClass=None) -> ObjCInstance:
+    if not cls:
+        cls = TxHistoryHelper
+    helper = cls.new().autorelease()
     tv.dataSource = helper
     tv.delegate = helper
     helper.tv = tv

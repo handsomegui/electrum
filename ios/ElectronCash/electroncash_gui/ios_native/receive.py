@@ -101,7 +101,7 @@ class ReceiveVC(UIViewController):
                 
         if not self.view:
             raise Exception("Could not build view -- Receive.xib is missing a UIScrollView as a root object!")
-        self.tvd = ReqTVD.new().autorelease()
+        self.tvd = ReqTVDTiny.new().autorelease()
     
     @objc_method
     def viewDidLoad(self) -> None:
@@ -483,11 +483,7 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def numberOfSectionsInTableView_(self, tv) -> int:
         return 1
-    
-    @objc_method
-    def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
-        return _("Requests")
-            
+                
     @objc_method
     def tableView_numberOfRowsInSection_(self, tv : ObjCInstance, section : int) -> int:
         reqs = _GetReqs()
@@ -524,3 +520,31 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
+
+class ReqTVDTiny(ReqTVD):
+    @objc_method
+    def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
+        return _("Requests")
+
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        reqs = _GetReqs()
+        if not reqs: return None
+        assert indexPath.row >= 0 and indexPath.row < len(reqs)
+        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
+        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
+        if cell is None:
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()        
+        item = reqs[indexPath.row]
+        #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
+        cell.textLabel.text = ((item.dateStr + " - ") if item.dateStr else "") + (item.message if item.message else "")
+        cell.textLabel.numberOfLines = 1
+        cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
+        cell.textLabel.adjustsFontSizeToFitWidth = True
+        cell.textLabel.minimumScaleFactor = 0.3
+        cell.detailTextLabel.text = ((item.addrStr + " ") if item.addrStr else "") + (item.amountStr if item.amountStr else "") + " - " + item.statusStr
+        cell.detailTextLabel.numberOfLines = 1
+        cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
+        cell.detailTextLabel.adjustsFontSizeToFitWidth = True
+        cell.detailTextLabel.minimumScaleFactor = 0.3        
+        return cell

@@ -89,7 +89,7 @@ class AddressDetail(UIViewController):
         tv = v.viewWithTag_(1000)
         
         # Re-use of TxHistoryHelper below...
-        helper = history.NewTxHistoryHelper(tv = tv, vc = self, noRefreshControl = True, domain = [entry.address])
+        helper = history.NewTxHistoryHelper(tv = tv, vc = self, noRefreshControl = True, domain = [entry.address], cls=history.TxHistoryHelperWithHeader)
 
         self.view = v
                 
@@ -146,7 +146,8 @@ class AddressDetail(UIViewController):
         lbl.text = ', '.join(flags)
         
         tv = v.viewWithTag_(1000)
-        tv.backgroundColor = bgColor
+        # This was here for old UI style.. removed for now as we transition to new
+        #tv.backgroundColor = bgColor
         
         self.refreshButs()
         tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
