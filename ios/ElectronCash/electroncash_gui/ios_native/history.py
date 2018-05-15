@@ -214,21 +214,28 @@ class TxHistoryHelper(TxHistoryHelperBase):
         cell.amountTit.setText_withKerning_(_("Amount"), utils._kern)
         cell.balanceTit.setText_withKerning_(_("Balance"), utils._kern)
         cell.statusTit.setText_withKerning_(_("Status"), utils._kern)
-        cell.amount.text = utils.stripAmount(entry.v_str)
-        cell.balance.text = utils.stripAmount(entry.balance_str)
-        '''
-        # begin experimental fiat history rates zone
-        cell.amount.numberOfLines = 0
-        cell.balance.numberOfLines = 0
-        cell.dateWidthCS.constant = _date_width
         amtStr = utils.stripAmount(entry.v_str)
         balStr = utils.stripAmount(entry.balance_str)
-        s1 = ns_from_py(amtStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
-        s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
-        cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,strp(entry.fiat_amount_str) if not self.compactMode else '',entry.ccy,s2.width-s1.width,cell.amountTit.textColor,lambda:cell.dateWidthCS.constant = _date_width - 24.0,utils._kern*1.25) 
-        cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,strp(entry.fiat_balance_str) if not self.compactMode else '',entry.ccy,s1.width-s2.width,cell.amountTit.textColor,lambda:cell.dateWidthCS.constant = _date_width - 24.0,utils._kern*1.25)
-        # end experimental zone...
-        '''
+        if self.compactMode or (not entry.fiat_amount_str and not entry.fiat_balance_str):
+            if cell.amount.numberOfLines != 1:
+                cell.amount.numberOfLines = 1
+                cell.balance.numberOfLines = 1
+            if cell.dateWidthCS.constant != _date_width:
+                cell.dateWidthCS.constant = _date_width
+            cell.amount.text = amtStr
+            cell.balance.text = balStr
+        else:
+            # begin experimental fiat history rates zone
+            cell.amount.numberOfLines = 0
+            cell.balance.numberOfLines = 0
+            cell.dateWidthCS.constant = _date_width
+            s1 = ns_from_py(amtStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
+            s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
+            def adjustCS() -> None:
+                cell.dateWidthCS.constant = _date_width - 24.0
+            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,utils.stripAmount(entry.fiat_amount_str),entry.ccy,s2.width-s1.width,cell.amountTit.textColor,adjustCS,utils._kern*1.25) 
+            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,utils.stripAmount(entry.fiat_balance_str),entry.ccy,s1.width-s2.width,cell.amountTit.textColor,adjustCS,utils._kern*1.25)
+            # end experimental zone...
         cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', utils._kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
         if entry.conf > 0:
