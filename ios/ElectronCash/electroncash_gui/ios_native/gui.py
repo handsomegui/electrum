@@ -632,7 +632,7 @@ class ElectrumGui(PrintError):
     def on_quotes(self, event, *args):
         utils.NSLog("ON QUOTES (IsMainThread: %s)",str(NSThread.currentThread.isMainThread))
         #if self.daemon.fx.history_used_spot: #TODO: this is from qt gui.. figure out what this means.. does it help rate-limit?
-        self.refresh_components('history', 'addresses', 'helper')
+        self.refresh_components('history', 'addresses', 'helper', 'requests')
             
     def on_network(self, event, *args):
         utils.NSLog("ON NETWORK: %s (IsMainThread: %s)",event,str(NSThread.currentThread.isMainThread))

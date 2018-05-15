@@ -256,4 +256,18 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // stub to represent python -- implemented in python receive.py
 @interface ReqTVD : ReqTVDBase
 @end
+
+
+@interface RequestListCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UILabel *addressTit;
+@property (nonatomic, weak) IBOutlet UILabel *address;
+@property (nonatomic, weak) IBOutlet UILabel *amountTit;
+@property (nonatomic, weak) IBOutlet UILabel *amount;
+@property (nonatomic, weak) IBOutlet UILabel *statusTit;
+@property (nonatomic, weak) IBOutlet UILabel *status;
+@property (nonatomic, weak) IBOutlet UILabel *date;
+@property (nonatomic, weak) IBOutlet UILabel *desc;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *addressTitCS;
+@end
+
 #endif /* ViewsForIB_h */

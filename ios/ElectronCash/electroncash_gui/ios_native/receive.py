@@ -30,9 +30,7 @@ pr_tooltips = {
     PR_EXPIRED:'Expired'
 }
 
-
-ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
-
+ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr")
 
 def parent():
     return gui.ElectrumGui.gui
@@ -421,6 +419,7 @@ def _GetReqs() -> list:
 class RequestMgr(utils.DataMgr):
     def doReloadForKey(self, ignored):
         wallet = parent().wallet
+        daemon = parent().daemon
         if not wallet: return # wallet not open for whatever reason (can happen due to app backgrounding)
         
         domain = wallet.get_addresses()
@@ -443,6 +442,7 @@ class RequestMgr(utils.DataMgr):
             signedBy = ''
             iconSign = ''
             iconStatus = ''
+            fiatStr = ''
             #item.setData(0, Qt.UserRole, address)
             if signature is not None:
                 #item.setIcon(2, QIcon(":icons/seal.png"))
@@ -452,8 +452,14 @@ class RequestMgr(utils.DataMgr):
             if status is not PR_UNKNOWN:
                 #item.setIcon(6, QIcon(pr_icons.get(status)))
                 iconStatus = pr_icons.get(status,'')
-            #ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
-            item = ReqItem(date, address.to_ui_string(), signedBy, message, amount_str, pr_tooltips.get(status,''), address, iconSign, iconStatus)
+            try:
+                if daemon and daemon.fx.is_enabled():
+                    fiatStr = daemon.fx.format_amount_and_units(amount)
+            except:
+                utils.NSLog("ReqMgr: could not get fiat amount")
+                fiatStr = ''
+            #ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr")
+            item = ReqItem(date, address.to_ui_string(), signedBy, message, amount_str, pr_tooltips.get(status,''), address, iconSign, iconStatus, fiatStr)
             #self.addTopLevelItem(item)
             reqs.append(item)
             #print(item)
@@ -462,11 +468,13 @@ class RequestMgr(utils.DataMgr):
 
 class ReqTVD(ReqTVDBase):
     ''' Request TableView Datasource/Delegate -- generic handler to provide data and cells to the req table view '''
+    didReg = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
+            self.didReg = NSMutableSet.alloc().init().autorelease()
             def doRefresh() -> None:
                 if self.tv:
                     self.tv.reloadData()
@@ -477,6 +485,7 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def dealloc(self) -> None:
         parent().sigRequests.disconnect(self.ptr.value)
+        self.didReg = None
         send_super(__class__, self, 'dealloc')
     
     ## TABLEVIEW related methods..
@@ -493,23 +502,32 @@ class ReqTVD(ReqTVDBase):
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
         reqs = _GetReqs()
         if not reqs: return None
+        identifier = "RequestListCell"
+        if not self.didReg.containsObject_(tv.ptr.value):
+            nib = UINib.nibWithNibName_bundle_(identifier, None)
+            tv.registerNib_forCellReuseIdentifier_(nib, identifier)
+            self.didReg.addObject_(tv.ptr.value)
         assert indexPath.row >= 0 and indexPath.row < len(reqs)
-        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
         cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-        if cell is None:
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()        
-        item = reqs[indexPath.row]
         #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
-        cell.textLabel.text = ((item.dateStr + " - ") if item.dateStr else "") + (item.message if item.message else "")
-        cell.textLabel.numberOfLines = 1
-        cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
-        cell.textLabel.adjustsFontSizeToFitWidth = True
-        cell.textLabel.minimumScaleFactor = 0.3
-        cell.detailTextLabel.text = ((item.addrStr + " ") if item.addrStr else "") + (item.amountStr if item.amountStr else "") + " - " + item.statusStr
-        cell.detailTextLabel.numberOfLines = 1
-        cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
-        cell.detailTextLabel.adjustsFontSizeToFitWidth = True
-        cell.detailTextLabel.minimumScaleFactor = 0.3        
+        item = reqs[indexPath.row]
+        cell.addressTit.setText_withKerning_(_('Address'),utils._kern)
+        cell.statusTit.setText_withKerning_(_('Status'),utils._kern)
+        cell.amountTit.setText_withKerning_(_('Amount'),utils._kern)
+        if item.fiatStr:
+            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(item.amountStr.strip(), item.fiatStr.strip(), '', 2.5, cell.amountTit.textColor)
+        else:
+            cell.amount.text = item.amountStr.strip() if item.amountStr else ''
+        cell.address.text = item.addrStr.strip() if item.addrStr else ''
+        if item.dateStr:
+            cell.date.attributedText = utils.makeFancyDateAttrString(item.dateStr.strip())
+        else:
+            cell.date.text = ''
+        if item.message:
+            cell.desc.setText_withKerning_(item.message,utils._kern)
+        else:
+            cell.desc.text = ''
+        cell.status.text = item.statusStr if item.statusStr else _('Unknown')
         return cell
 
     # Below 2 methods conform to UITableViewDelegate protocol

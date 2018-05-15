@@ -95,12 +95,6 @@ class HistoryMgr(utils.DataMgr):
         return hist
 
 _tx_cell_height = 76.0 # TxHistoryCell height in points
-_kern = -0.5 # kerning for some of the text labels in the view in points
-_f1 = UIFont.systemFontOfSize_weight_(16.0,UIFontWeightBold).retain()
-_f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
-_f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
-_f4 = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightLight).retain()
-_s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
 _date_width = None
 
 class TxHistoryHelper(TxHistoryHelperBase):
@@ -208,12 +202,6 @@ class TxHistoryHelper(TxHistoryHelperBase):
             return cell            
         identifier = "TxHistoryCell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
-        if cell is None:
-            objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TxHistoryCell",None,None)
-            for obj in objs:
-                if isinstance(obj, UITableViewCell) and obj.reuseIdentifier == identifier:
-                    cell = obj
-                    break
         global _date_width
         if _date_width is None:
             _date_width = cell.dateWidthCS.constant
@@ -223,72 +211,30 @@ class TxHistoryHelper(TxHistoryHelperBase):
         if entry.conf and entry.conf > 0 and entry.conf < 6:
             ff = "%s %s"%(entry.conf, _('confirmations'))
 
-        cell.amountTit.setText_withKerning_(_("Amount"), _kern)
-        cell.balanceTit.setText_withKerning_(_("Balance"), _kern)
-        cell.statusTit.setText_withKerning_(_("Status"), _kern)
-        def strp(s : str) -> str:
-            return s.translate({ord(i):None for i in '+- '}) #strip +/-
-        cell.amount.text = strp(entry.v_str)
-        cell.balance.text = strp(entry.balance_str)
+        cell.amountTit.setText_withKerning_(_("Amount"), utils._kern)
+        cell.balanceTit.setText_withKerning_(_("Balance"), utils._kern)
+        cell.statusTit.setText_withKerning_(_("Status"), utils._kern)
+        cell.amount.text = utils.stripAmount(entry.v_str)
+        cell.balance.text = utils.stripAmount(entry.balance_str)
         '''
         # begin experimental fiat history rates zone
         cell.amount.numberOfLines = 0
         cell.balance.numberOfLines = 0
         cell.dateWidthCS.constant = _date_width
-        def nsattrstring(amtStr, fiatStr, ccy, pad) -> ObjCInstance:
-            #print("str=",amtStr,"pad=",pad,"spacesize=",s3.width)
-            p = ''
-            if fiatStr and not self.compactMode:
-                if pad > 0.0:
-                    n = round(pad / _s3.width)
-                    p = ''.join([' ' for i in range(0, n)])
-                fiatStr = p + '  ' +  fiatStr + ' ' + ccy
-            else:
-                fiatStr = ''
-            ats = NSMutableAttributedString.alloc().initWithString_(amtStr + fiatStr).autorelease()
-            ats.addAttribute_value_range_(NSFontAttributeName,_f1,NSRange(0,len(amtStr)))
-            if fiatStr:
-                cell.dateWidthCS.constant = _date_width - 24.0
-                r0 = NSRange(len(amtStr),len(p))
-                ats.addAttribute_value_range_(NSFontAttributeName,_f3,r0)
-                r = NSRange(len(amtStr)+len(p),len(fiatStr)-len(p))
-                r2 = NSRange(ats.length()-(len(ccy)+1),len(ccy))
-                ats.addAttribute_value_range_(NSFontAttributeName,_f2,r)
-                ats.addAttribute_value_range_(NSKernAttributeName,_kern*1.25,r)
-                #ats.addAttribute_value_range_(NSBaselineOffsetAttributeName,3.0,r)
-                ats.addAttribute_value_range_(NSForegroundColorAttributeName,cell.amountTit.textColor,r)
-                #ats.addAttribute_value_range_(NSFontAttributeName,_f3,r2)
-                #ats.addAttribute_value_range_(NSObliquenessAttributeName,0.1,r)
-                #ps = NSMutableParagraphStyle.new().autorelease()
-                #ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
-                #ps.alignment = NSJustifiedTextAlignment
-                #ps.lineBreakMode = NSLineBreakByWordWrapping
-                #ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
-            return ats
-        amtStr = strp(entry.v_str)
-        balStr = strp(entry.balance_str)
-        s1 = ns_from_py(amtStr).sizeWithAttributes_({NSFontAttributeName:_f1})
-        s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:_f1})
-        cell.amount.attributedText = nsattrstring(amtStr,strp(entry.fiat_amount_str),entry.ccy,s2.width-s1.width) 
-        cell.balance.attributedText = nsattrstring(balStr,strp(entry.fiat_balance_str),entry.ccy,s1.width-s2.width)
+        amtStr = utils.stripAmount(entry.v_str)
+        balStr = utils.stripAmount(entry.balance_str)
+        s1 = ns_from_py(amtStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
+        s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
+        cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,strp(entry.fiat_amount_str) if not self.compactMode else '',entry.ccy,s2.width-s1.width,cell.amountTit.textColor,lambda:cell.dateWidthCS.constant = _date_width - 24.0,utils._kern*1.25) 
+        cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,strp(entry.fiat_balance_str) if not self.compactMode else '',entry.ccy,s1.width-s2.width,cell.amountTit.textColor,lambda:cell.dateWidthCS.constant = _date_width - 24.0,utils._kern*1.25)
         # end experimental zone...
         '''
-        cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', _kern)
+        cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', utils._kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
-        def makeFancyDateAttrString(datestr : str) -> ObjCInstance:
-            ''' Make the ending MM:SS of the date field be 'light' text as per Max's UI spec '''
-            datestr = datestr.strip()
-            ats = NSMutableAttributedString.alloc().initWithString_(datestr).autorelease()
-            l = len(datestr)
-            ix = datestr.rfind(' ', 0, l)
-            if ix >= 0:
-                r = NSRange(ix,l-ix)
-                ats.addAttribute_value_range_(NSFontAttributeName,_f4,r)
-            return ats
         if entry.conf > 0:
-            cell.date.attributedText = makeFancyDateAttrString(entry.status_str)
+            cell.date.attributedText = utils.makeFancyDateAttrString(entry.status_str.strip())
         else:
-            cell.date.text = entry.status_str
+            cell.date.text = entry.status_str.strip()
         cell.status.text = ff #if entry.conf < 6 else ""
         cell.statusIcon.image = entry.status_image
         

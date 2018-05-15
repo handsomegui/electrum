@@ -993,3 +993,56 @@ class DataMgr:
     def doReloadForKey(self, key : Any) -> Any:
         NSLog("DataMgr: UNIMPLEMENTED -- doReloadForKey() needs to be overridden in a child class!")
         return None
+
+######    
+### Various helpers for laying out text, building attributed strings, etc...
+######
+_f1 = UIFont.systemFontOfSize_weight_(16.0,UIFontWeightBold).retain()
+_f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
+_f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
+_f4 = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightLight).retain()
+_s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
+_kern = -0.5 # kerning for some of the text labels in some of the views (in points)
+def stripAmount(s : str) -> str:
+    return s.translate({ord(i):None for i in '+- '}) #strip +/-
+
+def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCInstance:
+    ''' Make the ending MM:SS of the date field be 'light' text as per Max's UI spec '''
+    if font is None: font = _f4
+    ats = NSMutableAttributedString.alloc().initWithString_(datestr).autorelease()
+    l = len(datestr)
+    ix = datestr.rfind(' ', 0, l)
+    if ix >= 0:
+        r = NSRange(ix,l-ix)
+        ats.addAttribute_value_range_(NSFontAttributeName,font,r)
+    return ats
+def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance, cb : Callable = None, kern : float = None) -> ObjCInstance:
+    #print("str=",amtStr,"pad=",pad,"spacesize=",s3.width)
+    p = ''
+    if fiatStr:
+        if pad > 0.0:
+            n = round(pad / _s3.width)
+            p = ''.join([' ' for i in range(0, n)])
+        fiatStr = p + '  ' +  fiatStr + ' ' + ccy
+    else:
+        fiatStr = ''
+    ats = NSMutableAttributedString.alloc().initWithString_(amtStr + fiatStr).autorelease()
+    ats.addAttribute_value_range_(NSFontAttributeName,_f1,NSRange(0,len(amtStr)))
+    if fiatStr:
+        if callable(cb): cb()
+        r0 = NSRange(len(amtStr),len(p))
+        ats.addAttribute_value_range_(NSFontAttributeName,_f3,r0)
+        r = NSRange(len(amtStr)+len(p),len(fiatStr)-len(p))
+        r2 = NSRange(ats.length()-(len(ccy)+1),len(ccy))
+        ats.addAttribute_value_range_(NSFontAttributeName,_f2,r)
+        if kern: ats.addAttribute_value_range_(NSKernAttributeName,kern,r)
+        #ats.addAttribute_value_range_(NSBaselineOffsetAttributeName,3.0,r)
+        ats.addAttribute_value_range_(NSForegroundColorAttributeName,color,r)
+        #ats.addAttribute_value_range_(NSFontAttributeName,_f3,r2)
+        #ats.addAttribute_value_range_(NSObliquenessAttributeName,0.1,r)
+        #ps = NSMutableParagraphStyle.new().autorelease()
+        #ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
+        #ps.alignment = NSJustifiedTextAlignment
+        #ps.lineBreakMode = NSLineBreakByWordWrapping
+        #ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+    return ats

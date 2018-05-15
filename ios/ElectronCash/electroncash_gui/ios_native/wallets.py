@@ -29,8 +29,6 @@ VChevronImages = [
     UIImage.imageNamed_("chevron_00005").retain(),
 ]
 
-_kern = -0.5 # kerning for some of the text labels in the view in points
-
 class WalletsNav(WalletsNavBase):    
     @objc_method
     def dealloc(self) -> None:
@@ -263,8 +261,8 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
             if isinstance(obj, UIView) and obj.tag == 1000:
                 name = obj.viewWithTag_(1)
                 size = obj.viewWithTag_(2)
-                name.setText_withKerning_(_("Name"), _kern) 
-                size.setText_withKerning_(_("Size:").translate({ord(i):None for i in ':'}), _kern)
+                name.setText_withKerning_(_("Name"), utils._kern) 
+                size.setText_withKerning_(_("Size:").translate({ord(i):None for i in ':'}), utils._kern)
                 return obj
         return None
 
