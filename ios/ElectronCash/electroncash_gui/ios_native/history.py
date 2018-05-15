@@ -4,7 +4,7 @@ from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 
-import time, math, sys, traceback
+import time, math, sys
 from collections import namedtuple
 
 from .uikit_bindings import *
@@ -71,7 +71,8 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
                 fiat_balance_str = htext if htext else fiat_balance_str
             except:
                 utils.NSLog("Exception in get_history computing fiat amounts!\n%s",str(sys.exc_info()[1]))
-                traceback.print_exc(file=sys.stderr)
+                #import traceback
+                #traceback.print_exc(file=sys.stderr)
                 fiat_amount = fiat_balance = 0
                 fiat_amount_str = fiat_balance_str = ''
         if status >= 0 and status < len(sImages):
