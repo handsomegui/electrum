@@ -741,3 +741,14 @@ UIActivityTypePostToVimeo        = ObjCInstance(c_void_p.in_dll(uikit, "UIActivi
 UIActivityTypePostToTencentWeibo = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypePostToTencentWeibo"))
 UIActivityTypeAirDrop            = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeAirDrop"))
 UIActivityTypeOpenInIBooks       = ObjCInstance(c_void_p.in_dll(uikit, "UIActivityTypeOpenInIBooks"))
+
+# UIContextualAction stuff for TableViews -- available iOS 11.0+, which is why we wrap it in a try/except block
+HAVE_UI_SWIPE_ACTION = False
+try:
+    UISwipeActionsConfiguration = ObjCClass('UISwipeActionsConfiguration')
+    UIContextualAction = ObjCClass('UIContextualAction')
+    UIContextualActionStyleNormal = 0
+    UIContextualActionStyleDestructive = 1
+    HAVE_UI_SWIPE_ACTION = True
+except NameError as e:
+    print("iOS 11.0+ UI Swipe Action facility missing, exception was:","["+str(e)+"]")

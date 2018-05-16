@@ -415,7 +415,7 @@ class ReceiveVC(UIViewController):
 def _GetReqs() -> list:
     return parent().reqMgr.get(None)
 
-def _DelReqAtIndex(index : int, showErrorBox : bool = True, refreshDelay : float = -1.0) -> bool:
+def _DelReqAtIndex(index : int, refreshDelay : float = 0.45, showErrorBox : bool = True) -> bool:
     wasDeleted = False
     try:
         reqs = _GetReqs()
@@ -558,7 +558,7 @@ class ReqTVD(ReqTVDBase):
     def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv : ObjCInstance, es : int, indexPath : ObjCInstance) -> None:
         ''' iOS 10 and below method for deleting table rows '''
         if es == UITableViewCellEditingStyleDelete:
-            _DelReqAtIndex(indexPath.row, refreshDelay = 0.25)
+            _DelReqAtIndex(indexPath.row, refreshDelay = 0.2)
      
     
     @objc_method
@@ -567,13 +567,13 @@ class ReqTVD(ReqTVDBase):
             here rather than in uikit_bindings.py
         '''
         try:
-            UISwipeActionsConfiguration = ObjCClass('UISwipeActionsConfiguration')
-            UIContextualAction = ObjCClass('UIContextualAction')
-            UIContextualActionStyleNormal = 0
-            UIContextualActionStyleDestructive = 1
             row = int(indexPath.row) # save param outside objcinstance object and into python for 'handler' closure
             def handler(a : objc_id, v : objc_id, c : objc_id) -> None:
-                result = _DelReqAtIndex(row, refreshDelay=0.4)
+                result = False
+                try:
+                    result = _DelReqAtIndex(row)
+                except:
+                    traceback.print_exc(file=sys.stderr)
                 ObjCBlock(c)(bool(result)) # inform UIKit if we deleted it or not by calling the block handler callback
             action = UIContextualAction.contextualActionWithStyle_title_handler_(UIContextualActionStyleDestructive,
                                                                                  _("Remove"),
