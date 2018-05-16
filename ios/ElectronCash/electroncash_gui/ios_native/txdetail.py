@@ -522,7 +522,7 @@ class TxDetail(TxDetailBase):
         
         entry = utils.nspy_get_byname(self, 'tx_entry')
 
-        qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+        qrvc = utils.present_qrcode_vc_for_data(vc=self,
                                                 data=entry.tx_hash,
                                                 title = _('QR code'))
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
@@ -650,7 +650,7 @@ def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = N
     txvc = txvc.init().autorelease()
     if asModalNav:
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(txvc,leftSide = True)
-        return UINavigationController.alloc().initWithRootViewController_(txvc).autorelease()
+        return utils.tintify(UINavigationController.alloc().initWithRootViewController_(txvc).autorelease())
     return txvc
 
 def CreateTxDetailWithTx(tx : Transaction, on_label = None, on_appear = None, asModalNav = False) -> ObjCInstance:

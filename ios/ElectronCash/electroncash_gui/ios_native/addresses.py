@@ -682,13 +682,13 @@ class AddressData:
 def present_modal_address_picker(callback) -> None:
     parent = gui.ElectrumGui.gui
     avc = AddressesTableVC.alloc().initWithMode_(ModePicker).autorelease()
-    nav = UINavigationController.alloc().initWithRootViewController_(avc).autorelease()
+    nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(avc).autorelease())
     def pickedAddress(entry) -> None:
         if callable(callback):
             callback(entry)
         nav.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
     utils.add_callback(avc, 'on_picked', pickedAddress)
-    parent.add_navigation_bar_close_to_modal_vc(avc)
+    parent.add_navigation_bar_close_to_modal_vc(avc, leftSide = True)
     parent.get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)
 
 def EntryForAddress(address : str) -> object:

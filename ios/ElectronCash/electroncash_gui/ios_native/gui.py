@@ -936,7 +936,7 @@ class ElectrumGui(PrintError):
             vc = ObjCInstance(objc_id(but.tag))
         vc.dismissViewControllerAnimated_completion_(True, None)
         
-    def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = False) -> ObjCInstance:
+    def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = True) -> ObjCInstance:
         closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self.helper, SEL(b'onModalClose:')).autorelease()
         # poor man's weak ref -- used in above on_modal_close() to properly close nested modals
         closeButton.tag = vc.ptr.value
@@ -1733,7 +1733,7 @@ class ElectrumGui(PrintError):
                 self.show_error(_("Cannot display the requested transaction since you already have a modal dialog open."))
             else:
                 vc = self.get_presented_viewcontroller()
-                txvc = utils.tintify(txdetail.CreateTxDetailWithTx(tx, asModalNav = True))
+                txvc = txdetail.CreateTxDetailWithTx(tx, asModalNav = True)
                 vc.presentViewController_animated_completion_(txvc, True, None)
         except:
             traceback.print_exc(file=sys.stderr)
