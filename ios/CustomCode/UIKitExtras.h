@@ -91,3 +91,15 @@ typedef void(^ActionBlock)(UIControl *);
 - (void) setKerning:(CGFloat)kerning;
 @end
 
+@interface UIColor (DeviceRGB)
+/**
+ * Returns a UIColor specified by components in device RGB color space.
+ * (Workaround to UIColor expecting extended color space and Max giving me device color space colors.)
+ **/
++ (UIColor *) colorInDeviceRGBWithRed:(CGFloat)red green:(CGFloat)green blue:(CGFloat)blue alpha:(CGFloat)alpha;
+/**
+ * Returns a UIColor specified by components in device RGB color space, using an html-like hex format eg:
+ * @"#ffcc99" or @"cc33ff" or @"#7799cccc" (with alpha at end).  Leading/trailing whitespace is ignored.
+ **/
++ (UIColor *) colorInDeviceRGBWithHexString:(NSString *)hexString;
+@end

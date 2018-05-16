@@ -467,7 +467,7 @@ class RequestMgr(utils.DataMgr):
                 #item.setIcon(6, QIcon(pr_icons.get(status)))
                 iconStatus = pr_icons.get(status,'')
             try:
-                if daemon and daemon.fx.is_enabled():
+                if daemon and daemon.fx.is_enabled() and amount:
                     fiatStr = daemon.fx.format_amount_and_units(amount)
             except:
                 utils.NSLog("ReqMgr: could not get fiat amount")

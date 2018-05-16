@@ -10,6 +10,7 @@
 #import <QuartzCore/QuartzCore.h>
 #include <stdlib.h>
 #import <objc/runtime.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 #define kGuiAnimDur 0.3 /* in seconds */
 
@@ -407,3 +408,36 @@ static long UIButtonBlockKey = 0xb10cb10c;
 }
 @end
 
+@implementation UIColor (DeviceRGB)
++ (UIColor *) colorInDeviceRGBWithRed:(CGFloat)red green:(CGFloat)green blue:(CGFloat)blue alpha:(CGFloat)alpha {
+    static CGColorSpaceRef cs = NULL;
+    UIColor *ret = nil;
+    if (!cs) cs = CGColorSpaceCreateDeviceRGB();
+    CGFloat components[4] = {red, green, blue, alpha};
+    CGColorRef cg = CGColorCreate(cs, components);
+    if (cg) {
+        ret = [UIColor colorWithCGColor:cg];
+        CGColorRelease(cg);
+    }
+    return ret;
+}
++ (UIColor *) colorInDeviceRGBWithHexString:(NSString *)nsstr {
+    const char *s = nsstr.lowercaseString.UTF8String;
+    CGFloat components[4] = { 0.0, 0.0, 0.0, 1.0};
+    if (s) {
+        char buf[3] = { 0, 0, 0};
+        int bufct = 0, compct = 0;
+        for ( ; *s && compct < 4; ++s) {
+            if ( (*s >= '0' && *s <= '9') || (*s >= 'a' && *s <= 'f') ) {
+                buf[bufct++] = *s;
+            }
+            if (bufct >= 2) {
+                long l = strtol(buf, NULL, 16);
+                components[compct++] = ((CGFloat)l) / 255.0;
+                bufct = 0;
+            }
+        }
+    }
+    return [UIColor colorInDeviceRGBWithRed:components[0] green:components[1] blue:components[2] alpha:components[3]];
+}
+@end

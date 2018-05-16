@@ -10,7 +10,6 @@
 #import <UIKit/UIKit.h>
 #include <Python.h>
 #include <dispatch/dispatch.h>
-#import <CoreGraphics/CoreGraphics.h>
 
 @interface HelpfulGlue : NSObject {
 }
@@ -34,21 +33,6 @@ typedef void(^VoidBlock)(void);
     } else {
         dispatch_async(dispatch_get_main_queue(), block);
     }
-}
-
-// workaround to UIColor expecting extended color space and Max giving me device color space.
-// returns a UIColor specified by components in device color space!
-+ (UIColor *) deviceColorWithRed:(CGFloat)red green:(CGFloat)green blue:(CGFloat)blue alpha:(CGFloat)alpha {
-    static CGColorSpaceRef cs = NULL;
-    UIColor *ret = nil;
-    if (!cs) cs = CGColorSpaceCreateDeviceRGB();
-    CGFloat components[4] = {red, green, blue, alpha};
-    CGColorRef cg = CGColorCreate(cs, components);
-    if (cg) {
-        ret = [UIColor colorWithCGColor:cg];
-        CGColorRelease(cg);
-    }
-    return ret;
 }
 @end
 
