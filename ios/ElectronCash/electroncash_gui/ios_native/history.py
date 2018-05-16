@@ -236,8 +236,8 @@ class TxHistoryHelper(TxHistoryHelperBase):
             s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
             def adjustCS() -> None:
                 cell.dateWidthCS.constant = _date_width - 24.0
-            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,utils.stripAmount(entry.fiat_amount_str),entry.ccy,s2.width-s1.width,cell.amountTit.textColor,adjustCS,utils._kern*1.25) 
-            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,utils.stripAmount(entry.fiat_balance_str),entry.ccy,s1.width-s2.width,cell.amountTit.textColor,adjustCS,utils._kern*1.25)
+            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,utils.stripAmount(entry.fiat_amount_str),entry.ccy,s2.width-s1.width,utils.uicolor_custom('light'),adjustCS,utils._kern*1.25) 
+            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,utils.stripAmount(entry.fiat_balance_str),entry.ccy,s1.width-s2.width,utils.uicolor_custom('light'),adjustCS,utils._kern*1.25)
             # end experimental zone...
         cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', utils._kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")

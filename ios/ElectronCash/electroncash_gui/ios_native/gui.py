@@ -303,7 +303,7 @@ class ElectrumGui(PrintError):
         self.helper = GuiHelper.alloc().init()
                 
         self.tabController = MyTabBarController.alloc().init().autorelease()
-            
+    
         self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
@@ -314,7 +314,7 @@ class ElectrumGui(PrintError):
         
         self.contactsVC = cntcts = contacts.ContactsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
         self.helper.bindRefreshControl_(self.contactsVC.refreshControl)
-        
+  
         # Wallets tab
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsTab",None,None)
         for obj in objs:
@@ -334,8 +334,7 @@ class ElectrumGui(PrintError):
 
         unimplemented_navs = []
         #unimplemented_navs.append(UINavigationController.alloc().initWithRootViewController_(UnimplementedVC.alloc().initWithTitle_image_(_("Console"), "tab_console.png").autorelease()).autorelease())
-
-        self.tabs = [nav1, nav2, nav3, nav4, nav5, *unimplemented_navs]
+        self.tabs = [utils.tintify(x) for x in [nav1, nav2, nav3, nav4, nav5, *unimplemented_navs]]
         self.rootVCs = dict()
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
@@ -352,7 +351,7 @@ class ElectrumGui(PrintError):
         self.setup_toolbar()
         
         self.prefsVC = prefs.PrefsVC.new().autorelease()
-        self.prefsNav = UINavigationController.alloc().initWithRootViewController_(self.prefsVC)
+        self.prefsNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.prefsVC))
         self.add_navigation_bar_close_to_modal_vc(self.prefsVC)
 
         #tbl.refresh()
@@ -1570,7 +1569,7 @@ class ElectrumGui(PrintError):
             utils.NSLog("**** WARNING **** Network Nav is not None!! FIXME!")
         self.networkVC = network_dialog.NetworkDialogVC.new().autorelease()
         self.networkVC.title = _("Network")
-        self.networkNav = UINavigationController.alloc().initWithRootViewController_(self.networkVC).autorelease()
+        self.networkNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.networkVC).autorelease())
         def doCleanup(oid : objc_id) -> None:
             if self.networkVC is not None and oid == self.networkVC.ptr:
                 #print("NetworkDialogVC dealloc caught!")
@@ -1586,7 +1585,7 @@ class ElectrumGui(PrintError):
     def send_create_if_none(self) -> None:
         if self.sendVC: return
         self.sendVC = send.SendVC.alloc().init().autorelease()
-        self.sendNav = UINavigationController.alloc().initWithRootViewController_(self.sendVC).autorelease()
+        self.sendNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.sendVC).autorelease())
         self.add_navigation_bar_close_to_modal_vc(self.sendVC, leftSide = True)
         def doCleanup(oid : objc_id) -> None:
             self.sendVC = None
@@ -1631,7 +1630,7 @@ class ElectrumGui(PrintError):
         if self.receiveVC: return
         # Receive modal
         self.receiveVC = receive.ReceiveVC.alloc().init().autorelease()
-        self.receiveNav = UINavigationController.alloc().initWithRootViewController_(self.receiveVC).autorelease()
+        self.receiveNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.receiveVC).autorelease())
         self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True)
         def doCleanup(oid : objc_id) -> None:
             self.receiveVC = None
@@ -1734,7 +1733,7 @@ class ElectrumGui(PrintError):
                 self.show_error(_("Cannot display the requested transaction since you already have a modal dialog open."))
             else:
                 vc = self.get_presented_viewcontroller()
-                txvc = txdetail.CreateTxDetailWithTx(tx, asModalNav = True)
+                txvc = utils.tintify(txdetail.CreateTxDetailWithTx(tx, asModalNav = True))
                 vc.presentViewController_animated_completion_(txvc, True, None)
         except:
             traceback.print_exc(file=sys.stderr)

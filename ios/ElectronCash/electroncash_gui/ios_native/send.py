@@ -340,7 +340,7 @@ class SendVC(SendBase):
             if contacts.pay_to(addys):
                 self.dismissViewControllerAnimated_completion_(True, None)
         vc = contacts.ContactsTableVC.alloc().initWithStyle_mode_(UITableViewStylePlain, contacts.ModePicker).autorelease()                
-        nav = UINavigationController.alloc().initWithRootViewController_(vc).autorelease()
+        nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(vc).autorelease())
         utils.add_callback(vc, 'on_pay_to', onPayTo)
         self.presentViewController_animated_completion_(nav, True, None)
 

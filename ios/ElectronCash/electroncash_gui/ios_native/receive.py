@@ -579,7 +579,7 @@ class ReqTVD(ReqTVDBase):
                                                                                  _("Remove"),
                                                                                  Block(handler))
             action.image = UIImage.imageNamed_("trashcan_red.png")
-            action.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(255.0/255.0,97.0/255.0,97.0/255.0,1.0)
+            action.backgroundColor = utils.uicolor_custom('red')
             return UISwipeActionsConfiguration.configurationWithActions_([action])
         except:
             utils.NSLog("ReqTV.tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_, got exception: %s", str(sys.exc_info()[1]))

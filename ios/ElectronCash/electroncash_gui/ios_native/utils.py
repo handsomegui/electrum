@@ -90,9 +90,20 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
     view.userInteractionEnabled = bool(b)
     view.alpha = float(1.0 if bool(b) else 0.3)
     view.setNeedsDisplay()
+
+# new color schem from Max
+_ColorScheme = {
+    'dark' : HelpfulGlue.deviceColorWithRed_green_blue_alpha_(0.25490196079999999, 0.25490196079999999, 0.25490196079999999, 1.0).retain(),
+    'light': HelpfulGlue.deviceColorWithRed_green_blue_alpha_(0.80000000000000004, 0.80000000000000004, 0.80000000000000004, 1.0).retain(),
+    'nav'  : HelpfulGlue.deviceColorWithRed_green_blue_alpha_(0.33333333329999998, 0.5450980392, 1.0, 1.0).retain(),
+    'navtint' : HelpfulGlue.deviceColorWithRed_green_blue_alpha_(1.0,1.0,1.0,1.0).retain(),
+    'red'  : HelpfulGlue.deviceColorWithRed_green_blue_alpha_(255.0/255.0,97.0/255.0,97.0/255.0,1.0).retain(),
+}
     
 def uicolor_custom(name : str) -> ObjCInstance:
     name = name.strip().lower() if name else ""
+    if name in _ColorScheme.keys():
+        return _ColorScheme[name]
     if name in ['blue', 'myblue', 'tf', 'password']:
         return UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995, 0.95870447160000005, 0.99979293349999998, 1.0)
     if name in ['change', 'changeaddress', 'change address']:
@@ -103,6 +114,15 @@ def uicolor_custom(name : str) -> ObjCInstance:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,1.0)
     NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
     return UIColor.grayColor
+
+def tintify(t : ObjCInstance) -> ObjCInstance:
+    # setup nav tint colors
+    t.navigationBar.setTranslucent_(False)
+    t.navigationBar.barTintColor = uicolor_custom('nav')
+    t.navigationBar.tintColor = uicolor_custom('navtint')
+    t.navigationBar.barStyle = UIBarStyleBlack
+    return t
+
 
 # NB: This isn't normally called since you need to specify the full pathname of the resource you want, instead
 #     if you need images, call uiimage_get, etc.  This does NOT search recursively, since NSBundle sucks.
@@ -603,7 +623,7 @@ def present_qrcode_vc_for_data(vc : ObjCInstance, data : str, title : str = "QR 
     iv.opaque = True
     iv.backgroundColor = UIColor.whiteColor
     qvc.view = iv
-    nav = UINavigationController.alloc().initWithRootViewController_(qvc).autorelease()
+    nav = tintify(UINavigationController.alloc().initWithRootViewController_(qvc).autorelease())
     vc.presentViewController_animated_completion_(nav,True,None)
     return qvc
 
