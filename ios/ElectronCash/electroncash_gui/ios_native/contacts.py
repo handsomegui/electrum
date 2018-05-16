@@ -184,11 +184,10 @@ class ContactsTableVC(UITableViewController):
         if editingStyle == UITableViewCellEditingStyleDelete:
             if delete_contact(contacts[indexPath.row]):
                 was = self.blockRefresh
-                was2 = self.needsRefresh
                 self.blockRefresh = True
                 _Updated()
                 contacts = _Get()
-                self.needsRefresh = was2
+                self.needsRefresh = False
                 if len(contacts):
                     tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
                     self.selected = self.updateSelectionButtons()
@@ -224,7 +223,7 @@ class ContactsTableVC(UITableViewController):
             self.doRefreshIfNeeded()
             self.autorelease()
         utils.do_in_main_thread(inMain)
-
+        
     @objc_method
     def doRefreshIfNeeded(self):
         if self.needsRefresh:
@@ -237,35 +236,7 @@ class ContactsTableVC(UITableViewController):
             # the below starts up the table view in the "refreshing" state..
             self.refreshControl.beginRefreshing()
             self.tableView.setContentOffset_animated_(CGPointMake(0, self.tableView.contentOffset.y-self.refreshControl.frame.size.height), True)
-                    
-    @objc_method
-    def textFieldShouldReturn_(self, tf) -> bool:
-        tf.resignFirstResponder()
-        return True
-
-    @objc_method
-    def textFieldDidBeginEditing_(self, tf) -> None:
-        self.blockRefresh = True # temporarily block refreshing since that kills out keyboard/textfield
-    
-    @objc_method
-    def textFieldDidEndEditing_(self, tf) -> None:
-        return
-        # below is copy-pasta from coins.py.. here for reference in case we ever need a similar mechanism
-        coins = utils.nspy_get_byname(self, 'coins')
-        if not coins or tf.tag < 0 or tf.tag >= len(coins):
-            utils.NSLog("ERROR -- Contacts label text field unknown tag: %d",int(tf.tag))
-        else:
-            entry = coins[tf.tag]
-            newLabel = tf.text
-            if newLabel != entry.label:
-                # implicitly refreshes us
-                gui.ElectrumGui.gui.on_label_edited(entry.tx_hash, newLabel)
-        # need to enqueue a call to "doRefreshIfNeeded" because it's possible the user tapped another text field in which case we
-        # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
-        # note we wait until here to unblock refresh because it's possible used tapped another textfield in the same view and we want to continue to block if that is the case
-        self.blockRefresh = False # unblock block refreshing
-        utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
-                        
+                                            
     @objc_method
     def onOptions_(self, obj : ObjCInstance) -> None:
         print ("On Options")
