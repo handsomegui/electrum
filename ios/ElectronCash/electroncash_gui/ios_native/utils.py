@@ -998,19 +998,13 @@ class DataMgr:
             if key not in self.datas:
                 #print("DataMgr: domain (%s) not in cache, calling doReload"%(str(key)))
                 self.datas[key] = self.doReloadForKey(realkey)    
-            return self.datas.get(self.keyify(key), None)
+            return self.datas.get(key, None)
         else:
             NSLog("DataMgr: WARNING -- get() called on a domain that is not subscribed: '%s'", str(key))
         return None
         
     def emptyCache(self) -> None:
         self.datas = dict()
-        ctr = 0
-        for k in self.subs:
-            # We just remove the data and load it on-demoand in get() above..
-            self.datas.pop(k, None)
-            ctr += 1
-        #print("DataMgr: emptyCache for %d datas, deferring reload until requested (on-demand optimization)"%ctr)
     
     def doReloadForKey(self, key : Any) -> Any:
         NSLog("DataMgr: UNIMPLEMENTED -- doReloadForKey() needs to be overridden in a child class!")
