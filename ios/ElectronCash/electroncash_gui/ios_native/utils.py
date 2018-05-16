@@ -102,8 +102,10 @@ _ColorScheme = {
     
 def uicolor_custom(name : str) -> ObjCInstance:
     name = name.strip().lower() if name else ""
-    if name in _ColorScheme.keys():
-        return _ColorScheme[name]
+    schemecolor = _ColorScheme.get(name, None)
+    if schemecolor:
+        return schemecolor
+    # other, old-style colors.  These will be removed once we fully transition to new UI style
     if name in ['blue', 'myblue', 'tf', 'password']:
         return UIColor.colorWithRed_green_blue_alpha_(0.91746425629999995, 0.95870447160000005, 0.99979293349999998, 1.0)
     if name in ['change', 'changeaddress', 'change address']:
