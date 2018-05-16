@@ -229,6 +229,7 @@ class ElectrumGui(PrintError):
   
         self.historyMgr = history.HistoryMgr()
         self.reqMgr = receive.RequestMgr()
+        self.contactsMgr = contacts.ContactsMgr()
         
         # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
         self.sigHelper = utils.PySig()
@@ -297,6 +298,7 @@ class ElectrumGui(PrintError):
     def createAndShowUI(self):
         self.historyMgr.subscribe(None) # default subscription to 'all' history domain always active
         self.reqMgr.subscribe(None) # keep the only domain -- None -- alive the whole time
+        self.contactsMgr.subscribe(None) # ditto
 
         self.helper = GuiHelper.alloc().init()
                 
@@ -591,6 +593,7 @@ class ElectrumGui(PrintError):
         self.sigContacts.clear()
         self.sigCoins.clear()
         
+        self.contactsMgr.clear()
         self.reqMgr.clear()
         self.historyMgr.clear()
     
@@ -1255,7 +1258,7 @@ class ElectrumGui(PrintError):
             self.sigHelper.emit()
         if components & {'history', *al} and self.sigHistory not in signalled:
             signalled.add(self.sigHistory)
-            self.historyMgr.reloadAll()
+            self.historyMgr.emptyCache()
             self.sigHistory.emit()
             if self.sigCoins not in signalled:
                 signalled.add(self.sigCoins)
@@ -1270,15 +1273,22 @@ class ElectrumGui(PrintError):
             signalled.add(self.sigPrefs)
             self.sigPrefs.emit()
         if components & {'receive', 'requests', 'paymentrequests', 'pr', *al} and self.sigRequests not in signalled:
-            self.reqMgr.reloadAll()
+            self.reqMgr.emptyCache()
             signalled.add(self.sigRequests)
             self.sigRequests.emit()
         if components & {'network', 'servers','connection', 'interfaces', *al} and self.sigNetwork not in signalled:
             signalled.add(self.sigNetwork)
             self.sigNetwork.emit()
         if components & {'contact', 'contacts', *al} and self.sigContacts not in signalled:
+            self.contactsMgr.emptyCache()
             signalled.add(self.sigContacts)
             self.sigContacts.emit()
+
+    def empty_caches(self):
+        self.historyMgr.emptyCache()
+        self.reqMgr.emptyCache()
+        self.contactsMgr.emptyCache()
+        
 
     def on_new_daemon(self):
         self.daemon.gui = self
@@ -1296,6 +1306,7 @@ class ElectrumGui(PrintError):
     def stop_daemon(self):
         if not self.daemon_is_running(): return
         self.unregister_network_callbacks()
+        self.empty_caches()
         if self.wallet and self.wallet.storage:
             self.daemon.stop_wallet(self.wallet.storage.path)
         self.daemon.stop()

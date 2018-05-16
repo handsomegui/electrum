@@ -34,6 +34,7 @@ from . import txdetail
 def get_history(domain : list = None, statusImagesOverride : list = None, forceNoFX : bool = False) -> list:
     ''' For a given set of addresses (or None for all addresses), builds a list of
         HistoryEntry '''
+    t0 = time.time()
     sImages = StatusImages if not statusImagesOverride or len(statusImagesOverride) < len(StatusImages) else statusImagesOverride
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
@@ -80,10 +81,12 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
             img = sImages[status]
         else:
             img = None
-        entry = HistoryEntry('', tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)
+        tx = wallet.transactions.get(tx_hash, None)
+        if tx is not None: tx.deserialize()
+        entry = HistoryEntry(tx, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)
         history.append(entry) # appending is O(1)
     history.reverse() # finally, reverse the order to keep most recent first
-    utils.NSLog("history: retrieved %d entries",len(history))
+    utils.NSLog("history: retrieved %d entries in %f ms",len(history),(time.time()-t0)*1000.0)
     return history
 
 from typing import Any

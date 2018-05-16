@@ -4,12 +4,13 @@ from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 from .coins import get_circle_imageview
-from electroncash.address import Address
+from electroncash.address import Address, PublicKey
 from .uikit_bindings import *
 from .custom_objc import *
 from collections import namedtuple
+import time
 
-ContactsEntry = namedtuple("ContactsEntry", "name address address_str")
+ContactsEntry = namedtuple("ContactsEntry", "name address address_str tx_hashes")
 
 CellIdentifiers = ( "Cell", "EmptyCell")
 
@@ -111,7 +112,7 @@ class ContactsTableVC(UITableViewController):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         try:
-            contacts = utils.nspy_get_byname(self, 'contacts')
+            contacts = _Get()
             return len(contacts) if contacts else 1
         except:
             print("Error, exception retrieving contacts from nspy cache")
@@ -120,7 +121,7 @@ class ContactsTableVC(UITableViewController):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         try:
-            contacts = utils.nspy_get_byname(self, 'contacts')
+            contacts = _Get()
             identifier = CellIdentifiers[0 if contacts else -1]
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
             parent = gui.ElectrumGui.gui
@@ -160,7 +161,7 @@ class ContactsTableVC(UITableViewController):
         tv.deselectRowAtIndexPath_animated_(indexPath,False)
         cell = tv.cellForRowAtIndexPath_(indexPath)
 
-        contacts = utils.nspy_get_byname(self, 'contacts')
+        contacts = _Get()
         if not contacts or not len(contacts): return
     
         self.setIndex_selected_(indexPath.row, not self.isIndexSelected_(indexPath.row))
@@ -171,25 +172,30 @@ class ContactsTableVC(UITableViewController):
 
     @objc_method
     def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
-        contacts = utils.nspy_get_byname(self, 'contacts')
+        contacts = _Get()
         if self.mode == ModePicker or not contacts or not len(contacts):
             return UITableViewCellEditingStyleNone
         return UITableViewCellEditingStyleDelete
 
     @objc_method
     def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv, editingStyle : int, indexPath) -> None:
-        contacts = utils.nspy_get_byname(self, 'contacts')
+        contacts = _Get()
         if not contacts or indexPath.row < 0 or indexPath.row >= len(contacts): return
         if editingStyle == UITableViewCellEditingStyleDelete:
             if delete_contact(contacts[indexPath.row]):
-                self.updateContacts()
-                contacts = utils.nspy_get_byname(self, 'contacts')
+                was = self.blockRefresh
+                was2 = self.needsRefresh
+                self.blockRefresh = True
+                _Updated()
+                contacts = _Get()
+                self.needsRefresh = was2
                 if len(contacts):
                     tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
                     self.selected = self.updateSelectionButtons()
+                    self.blockRefresh = was
                 else:
+                    self.blockRefresh = was
                     self.refresh()
-    
 
     ''' 
     @objc_method
@@ -197,22 +203,12 @@ class ContactsTableVC(UITableViewController):
         return 150.0
         #return 44.0
     '''
-   
-    @objc_method
-    def updateContacts(self):
-        contacts = get_contacts()
-        if contacts is None:
-            # probable backgroundeed and/or wallet is closed
-            return
-        utils.nspy_put_byname(self, contacts, 'contacts')
-        utils.NSLog("fetched %d contacts",len(contacts))
 
     @objc_method
     def refresh(self):
         self.needsRefresh = True # mark that a refresh was called in case refresh is blocked
         if self.blockRefresh:
             return
-        self.updateContacts()
         if self.refreshControl: self.refreshControl.endRefreshing()
         self.selected = self.updateSelectionButtons()
         if self.tableView:
@@ -335,7 +331,7 @@ class ContactsTableVC(UITableViewController):
     @objc_method
     def isIndexSelected_(self, index : int) -> bool:
         try:
-            entry = utils.nspy_get_byname(self, 'contacts')[index]
+            entry = _Get()[index]
             sels = set(list(self.selected))
             return bool(entry.address_str in sels)
         except:
@@ -346,7 +342,7 @@ class ContactsTableVC(UITableViewController):
     @objc_method
     def setIndex_selected_(self, index : int, b : bool) -> None:
         try:
-            entry = utils.nspy_get_byname(self, 'contacts')[index]
+            entry = _Get()[index]
             sels = set(list(self.selected))
             if not b: sels.discard(entry.address_str)
             else: sels.add(entry.address_str)
@@ -368,7 +364,7 @@ class ContactsTableVC(UITableViewController):
         #print ("picker done/payto...")
         validSels = list(self.updateSelectionButtons())
         #print("valid selections:",*validSels)
-        contacts = utils.nspy_get_byname(self, 'contacts')
+        contacts = _Get()
         addys = []
         for entry in contacts:
             if entry.address_str in validSels:
@@ -384,10 +380,10 @@ class ContactsTableVC(UITableViewController):
     def showNewEditForm_(self, index : int) -> None:
         vc = NewContactVC.new().autorelease()
         if index > -1:
-            contacts = utils.nspy_get_byname(self, 'contacts')
+            contacts = _Get()
             if contacts and index < len(contacts):
                 utils.nspy_put_byname(vc, contacts[index], 'edit_contact')
-                
+
         def onOk(entry : ContactsEntry) -> None:
             #print ("parent onOK called...")
             if entry is not None:
@@ -395,7 +391,7 @@ class ContactsTableVC(UITableViewController):
                 if oldEntry:
                     delete_contact(oldEntry, False)
                 add_contact(entry)
-                self.refresh()
+                _Updated()
         utils.add_callback(vc, 'on_ok', onOk)
         self.presentViewController_animated_completion_(vc, True, None)
         
@@ -416,7 +412,7 @@ class ContactsTableVC(UITableViewController):
         if self.doneBut: self.doneBut.enabled = False
         if parent.wallet:
             sels = set(list(self.selected))
-            contacts = utils.nspy_get_byname(self, 'contacts')
+            contacts = _Get()
             for c in contacts:
                 if c.address_str in sels:
                     newSels.add(c.address_str)
@@ -429,7 +425,7 @@ class ContactsTableVC(UITableViewController):
         parent = gui.ElectrumGui.gui
         no_good = parent.wallet is None or parent.wallet.is_watching_only()
         try:
-            entry = utils.nspy_get_byname(self, 'contacts')[index]
+            entry = _Get()[index]
         except:
             no_good = True
         
@@ -494,7 +490,7 @@ class NewContactVC(NewContactBase):
                     entry = None
                     if name and address_str and Address.is_valid(address_str):
                         address = Address.from_string(address_str)
-                        entry = ContactsEntry(name, address, address_str)
+                        entry = ContactsEntry(name, address, address_str, build_contact_tx_list(address))
                     cb(entry)
                 self.autorelease()
             self.retain()
@@ -595,13 +591,50 @@ class NewContactVC(NewContactBase):
             self.topCS.constant = 0
 
 
+class ContactsMgr(utils.DataMgr):
+    def doReloadForKey(self, key) -> list:
+        # key is ignored
+        return get_contacts() or list()
+
+def _Get() -> list:
+    return gui.ElectrumGui.gui.contactsMgr.get(None)
+
+def _Updated() -> None:
+    gui.ElectrumGui.gui.refresh_components('contacts')
+
+def build_contact_tx_list(address : Address) -> list:
+    parent = gui.ElectrumGui.gui
+    ret = list()
+    if isinstance(address, Address) and parent and parent.historyMgr:
+        alltxs = parent.historyMgr.get(None)
+        for hentry in alltxs:
+            if hentry.tx:
+                ins = hentry.tx.inputs()
+                for x in ins:
+                    xa = x['address']
+                    if isinstance(xa, PublicKey):
+                        xa = xa.toAddress()
+                    if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string():
+                        ret.append(hentry.tx_hash)
+                        break
+                outs = hentry.tx.get_outputs()
+                for x in outs:
+                    xa, dummy = x
+                    if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string():
+                        ret.append(hentry.tx_hash)
+                        break
+    #print("build_contact_tx_list: address", address.to_ui_string(), "found", len(ret),"associated txs")
+    return ret
+
+
 def get_contacts() -> list:
     ''' Builds a list of
         ContactsEntry tuples:
         
-        ContactsEntry = namedtuple("ContactsEntry", "name address address_str")
+        ContactsEntry = namedtuple("ContactsEntry", "name address address_str tx_hashes")
 
         '''
+    t0 = time.time()
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     if wallet is None:
@@ -612,10 +645,12 @@ def get_contacts() -> list:
     for addr,tupl in c.items():
         typ, name = tupl
         if typ == 'address' and Address.is_valid(addr):
-            entry = ContactsEntry(name, Address.from_string(addr), addr)
+            address = Address.from_string(addr)
+            tx_hashes = build_contact_tx_list(address)
+            entry = ContactsEntry(name, address, addr, tx_hashes)
             contacts.append(entry)    
     contacts.sort(key=lambda x: [x.name, x.address_str], reverse=False)
-
+    utils.NSLog("get_contacts: fetched %d contacts in %f ms",len(contacts), (time.time()-t0)*1000.0)
     return contacts
 
 def delete_contact(entry : ContactsEntry, do_write = True) -> int:
