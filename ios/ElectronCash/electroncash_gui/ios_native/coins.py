@@ -251,7 +251,7 @@ class CoinsTableVC(UITableViewController):
         #print ("On QR But")
         try:
             entry = utils.nspy_get_byname(self, 'coins')[but.tag]
-            qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+            qrvc = utils.present_qrcode_vc_for_data(vc=self,
                                                     data=entry.address_str,
                                                     title = _('QR code'))
             gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)

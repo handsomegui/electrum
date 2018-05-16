@@ -1678,7 +1678,7 @@ class ElectrumGui(PrintError):
     
     def get_history_entry(self, tx_hash) -> tuple:
         ''' returns a history.HistoryEntry namedtuple instance if tx_hash exists in history, or None if not found '''
-        history = wallets.GetTxs()
+        history = self.historyMgr.get(None)
         if history:
             for entry in history:
                 if entry.tx_hash == tx_hash:

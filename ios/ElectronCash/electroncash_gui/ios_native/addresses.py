@@ -233,7 +233,7 @@ class AddressDetail(UIViewController):
     @objc_method
     def onQRBut(self) -> None:
         entry = utils.nspy_get_byname(self, 'entry')
-        qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+        qrvc = utils.present_qrcode_vc_for_data(vc=self,
                                                 data=entry.addr_str,
                                                 title = _('QR code'))
         gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
@@ -429,7 +429,7 @@ class AddressesTableVC(UITableViewController):
                 UIPasteboard.generalPasteboard.string = closure_address
                 utils.show_notification(message=_("Text copied to clipboard"))
             def onQR(oid : objc_id) -> None:
-                qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+                qrvc = utils.present_qrcode_vc_for_data(vc=self,
                                                         data=closure_address,
                                                         title = _('QR code'))
                 gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
@@ -679,7 +679,7 @@ class AddressData:
         return d
 
 
-def present_modal_address_picker(callback) -> None:
+def present_modal_address_picker(callback, vc = None) -> None:
     parent = gui.ElectrumGui.gui
     avc = AddressesTableVC.alloc().initWithMode_(ModePicker).autorelease()
     nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(avc).autorelease())
@@ -689,7 +689,8 @@ def present_modal_address_picker(callback) -> None:
         nav.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
     utils.add_callback(avc, 'on_picked', pickedAddress)
     parent.add_navigation_bar_close_to_modal_vc(avc, leftSide = True)
-    parent.get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)
+    if vc is None: vc = parent.get_presented_viewcontroller()
+    vc.presentViewController_animated_completion_(nav, True, None)
 
 def EntryForAddress(address : str) -> object:
     vc = gui.ElectrumGui.gui.addressesVC

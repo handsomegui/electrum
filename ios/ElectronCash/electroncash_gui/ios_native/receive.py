@@ -229,7 +229,7 @@ class ReceiveVC(UIViewController):
         def pickedAddress(entry) -> None:
             self.addr = str(entry.address)
             # refresh of view will be done as a result of viewWillAppear which will be called after this returns
-        addresses.present_modal_address_picker(pickedAddress)
+        addresses.present_modal_address_picker(pickedAddress, self)
 
     @objc_method
     def onCopyBut(self) -> None:
@@ -252,7 +252,7 @@ class ReceiveVC(UIViewController):
             self.setExpiresByIndex_(idx)
         actions = list(map(lambda x,y: [ _(x[0]), onSelect, y ], expiresList, range(0,len(expiresList))))
         actions.append([_('Cancel')])
-        vc = parent().get_presented_viewcontroller()
+        vc = self
         ipadAnchor = None
         if utils.is_ipad():
             ipadAnchor = but.convertRect_toView_(but.bounds, vc.view)

@@ -169,7 +169,7 @@ class SignDecryptVC(UIViewController):
             data = DialogData(entry.address, pubkey)
             utils.nspy_put_byname(self, data, 'data')
             # refresh will be auto-called as a result of viewWillAppear
-        addresses.present_modal_address_picker(pickedAddress)
+        addresses.present_modal_address_picker(pickedAddress, self)
 
     @objc_method
     def onCloseKeyboard_(self, sender : ObjCInstance) -> None:

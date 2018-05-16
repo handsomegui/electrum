@@ -126,7 +126,7 @@ class PrivateKeyDialog(UIViewController):
         if sender.tag == 130: data = str(entry.address)
         elif sender.tag == 330: data = str(entry.privkey)
         elif sender.tag == 430: data = entry.address.to_script().hex()
-        qrvc = utils.present_qrcode_vc_for_data(vc=self.tabBarController,
+        qrvc = utils.present_qrcode_vc_for_data(vc=self,
                                                 data=data,
                                                 title = _('QR code'))
         parent().add_navigation_bar_close_to_modal_vc(qrvc)

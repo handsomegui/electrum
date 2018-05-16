@@ -792,7 +792,7 @@ def read_send_form(send : ObjCInstance) -> tuple:
         try:
             typ, addr = Parser().parse_output(addr_e.text)
         except:
-            utils.show_alert(parent().get_presented_viewcontroller(), _("Error"), _("Invalid Address"))
+            utils.show_alert(send, _("Error"), _("Invalid Address"))
             return None
         outputs = [(typ, addr, "!" if send.isMax else amt_e.getAmount())]
 
@@ -805,12 +805,12 @@ def read_send_form(send : ObjCInstance) -> tuple:
         #        return
 
     if not outputs:
-        utils.show_alert(parent().get_presented_viewcontroller(), _("Error"), _('No outputs'))
+        utils.show_alert(send, _("Error"), _('No outputs'))
         return None
 
     for _type, addr, amount in outputs:
         if amount is None:
-            utils.show_alert(parent().get_presented_viewcontroller(), _("Error"), _('Invalid Amount'))
+            utils.show_alert(send, _("Error"), _('Invalid Amount'))
             return None
 
     freeze_fee = fee_e.isModified() and fee_e.getAmount()#self.fee_e.isVisible() and self.fee_e.isModified() and (self.fee_e.text() or self.fee_e.hasFocus())
