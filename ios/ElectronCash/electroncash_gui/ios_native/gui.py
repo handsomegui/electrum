@@ -171,7 +171,7 @@ class GuiHelper(NSObject):
         moreTab = ElectrumGui.gui.tabController.moreNavigationController        
         if moreTab is not None and nav.ptr.value == moreTab.ptr.value:
             depth = 2
-        rvc = nav.viewControllers[0] if isinstance(nav, UINavigationController) else None
+        rvc = nav.viewControllers[0] if isinstance(nav, UINavigationController) and nav and nav.viewControllers else None
         is_hidden = True if len(nav.viewControllers) > depth or isinstance(rvc, (wallets.WalletsVC, contacts.ContactsVC)) else False
         #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
         nav.setToolbarHidden_animated_(is_hidden, True)
