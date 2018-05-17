@@ -345,8 +345,8 @@ def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
     timer = None
     if not NSThread.currentThread.isMainThread:
         # NB: From NSRunLoop docs -- messing with the run loop from another thread is bad bad bad since NSRunLoop is not thread safe
-        # so we force this scheduling of the NSTiemr to happen on the main thread...
-        NSLog("****** WARNING WARNING WARNING -- utils.call_later() called from outside the main thread! FIXME!!!! ******")
+        # so we force this scheduling of the NSTiemr to happen on the main thread... using dispatch_queue tricks in HelpfulGlue.
+        #NSLog("****** WARNING WARNING WARNING -- utils.call_later() called from outside the main thread! FIXME!!!! ******")
         def inMain() -> None:
             nonlocal timer
             timer = call_later(timeout, func, *args)
@@ -355,7 +355,7 @@ def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
         def OnTimer(t_in : objc_id) -> None:
             t = ObjCInstance(t_in)
             func(*args)
-            t.invalidate()
+            if t: t.invalidate()
         timer = NSTimer.timerWithTimeInterval_repeats_block_(timeout, False, OnTimer)
         NSRunLoop.mainRunLoop().addTimer_forMode_(timer, NSDefaultRunLoopMode)
     return timer

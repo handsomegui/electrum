@@ -30,6 +30,7 @@ import traceback
 import bz2
 import base64
 import time
+import threading
 from datetime import datetime
 from decimal import Decimal
 from functools import partial
@@ -286,6 +287,9 @@ class ElectrumGui(PrintError):
         self.downloadingNotif = None
         self.downloadingNotif_view = None
         self.queued_ext_txn = None
+        self.queued_refresh_components = set()
+        self.queued_refresh_components_mut = threading.Lock()
+        self.last_refresh = 0
                 
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
         NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
@@ -297,6 +301,7 @@ class ElectrumGui(PrintError):
                 
         self.tabController = MyTabBarController.alloc().init().autorelease()
         self.tabController.tabBar.tintColor = utils.uicolor_custom('nav')
+        self.tabController.tabBar.setTranslucent_(False)
     
         self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
@@ -1237,11 +1242,52 @@ class ElectrumGui(PrintError):
         self.refresh_components('*')
         
     def refresh_components(self, *args) -> None:
+        # BEGIN SPECIAL LOGIC TO RATE-LIMIT refresh_components spam
+        dummy = "dummy_for_queue"
+        #utils.NSLog("refresh_components...")
+        #print(*args)
         if not args: args = ['*']
-        components = set(map(lambda x: str(x).strip().lower(),args))
-        signalled = set()
+        doLater = False
+        abortEarly = False
+        self.queued_refresh_components_mut.acquire() # Lock
+        qsize = len(self.queued_refresh_components)
+        #oldq = self.queued_refresh_components.copy()
+        # pick up queued as well as this call's components for refreshing..
+        components = set(map(lambda x: str(x).strip().lower(),args)) | self.queued_refresh_components 
+        self.queued_refresh_components = set() # immediately empty queue while we hold the lock
+        diff = time.time() - float(self.last_refresh)
+        if {dummy} == components: # spurious self-call
+            abortEarly = True
+        else:
+            if diff < 0.300: 
+                # rate-limit to 300ms between refreshes
+                doLater = True
+                self.queued_refresh_components = components.copy()
+            else:
+                # ok, we're going to refresh this time around.. update timestamp
+                self.last_refresh = time.time() 
+        self.queued_refresh_components_mut.release() # Unlock
+
+        if abortEarly:
+            #print("refresh_components: aborting early.. got dummy set...")
+            return
+            
+        if doLater:
+            # enqueue a call to this function at most 1 times
+            if not qsize:
+                #print("refresh_components: rate limiting.. calling later ",diff,"(",*args,")")
+                utils.call_later((0.300-diff) + 0.010, lambda: self.refresh_components(dummy))
+            else:
+                # already had a queue -- this means another call_later() is pending, so do nothing but return and assume subsequent
+                # call_later() will execute this function in the future.
+                pass
+                #print("refresh_components: already Queued! Q=",oldq)
+            return
+        # END SPECIAL LOGIC TO RATE-LIMIT refresh_components spam
         
+        signalled = set()         
         al = {'*','all','world','everything'}
+        #print("components: ",*components)
         if components & {'helper', *al} and self.sigHelper not in signalled:
             signalled.add(self.sigHelper)
             self.sigHelper.emit()

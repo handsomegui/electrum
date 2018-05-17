@@ -87,8 +87,6 @@ class ContactsVC(ContactsVCBase):
             #self.doneBut = buts[1]
             self.navigationItem.rightBarButtonItems = buts
         
-        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.refresh(), self.ptr.value)
-
     @objc_method
     def dealloc(self) -> None:
         # do cleanup stuff here
@@ -131,6 +129,7 @@ class ContactsVC(ContactsVCBase):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
+        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.refresh(), self.ptr.value) 
         self.refresh()
 
     #### UITableView delegate/dataSource methods...
@@ -239,16 +238,16 @@ class ContactsVC(ContactsVCBase):
 
     @objc_method
     def refresh(self):
-        self.needsRefresh = True # mark that a refresh was called in case refresh is blocked
-        if self.blockRefresh:
-            return
-        if self.refreshControl: self.refreshControl.endRefreshing()
-        self.selected = self.updateSelectionButtons() 
-        if self.tv:
+        if self.viewIfLoaded:
+            self.needsRefresh = True # mark that a refresh was called in case refresh is blocked
+            if self.blockRefresh:
+                return
+            if self.refreshControl: self.refreshControl.endRefreshing()
+            self.selected = self.updateSelectionButtons() 
             self.tv.reloadData()
-        self.doChkEmpty()
+            self.doChkEmpty()
         self.needsRefresh = False
-        
+    
     @objc_method
     def doRefreshIfNeeded(self):
         if self.needsRefresh:
