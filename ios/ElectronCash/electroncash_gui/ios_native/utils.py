@@ -953,58 +953,41 @@ def set_namedtuple_field(nt : object, fieldname : str, newval : Any) -> object:
         return type(nt)(**d)
 
 #########################################################################################################
-# Data Manager -- subscription/domain based data cache -- Used by tx history (and other app mechanisms) #
+# Data Manager -- domain based data cache -- uses this app's PySig mechanism to announce interested     #
+# subsystems about data updates.  Used by tx history (and other app mechanisms). Instances live in      #
+# the gui.ElectrumGui instance. .emit() implicitly empties the cache.  emptyCache() implicitly emits.   #
 #########################################################################################################
-class DataMgr:
+class DataMgr(PySig):
     def __init__(self):
-        self.clear()
+        super().__init__()
+        #self.clear() # super calls clear, which calls this instance method, which itself calls super().clear().. python inheritence is weird
         
     def clear(self):
+        super().clear()
         self.datas = dict()
-        self.subs = dict()
-        self.realKeys = dict()
         
     def keyify(self, key: Any) -> Any:
         if isinstance(key, (list,tuple,dict,set)):
             key = str(key)
         return key
-    
-    def subscribe(self, realkey : Any) -> None:
-        key = self.keyify(realkey)
-        ctr = self.subs.get(key, 0)
-        ctr += 1
-        self.subs[key] = ctr
-        if ctr == 1:
-            self.realKeys[key] = realkey
-            #print("DataMgr: added (%s)"%(str(key)))
-        #print("DataMgr: subscribed (%s), total ctr now=%d"%(str(key),ctr))
-    
-    def unsubscribe(self, realkey : Any) -> None:
-        key = self.keyify(realkey)
-        ctr = self.subs.get(key, 0)
-        ctr -= 1
-        if ctr <= 0:
-            self.subs.pop(key, None)
-            self.datas.pop(key, None)
-            self.realKeys.pop(key, None)
-            #print("DataMgr: removed (%s)"%(str(key)))
-        else:
-            self.subs[key] = ctr
-        #print("DataMgr: unsubscribed (%s), total ctr now=%d"%(str(key),ctr))
-    
+        
     def get(self, realkey : Any) -> Any:
         key = self.keyify(realkey)
-        if key in self.subs:
-            if key not in self.datas:
-                #print("DataMgr: domain (%s) not in cache, calling doReload"%(str(key)))
-                self.datas[key] = self.doReloadForKey(realkey)    
-            return self.datas.get(key, None)
+        if key not in self.datas:
+            #print("DataMgr: cache miss for domain (%s), calling doReload"%(str(key)))
+            self.datas[key] = self.doReloadForKey(realkey)
         else:
-            NSLog("DataMgr: WARNING -- get() called on a domain that is not subscribed: '%s'", str(key))
-        return None
+            pass
+            #print("DataMgr: cache HIT for domain (%s)"%(str(key)))
+        return self.datas.get(key, None)
         
-    def emptyCache(self) -> None:
+    def emptyCache(self, noEmit : bool = False, require_sync : bool = False, *args) -> None:
         self.datas = dict()
+        if not noEmit:
+            super().emit_common(require_sync = require_sync, *args)
+            
+    def emit_common(self, require_sync : bool, *args) -> None:
+        self.emptyCache(noEmit = False, require_sync = require_sync, *args)
     
     def doReloadForKey(self, key : Any) -> Any:
         NSLog("DataMgr: UNIMPLEMENTED -- doReloadForKey() needs to be overridden in a child class!")

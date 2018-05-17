@@ -3,7 +3,6 @@ from . import gui
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
-from .coins import get_circle_imageview
 from electroncash.address import Address, PublicKey
 from .uikit_bindings import *
 from .custom_objc import *
@@ -12,42 +11,65 @@ import time
 
 ContactsEntry = namedtuple("ContactsEntry", "name address address_str tx_hashes")
 
-CellIdentifiers = ( "Cell", "EmptyCell")
+_CellIdentifier = "ContactsCell"  # New UI cell identifier
 
 ModeNormal = 0
 ModePicker = 1
 
-class ContactsTableVC(UITableViewController):
-    ''' Contacts Tab -- shows named contacts (association of a user-friendly name and an address)
-    '''
+
+class ContactsVC(ContactsVCBase):
+    ''' New UI style Contacts tab and modal picker '''
     needsRefresh = objc_property()
     blockRefresh = objc_property()
+    mode = objc_property()
+    pickSingle = objc_property()
     addBut = objc_property()
     doneBut = objc_property()
     cancelBut = objc_property()
-    mode = objc_property()
     selected = objc_property()
-    
+
+    # preferred c'tor
+    @objc_method
+    def initWithMode_(self, mode : int) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'init'))
+        if self:
+            self.commonInitWithMode_(mode)
+        return self
+
+    @objc_method
+    def init(self) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'init'))
+        if self:
+            self.commonInitWithMode_(ModeNormal)
+        return self
+    @objc_method
+    def initWithCoder(self, coder : ObjCInstance) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'initWithCoder:', coder, argtypes=[objc_id]))
+        if self:
+            self.commonInitWithMode_(ModeNormal)
+        return self
 
     @objc_method
     def commonInitWithMode_(self, mode : int) -> None:
+        self.mode = ModeNormal if mode == ModeNormal else ModePicker
         self.needsRefresh = False
         self.blockRefresh = False
-        self.mode = ModeNormal if mode == ModeNormal else ModePicker
+        self.pickSingle = True
+        self.tabBarItem.image = UIImage.imageNamed_("tab_contacts_new.png")
         self.title = _("Contacts")
+
         self.selected = []
-        self.tabBarItem.image = UIImage.imageNamed_("tab_contacts.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
         self.addBut = None
         self.doneBut = None
         self.cancelBut = None
       
         if self.mode == ModePicker:
             lbuts = [
-                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self, SEL(b'onPickerCancel')).autorelease(),
+                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemCancel, self, SEL(b'onPickerCancel')).autorelease(),
             ]
             buts = [
                 UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onPickerPayTo')).autorelease(),
-                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAdd, self, SEL(b'onAddBut')).autorelease(),
+                UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_plus"), UIBarButtonItemStylePlain, self, SEL(b'onAddBut')).autorelease(),
             ]
             self.cancelBut = lbuts[0]
             self.doneBut = buts[0]
@@ -58,34 +80,18 @@ class ContactsTableVC(UITableViewController):
             self.navigationItem.leftBarButtonItems = lbuts
         else:
             buts = [
-                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAdd, self, SEL(b'onAddBut')).autorelease(),
-                UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Pay to"), UIBarButtonItemStyleDone, self, SEL(b'onPickerPayTo')).autorelease(),
+                UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_plus"), UIBarButtonItemStylePlain, self, SEL(b'onAddBut')).autorelease(),
+                #UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Pay to"), UIBarButtonItemStyleDone, self, SEL(b'onPickerPayTo')).autorelease(),
             ]
             self.addBut = buts[0]
-            self.doneBut = buts[1]
+            #self.doneBut = buts[1]
             self.navigationItem.rightBarButtonItems = buts
         
-        self.refreshControl = UIRefreshControl.alloc().init().autorelease()
-        
-        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.needUpdate(), self.ptr.value)
-        
-
-    @objc_method
-    def initWithStyle_mode_(self, style : int, mode : int) -> ObjCInstance:
-        self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
-        if self:
-            self.commonInitWithMode_(mode)
-        return self
-
-    @objc_method
-    def initWithStyle_(self, style : int) -> ObjCInstance:
-        self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', style, argtypes=[c_int]))
-        if self:
-            self.commonInitWithMode_(ModeNormal)
-        return self
+        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.refresh(), self.ptr.value)
 
     @objc_method
     def dealloc(self) -> None:
+        # do cleanup stuff here
         gui.ElectrumGui.gui.sigContacts.disconnect(self.ptr.value)
         self.needsRefresh = None
         self.blockRefresh = None
@@ -94,17 +100,40 @@ class ContactsTableVC(UITableViewController):
         self.cancelBut = None
         self.doneBut = None
         self.addBut = None
+        self.pickSingle = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
 
     @objc_method
+    def loadView(self) -> None:
+        NSBundle.mainBundle.loadNibNamed_owner_options_("Contacts", self, None) # auto-binds self.view
+        if self.tv:
+            self.tv.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
+            self.refreshControl = self.tv.refreshControl
+        # workaround for inability to specify attributed text font italic in IB for some bizarre reason
+        ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.noContactsLabel.attributedText).autorelease()
+        r = NSRange(0,ats.length())
+        ats.removeAttribute_range_(NSFontAttributeName,r)
+        ats.addAttribute_value_range_(NSFontAttributeName,UIFont.italicSystemFontOfSize_(14.0),r)
+        ats.addAttribute_value_range_(NSKernAttributeName,-0.5,r)
+        self.noContactsLabel.attributedText = ats
+        # /end workaround
+        self.butBottom.text = _('New contact')
+        # Can't set this property from IB, so we do it here programmatically to create the stroke around the New contact bottom button
+        self.butBottom.layer.borderColor = self.butBottom.titleColorForState_(UIControlStateNormal).CGColor
+
+        # DON'T do this since we need to manually load the NIB to associate its file's owner with this instane
+        #nib = UINib.nibWithNibName_bundle_(_CellIdentifier, None)
+        #self.tv.registerNib_forCellReuseIdentifier_(nib, _CellIdentifier)
+
+    
+    @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
-        #nib = UINib.nibWithNibName_bundle_("MAYBE_USE_CUSTOM_XIB_HERE", None)
-        #self.tableView.registerNib_forCellReuseIdentifier_(nib, CellIdentifiers[0])
         self.refresh()
-        
+
+    #### UITableView delegate/dataSource methods...
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
         return 1
@@ -113,35 +142,35 @@ class ContactsTableVC(UITableViewController):
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         try:
             contacts = _Get()
-            return len(contacts) if contacts else 1
-        except:
-            print("Error, exception retrieving contacts from nspy cache")
+            return len(contacts) if contacts else 0
+        except Exception as e:
+            utils.NSLog("Error, exception retrieving contacts: %s",str(e))
             return 0
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         try:
             contacts = _Get()
-            identifier = CellIdentifiers[0 if contacts else -1]
-            cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+            cell = tableView.dequeueReusableCellWithIdentifier_(_CellIdentifier)
             parent = gui.ElectrumGui.gui
             if cell is None:
-                cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+                objs = NSBundle.mainBundle.loadNibNamed_owner_options_(_CellIdentifier, self, None)
+                for o in objs:
+                    if isinstance(o, UITableViewCell):
+                        cell = o
+                        break
             if contacts:
-                if self.mode == ModeNormal and cell.imageView.image is None:
-                    cell.imageView.image = UIImage.imageNamed_("edit_details.png")
-                    if not cell.imageView.gestureRecognizers or not len(cell.imageView.gestureRecognizers):
-                        gr = UITapGestureRecognizer.alloc().initWithTarget_action_(self, SEL(b'onTapEdit:')).autorelease()
-                        cell.imageView.addGestureRecognizer_(gr)
-                        cell.imageView.userInteractionEnabled = True
-                cell.imageView.tag = indexPath.row
+                cell.address.tag = indexPath.row # associate the tapped 'link' with this contact
                 c = contacts[indexPath.row]
-                cell.textLabel.text = c.name
-                cell.detailTextLabel.text = c.address_str
-                self.setupAccessoryForCell_atIndex_(cell, indexPath.row)
-                    
-            else:
-                empty_cell(cell,_("No contacts. Use + to add a contact."),True)
+                cell.name.text = c.name
+                cell.numTxs.text = str(len(c.tx_hashes) if c.tx_hashes else 0) + " " + _('Transactions')
+                ats = NSMutableAttributedString.alloc().initWithString_(c.address_str).autorelease()
+                r = NSRange(0, ats.length())
+                ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(16.0, UIFontWeightRegular), r)
+                ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('nav'), r)
+                ats.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleSingle, r)
+                cell.address.attributedText = ats
+                self.setupAccessoryForCell_atIndex_(cell, indexPath.row)                    
         except Exception as e:
             utils.NSLog("exception in Contacts tableView_cellForRowAtIndexPath_: %s",str(e))
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
@@ -162,13 +191,23 @@ class ContactsTableVC(UITableViewController):
         cell = tv.cellForRowAtIndexPath_(indexPath)
 
         contacts = _Get()
-        if not contacts or not len(contacts): return
+        if not contacts or indexPath.row >= len(contacts): return
     
-        self.setIndex_selected_(indexPath.row, not self.isIndexSelected_(indexPath.row))
-        wasSel = self.setupAccessoryForCell_atIndex_(cell, indexPath.row) # this sometimes fails if address is frozen and/or we are watching only
-        self.setIndex_selected_(indexPath.row, wasSel)
-
-        self.selected = self.updateSelectionButtons()
+        if self.mode == ModePicker:
+            if not self.pickSingle:
+                self.setIndex_selected_(indexPath.row, not self.isIndexSelected_(indexPath.row))
+                wasSel = self.setupAccessoryForCell_atIndex_(cell, indexPath.row) # this sometimes fails if address is frozen and/or we are watching only
+                self.setIndex_selected_(indexPath.row, wasSel)
+        
+                self.selected = self.updateSelectionButtons()
+            else:
+                # force only 1 contact to be selected, clearing all others
+                self.selected = [contacts[indexPath.row].address_str]
+                self.selected = self.updateSelectionButtons()
+                self.tv.reloadData() # force redraw of all checkmarks
+        else:
+            # TODO: push new detail view controller on nav stack here...
+            pass
 
     @objc_method
     def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
@@ -182,7 +221,7 @@ class ContactsTableVC(UITableViewController):
         contacts = _Get()
         if not contacts or indexPath.row < 0 or indexPath.row >= len(contacts): return
         if editingStyle == UITableViewCellEditingStyleDelete:
-            if delete_contact(contacts[indexPath.row]):
+            if delete_contact(contacts[indexPath.row]):  
                 was = self.blockRefresh
                 self.blockRefresh = True
                 _Updated()
@@ -196,12 +235,7 @@ class ContactsTableVC(UITableViewController):
                     self.blockRefresh = was
                     self.refresh()
 
-    ''' 
-    @objc_method
-    def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
-        return 150.0
-        #return 44.0
-    '''
+    ### end UITableView related methods
 
     @objc_method
     def refresh(self):
@@ -209,34 +243,36 @@ class ContactsTableVC(UITableViewController):
         if self.blockRefresh:
             return
         if self.refreshControl: self.refreshControl.endRefreshing()
-        self.selected = self.updateSelectionButtons()
-        if self.tableView:
-            self.tableView.reloadData()
+        # TODO: Tweak this for new scheme...
+        self.selected = self.updateSelectionButtons() 
+        if self.tv:
+            self.tv.reloadData()
+        self.doChkEmpty()
         self.needsRefresh = False
-
-    @objc_method
-    def needUpdate(self):
-        if self.needsRefresh: return
-        self.needsRefresh = True
-        self.retain()
-        def inMain() -> None:
-            self.doRefreshIfNeeded()
-            self.autorelease()
-        utils.do_in_main_thread(inMain)
         
     @objc_method
     def doRefreshIfNeeded(self):
         if self.needsRefresh:
             self.refresh()
-            #print ("CONTACTS REFRESHED")
 
     @objc_method
     def showRefreshControl(self):
         if self.refreshControl is not None and not self.refreshControl.isRefreshing():
             # the below starts up the table view in the "refreshing" state..
             self.refreshControl.beginRefreshing()
-            self.tableView.setContentOffset_animated_(CGPointMake(0, self.tableView.contentOffset.y-self.refreshControl.frame.size.height), True)
-                                            
+            self.tv.setContentOffset_animated_(CGPointMake(0, self.tv.contentOffset.y-self.refreshControl.frame.size.height), True)
+
+
+    @objc_method
+    def doChkEmpty(self):
+        contacts = _Get()
+        if contacts:
+            self.noContacts.setHidden_(True)
+            self.tv.setHidden_(False)
+        else:
+            self.noContacts.setHidden_(False)
+            self.tv.setHidden_(True)
+
     @objc_method
     def onOptions_(self, obj : ObjCInstance) -> None:
         print ("On Options")
@@ -348,31 +384,6 @@ class ContactsTableVC(UITableViewController):
 
 
     @objc_method
-    def showNewEditForm_(self, index : int) -> None:
-        vc = NewContactVC.new().autorelease()
-        if index > -1:
-            contacts = _Get()
-            if contacts and index < len(contacts):
-                utils.nspy_put_byname(vc, contacts[index], 'edit_contact')
-
-        def onOk(entry : ContactsEntry) -> None:
-            #print ("parent onOK called...")
-            if entry is not None:
-                oldEntry = utils.nspy_get_byname(vc, 'edit_contact')
-                if oldEntry:
-                    delete_contact(oldEntry, False)
-                add_contact(entry)
-                _Updated()
-        utils.add_callback(vc, 'on_ok', onOk)
-        self.presentViewController_animated_completion_(vc, True, None)
-        
-            
-    @objc_method
-    def onAddBut(self) -> None:
-        #print("on add but...")
-        self.showNewEditForm_(-1)
-
-    @objc_method
     def onTapEdit_(self, gr : ObjCInstance) -> None:
         self.showNewEditForm_(int(gr.view.tag))
 
@@ -402,15 +413,39 @@ class ContactsTableVC(UITableViewController):
         
         ret = False
         
-        if no_good or not self.isIndexSelected_(index):
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
-            cell.accessoryView = get_circle_imageview()
+        if no_good or not self.isIndexSelected_(index) or self.mode == ModeNormal:
+            cell.customAccessory.image = UIImage.imageNamed_("circle2" if self.mode == ModePicker else "chevron_gray_right")
         else:
-            cell.accessoryType = UITableViewCellAccessoryCheckmark
-            cell.accessoryView = None
+            cell.customAccessory.image = UIImage.imageNamed_("bluechk")
             ret = True
         
         return ret
+
+    @objc_method
+    def showNewEditForm_(self, index : int) -> None:
+        vc = NewContactVC.new().autorelease()
+        if index > -1:
+            contacts = _Get()
+            if contacts and index < len(contacts):
+                utils.nspy_put_byname(vc, contacts[index], 'edit_contact')
+
+        def onOk(entry : ContactsEntry) -> None:
+            #print ("parent onOK called...")
+            if entry is not None:
+                oldEntry = utils.nspy_get_byname(vc, 'edit_contact')
+                if oldEntry:
+                    delete_contact(oldEntry, False)
+                add_contact(entry)
+                _Updated()
+        utils.add_callback(vc, 'on_ok', onOk)
+        self.presentViewController_animated_completion_(vc, True, None)
+        
+            
+    @objc_method
+    def onAddBut(self) -> None:
+        self.showNewEditForm_(-1)
+
+
 
 class NewContactVC(NewContactBase):
     
@@ -568,7 +603,7 @@ class ContactsMgr(utils.DataMgr):
         return get_contacts() or list()
 
 def _Get() -> list:
-    return gui.ElectrumGui.gui.contactsMgr.get(None)
+    return gui.ElectrumGui.gui.sigContacts.get(None)
 
 def _Updated() -> None:
     gui.ElectrumGui.gui.refresh_components('contacts')
@@ -576,8 +611,8 @@ def _Updated() -> None:
 def build_contact_tx_list(address : Address) -> list:
     parent = gui.ElectrumGui.gui
     ret = list()
-    if isinstance(address, Address) and parent and parent.historyMgr:
-        alltxs = parent.historyMgr.get(None)
+    if isinstance(address, Address) and parent and parent.sigHistory:
+        alltxs = parent.sigHistory.get(None)
         for hentry in alltxs:
             if hentry.tx:
                 ins = hentry.tx.inputs()

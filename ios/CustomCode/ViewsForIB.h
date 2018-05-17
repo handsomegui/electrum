@@ -270,4 +270,26 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *addressTitCS;
 @end
 
+@interface ContactsVCBase : UIViewController
+@property (nonatomic, weak) IBOutlet UIView *noContacts;
+@property (nonatomic, weak) IBOutlet UILabel *noContactsLabel;
+@property (nonatomic, weak) IBOutlet UIButton *butBottom;
+@property (nonatomic, weak) IBOutlet UIRefreshControl *refreshControl; // bound in python
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@end
+
+// stub to represent python -- implemented in python contacts.py
+@interface ContactsVC : ContactsVCBase
+-(IBAction) onAddBut;
+-(IBAction) onTapEdit:(id)sender;
+@end
+
+@interface ContactsCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UIImageView *customAccessory;
+@property (nonatomic, weak) IBOutlet UILabel *name;
+@property (nonatomic, weak) IBOutlet UILabel *address;
+@property (nonatomic, weak) IBOutlet UITapGestureRecognizer *addressGr;
+@property (nonatomic, weak) IBOutlet UILabel *numTxs;
+@end
+
 #endif /* ViewsForIB_h */

@@ -413,7 +413,7 @@ class ReceiveVC(UIViewController):
 
 
 def _GetReqs() -> list:
-    return parent().reqMgr.get(None)
+    return parent().sigRequests.get(None)
 
 def _DelReqAtIndex(index : int, refreshDelay : float = 0.45, showErrorBox : bool = True) -> bool:
     wasDeleted = False
@@ -430,7 +430,7 @@ def _DelReqAtIndex(index : int, refreshDelay : float = 0.45, showErrorBox : bool
     return wasDeleted
 
     
-class RequestMgr(utils.DataMgr):
+class RequestsMgr(utils.DataMgr):
     def doReloadForKey(self, ignored):
         wallet = parent().wallet
         daemon = parent().daemon

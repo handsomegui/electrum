@@ -108,11 +108,6 @@ class TxHistoryHelper(TxHistoryHelperBase):
         #cleanup code here
         print("TxHistoryHelper dealloc")
         gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
-        try:
-            domain = _GetDomain(self)
-            if domain is not None:
-                gui.ElectrumGui.gui.historyMgr.unsubscribe(domain)
-        except: utils.NSLog("TxHistoryHelper: Could not remove self from historyMgr domain!\n%s",str(sys.exc_info()[1]))
         self.haveShowMoreTxs = None
         utils.nspy_pop(self) # clear 'txs' python dict
         send_super(__class__, self, 'dealloc')
@@ -121,11 +116,6 @@ class TxHistoryHelper(TxHistoryHelperBase):
     def miscSetup(self) -> None:
         nib = UINib.nibWithNibName_bundle_("TxHistoryCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(nib, "TxHistoryCell")
-        try:
-            domain = _GetDomain(self)
-            if domain is not None:
-                gui.ElectrumGui.gui.historyMgr.subscribe(domain)
-        except: utils.NSLog("TxHistoryHelper: Could not add self to historyMgr domain!:\n%s",str(sys.exc_info()[1]))
         self.tv.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
         def gotRefresh() -> None:
             if self.tv:
@@ -309,7 +299,7 @@ def NewTxHistoryHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = Non
 def _GetTxs(txsHelper : object) -> list:
     if not txsHelper:
         raise ValueError('GetTxs: Need to specify a TxHistoryHelper instance')
-    h = gui.ElectrumGui.gui.historyMgr.get(_GetDomain(txsHelper))
+    h = gui.ElectrumGui.gui.sigHistory.get(_GetDomain(txsHelper))
     return h
 
 def _GetDomain(txsHelper : object) -> list:

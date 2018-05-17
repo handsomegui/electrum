@@ -170,7 +170,8 @@ class GuiHelper(NSObject):
         moreTab = ElectrumGui.gui.tabController.moreNavigationController        
         if moreTab is not None and nav.ptr.value == moreTab.ptr.value:
             depth = 2
-        is_hidden = True if len(nav.viewControllers) > depth or isinstance(nav, wallets.WalletsNav) else False
+        rvc = nav.viewControllers[0] if isinstance(nav, UINavigationController) else None
+        is_hidden = True if len(nav.viewControllers) > depth or isinstance(rvc, (wallets.WalletsVC, contacts.ContactsVC)) else False
         #print("SetToolBarHidden=%s viewControllers len: %d  navViewController: %s navType: %s viewController: %s viewControllerType: %s"%(str(is_hidden), len(nav.viewControllers), str(nav.title), str(nav.objc_class), str(vc.title), str(vc.objc_class)))
         nav.setToolbarHidden_animated_(is_hidden, True)
         
@@ -226,19 +227,15 @@ class ElectrumGui(PrintError):
         self.appName = 'Electron-Cash'
         self.appDomain = 'com.c3-soft.ElectronCash'
         self.set_language()
-  
-        self.historyMgr = history.HistoryMgr()
-        self.reqMgr = receive.RequestMgr()
-        self.contactsMgr = contacts.ContactsMgr()
-        
+          
         # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
         self.sigHelper = utils.PySig()
-        self.sigHistory = utils.PySig()
+        self.sigHistory = history.HistoryMgr() # this DataMgr instance also caches history data
         self.sigAddresses = utils.PySig()
         self.sigPrefs = utils.PySig()
-        self.sigRequests = utils.PySig()
+        self.sigRequests = receive.RequestsMgr()
         self.sigNetwork = utils.PySig()
-        self.sigContacts = utils.PySig()
+        self.sigContacts = contacts.ContactsMgr()
         self.sigCoins = utils.PySig()
         
         #todo: support multiple wallets in 1 UI?
@@ -296,13 +293,10 @@ class ElectrumGui(PrintError):
         utils.NSLog("GUI instance created, splash screen 2 presented")
 
     def createAndShowUI(self):
-        self.historyMgr.subscribe(None) # default subscription to 'all' history domain always active
-        self.reqMgr.subscribe(None) # keep the only domain -- None -- alive the whole time
-        self.contactsMgr.subscribe(None) # ditto
-
         self.helper = GuiHelper.alloc().init()
                 
         self.tabController = MyTabBarController.alloc().init().autorelease()
+        self.tabController.tabBar.tintColor = utils.uicolor_custom('nav')
     
         self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
@@ -312,7 +306,7 @@ class ElectrumGui(PrintError):
         
         self.addrconvVC = acnv = addrconv.AddrConvVC.new().autorelease()
         
-        self.contactsVC = cntcts = contacts.ContactsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
+        self.contactsVC = cntcts = contacts.ContactsVC.new().autorelease()
         self.helper.bindRefreshControl_(self.contactsVC.refreshControl)
   
         # Wallets tab
@@ -591,11 +585,7 @@ class ElectrumGui(PrintError):
         self.sigNetwork.clear()
         self.sigContacts.clear()
         self.sigCoins.clear()
-        
-        self.contactsMgr.clear()
-        self.reqMgr.clear()
-        self.historyMgr.clear()
-    
+            
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
         #update status bar label width
         if self.helper is None or self.helper.butsStatusLabel is None: return 
@@ -1257,8 +1247,7 @@ class ElectrumGui(PrintError):
             self.sigHelper.emit()
         if components & {'history', *al} and self.sigHistory not in signalled:
             signalled.add(self.sigHistory)
-            self.historyMgr.emptyCache()
-            self.sigHistory.emit()
+            self.sigHistory.emit()  # implicitly does an emptyCache() then emit()
             if self.sigCoins not in signalled:
                 signalled.add(self.sigCoins)
                 self.sigCoins.emit()
@@ -1272,21 +1261,19 @@ class ElectrumGui(PrintError):
             signalled.add(self.sigPrefs)
             self.sigPrefs.emit()
         if components & {'receive', 'requests', 'paymentrequests', 'pr', *al} and self.sigRequests not in signalled:
-            self.reqMgr.emptyCache()
-            signalled.add(self.sigRequests)
-            self.sigRequests.emit()
+            signalled.add(self.sigRequests) 
+            self.sigRequests.emit() # implicitly does an emptyCache() then emit()
         if components & {'network', 'servers','connection', 'interfaces', *al} and self.sigNetwork not in signalled:
             signalled.add(self.sigNetwork)
             self.sigNetwork.emit()
         if components & {'contact', 'contacts', *al} and self.sigContacts not in signalled:
-            self.contactsMgr.emptyCache()
             signalled.add(self.sigContacts)
-            self.sigContacts.emit()
+            self.sigContacts.emit() # implicitly does an emptyCache() then emit()
 
-    def empty_caches(self):
-        self.historyMgr.emptyCache()
-        self.reqMgr.emptyCache()
-        self.contactsMgr.emptyCache()
+    def empty_caches(self, doEmit = False):
+        self.sigHistory.emptyCache(not doEmit)
+        self.sigRequests.emptyCache(not doEmit)
+        self.sigContacts.emptyCache(not doEmit)
         
 
     def on_new_daemon(self):
@@ -1678,7 +1665,7 @@ class ElectrumGui(PrintError):
     
     def get_history_entry(self, tx_hash) -> tuple:
         ''' returns a history.HistoryEntry namedtuple instance if tx_hash exists in history, or None if not found '''
-        history = self.historyMgr.get(None)
+        history = self.sigHistory.get(None)
         if history:
             for entry in history:
                 if entry.tx_hash == tx_hash:

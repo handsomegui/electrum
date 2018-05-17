@@ -209,3 +209,10 @@
 }
 @end
 
+@implementation ContactsVCBase
+// auto synthesized properties
+@end
+
+@implementation ContactsCell
+// auto synthesized properties
+@end
