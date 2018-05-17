@@ -243,7 +243,6 @@ class ContactsVC(ContactsVCBase):
         if self.blockRefresh:
             return
         if self.refreshControl: self.refreshControl.endRefreshing()
-        # TODO: Tweak this for new scheme...
         self.selected = self.updateSelectionButtons() 
         if self.tv:
             self.tv.reloadData()
@@ -274,68 +273,6 @@ class ContactsVC(ContactsVCBase):
             self.tv.setHidden_(True)
 
     @objc_method
-    def onOptions_(self, obj : ObjCInstance) -> None:
-        print ("On Options")
-        return
-        # below form coins.py -- here for reference
-        try:
-            if isinstance(obj, UIGestureRecognizer):
-                obj = obj.view
-            entry = utils.nspy_get_byname(self, 'coins')[obj.tag]
-            parent = gui.ElectrumGui.gui
-            def on_block_explorer() -> None:
-                parent.view_on_block_explorer(entry.tx_hash, 'tx')
-            def on_request_payment() -> None:
-                parent.jump_to_receive_with_address(entry.address)
-            def on_address_details() -> None:
-                aentry = parent.get_address_entry(entry.address)
-                if aentry:
-                    addrDetail = AddressDetail.alloc().init().autorelease()
-                    utils.nspy_put_byname(addrDetail, aentry, 'entry')
-                    self.navigationController.pushViewController_animated_(addrDetail, True)
-            def spend_from2(utxos : list) -> None:
-                validSels = list(self.updateSelectionButtons())
-                coins = utils.nspy_get_byname(self, 'coins')
-                for entry in coins:
-                    if entry.name in validSels and entry.utxo not in utxos:
-                        utxos.append(entry.utxo)
-                if utxos:
-                    spend_from(utxos)
-    
-            actions = [
-                    [ _('Cancel') ],
-                    [ _("Address Details"), on_address_details ],
-                    [ _("Transaction Details"), lambda: self.showTxDetailForIndex_(obj.tag)],
-                    [ _("View on block explorer"), on_block_explorer ],
-                    [ _("Request payment"), on_request_payment ],
-                ]
-            
-            watch_only = False if parent.wallet and not parent.wallet.is_watching_only() else True
-    
-            if not watch_only:
-                actions.append([ _('Freeze') if not entry.is_frozen else _('Unfreeze'), lambda: toggle_freeze(entry) ])
-    
-            if not watch_only and not entry.is_frozen:
-                actions.append([ _('Spend from this UTXO'), lambda: spend_from([entry.utxo]) ] )
-                if len(list(self.updateSelectionButtons())):
-                    actions.append([ _('Spend from this UTXO + Selected'), lambda: spend_from2([entry.utxo]) ] )
-                    
-                    
-            utils.show_alert(
-                vc = self,
-                title = _("Options"),
-                message = _("Output") + ":" + " " + entry.name[0:10] + "..." + entry.name[-2:],
-                actions = actions,
-                cancel = _('Cancel'),
-                style = UIAlertControllerStyleActionSheet,
-                ipadAnchor =  obj.convertRect_toView_(obj.bounds, self.view)
-            )
-            #print ("address =", entry.address_str)
-        except:
-            import sys
-            utils.NSLog("Exception during contacts.py 'onOptions': %s",str(sys.exc_info()[1]))
-
-    @objc_method
     def isIndexSelected_(self, index : int) -> bool:
         try:
             entry = _Get()[index]
@@ -362,9 +299,6 @@ class ContactsVC(ContactsVCBase):
     def onPickerCancel(self) -> None:
         print ("picker cancel...")
         self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
-        return
-        self.selected = []
-        self.refresh()
         
     @objc_method
     def onPickerPayTo(self) -> None:
