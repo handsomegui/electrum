@@ -894,11 +894,14 @@ class PySig:
         def doIt(entry, *args) -> None:
             sig = signature(entry.func)
             # call slot...
-            # release iff NSObject.. autorelease before calling func in case it throws exception
-            #if not isMainThread and entry.is_ns:
-            #    ObjCInstance(objc_id(entry.key)).autorelease()
-            #    NSLog(" *** NSObject autorelease")
-            entry.func(*args[:len(sig.parameters)])
+            # release iff NSObject..
+            try:
+                entry.func(*args[:len(sig.parameters)])
+            finally:
+                pass
+                #if not isMainThread and entry.is_ns:
+                #    ObjCInstance(objc_id(entry.key)).release()
+                #    NSLog(" *** NSObject autorelease")
         # guard against slots requesting themselves to be removed while this loop is iterating
         entries = self.entries.copy()
         # first, run through all entries that may be NSObjects and retain them
