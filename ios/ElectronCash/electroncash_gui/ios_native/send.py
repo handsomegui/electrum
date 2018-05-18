@@ -269,7 +269,7 @@ class SendVC(SendBase):
         if c is not None:
             c.constant = 60.0 if doFX else 24.0
 
-        parent().cash_addr_sig.connect(lambda: self.reformatSpendFrom(), self.ptr.value)
+        parent().cash_addr_sig.connect(lambda: self.reformatSpendFrom(), self)
         self.reformatSpendFrom()
         
         pay_to = utils.nspy_get_byname(self, 'pay_to')
@@ -319,7 +319,7 @@ class SendVC(SendBase):
         # Amount edit --  cache the amountSats in case they change stuff in the prefs affecting this 
         tedit = self.amt
         self.amountSats = tedit.getAmount()
-        parent().cash_addr_sig.disconnect(self.ptr.value)
+        parent().cash_addr_sig.disconnect(self)
         
 
     @objc_method

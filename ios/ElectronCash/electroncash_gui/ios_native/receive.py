@@ -69,12 +69,12 @@ class ReceiveVC(UIViewController):
         self.fxIsEnabled = None
         self.addr = None
         self.lastQRData = ""
-        parent().sigRequests.connect(lambda:self.refresh(), self.ptr.value)
+        parent().sigRequests.connect(lambda:self.refresh(), self)
         return self
     
     @objc_method
     def dealloc(self) -> None:
-        parent().sigRequests.disconnect(self.ptr.value)
+        parent().sigRequests.disconnect(self)
         self.ui = None
         self.expiresList = None
         self.expiresIdx = None
@@ -494,12 +494,12 @@ class ReqTVD(ReqTVDBase):
                 if self.tv:
                     self.tv.reloadData()
                     if self.tv.refreshControl: self.tv.refreshControl.endRefreshing()
-            parent().sigRequests.connect(doRefresh, self.ptr.value)
+            parent().sigRequests.connect(doRefresh, self)
         return self
     
     @objc_method
     def dealloc(self) -> None:
-        parent().sigRequests.disconnect(self.ptr.value)
+        parent().sigRequests.disconnect(self)
         self.didReg = None
         send_super(__class__, self, 'dealloc')
     

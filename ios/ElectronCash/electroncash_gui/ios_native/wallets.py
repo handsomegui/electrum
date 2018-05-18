@@ -40,8 +40,8 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def dealloc(self) -> None:
         # cleanup code here..
-        gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
-        gui.ElectrumGui.gui.sigRequests.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigHistory.disconnect(self)
+        gui.ElectrumGui.gui.sigRequests.disconnect(self)
 
         self.lineHider = None
         send_super(__class__, self, 'dealloc')  
@@ -62,8 +62,8 @@ class WalletsVC(WalletsVCBase):
         # Can't set this property from IB, so we do it here programmatically to create the stroke around the receive button
         self.receiveBut.layer.borderColor = self.sendBut.backgroundColor.CGColor
 
-        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.doChkTableViewCounts(), self.ptr.value)
-        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.doChkTableViewCounts(), self.ptr.value)
+        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.doChkTableViewCounts(), self)
+        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.doChkTableViewCounts(), self)
     
     @objc_method
     def viewDidLoad(self) -> None:

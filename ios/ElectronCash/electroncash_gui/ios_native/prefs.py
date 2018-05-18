@@ -44,7 +44,7 @@ class PrefsVC(UITableViewController):
         self.warnButtonColor = UIColor.colorWithRed_green_blue_alpha_(0.8,0.0,0.0,1.0)
         self.updateCurrencies()
         self.updateExchanges()
-        gui.ElectrumGui.gui.sigPrefs.connect(lambda:self.refresh(), self.ptr.value)
+        gui.ElectrumGui.gui.sigPrefs.connect(lambda:self.refresh(), self)
         return self
     
     @objc_method
@@ -55,7 +55,7 @@ class PrefsVC(UITableViewController):
         
     @objc_method
     def dealloc(self) -> None:
-        gui.ElectrumGui.gui.sigPrefs.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigPrefs.disconnect(self)
         self.warnButtonColor = None
         self.normalButtonColor = None
         self.currencies = None

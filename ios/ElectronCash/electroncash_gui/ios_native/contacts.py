@@ -90,7 +90,7 @@ class ContactsVC(ContactsVCBase):
     @objc_method
     def dealloc(self) -> None:
         # do cleanup stuff here
-        gui.ElectrumGui.gui.sigContacts.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigContacts.disconnect(self)
         self.needsRefresh = None
         self.blockRefresh = None
         self.selected = None
@@ -129,7 +129,7 @@ class ContactsVC(ContactsVCBase):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
-        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.refresh(), self.ptr.value) 
+        gui.ElectrumGui.gui.sigContacts.connect(lambda:self.refresh(), self) 
         self.refresh()
 
     #### UITableView delegate/dataSource methods...

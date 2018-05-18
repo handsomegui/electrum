@@ -26,16 +26,16 @@ class AddressDetail(UIViewController):
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         self.title = "Address Details"
-        gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self.ptr.value)
-        gui.ElectrumGui.gui.sigHistory.connect(lambda:self.refresh(), self.ptr.value)
+        gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self)
+        gui.ElectrumGui.gui.sigHistory.connect(lambda:self.refresh(), self)
 
         return self
     
     @objc_method
     def dealloc(self) -> None:
         #print("AddressDetail dealloc")
-        gui.ElectrumGui.gui.sigAddresses.disconnect(self.ptr.value)
-        gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigAddresses.disconnect(self)
+        gui.ElectrumGui.gui.sigHistory.disconnect(self)
         utils.nspy_pop(self)
         self.title = None
         self.view = None
@@ -326,13 +326,13 @@ class AddressesTableVC(UITableViewController):
                 self.refresh()
             self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
  
-        gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.needUpdate(), self.ptr.value)
+        gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.needUpdate(), self)
        
         return self
 
     @objc_method
     def dealloc(self) -> None:
-        gui.ElectrumGui.gui.sigAddresses.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigAddresses.disconnect(self)
         self.needsRefresh = None
         self.mode = None
         self.blockRefresh = None

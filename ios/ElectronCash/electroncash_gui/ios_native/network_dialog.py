@@ -76,7 +76,7 @@ class NetworkDialogVC(UIViewController):
 
     @objc_method
     def dealloc(self) -> None:
-        parent().sigNetwork.disconnect(self.ptr.value)
+        parent().sigNetwork.disconnect(self)
         self.connectedTV = None
         self.untranslatedMap = None
         self.peersTV = None
@@ -97,7 +97,7 @@ class NetworkDialogVC(UIViewController):
     
     @objc_method
     def loadView(self) -> None:
-        parent().sigNetwork.connect(lambda:self.refresh(), self.ptr.value)
+        parent().sigNetwork.connect(lambda:self.refresh(), self)
         self.protocol = 't'
         self.cellIdentifier = "ServerPortCell22px"
         uinib = UINib.nibWithNibName_bundle_(self.cellIdentifier, None)

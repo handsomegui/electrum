@@ -107,7 +107,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
     def dealloc(self) -> None:
         #cleanup code here
         print("TxHistoryHelper dealloc")
-        gui.ElectrumGui.gui.sigHistory.disconnect(self.ptr.value)
+        gui.ElectrumGui.gui.sigHistory.disconnect(self)
         self.haveShowMoreTxs = None
         utils.nspy_pop(self) # clear 'txs' python dict
         send_super(__class__, self, 'dealloc')
@@ -121,7 +121,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
             if self.tv:
                 if self.tv.refreshControl: self.tv.refreshControl.endRefreshing()
                 self.tv.reloadData()
-        gui.ElectrumGui.gui.sigHistory.connect(gotRefresh, self.ptr.value)
+        gui.ElectrumGui.gui.sigHistory.connect(gotRefresh, self)
        
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:

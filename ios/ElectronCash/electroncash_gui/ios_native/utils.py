@@ -849,51 +849,72 @@ def nspy_pop_byname(ns : ObjCInstance, name : str) -> Any:
 # Another take on signals/slots -- Python-only signal/slot mechanism
 ####################################################################
 class PySig:
+    
+    Entry = namedtuple('Entry', 'func key is_ns')
+    
     def __init__(self):
         self.clear()
     def clear(self) -> None:
         try:
-            del self.slots
-            del self.keys
+            del self.entries
         except AttributeError:
             pass
-        self.slots = set()
-        self.keys = dict()
+        self.entries = list() # list of slots 
+        
     def connect(self, func : Callable, key : Any = None) -> None:
         ''' Note: the func arg, for now, needs to take explicit args and no *args, **kwags business as it's not yet supported.'''
         if not callable(func):
             raise ValueError("Passed-in arg to PySig connect is not a callable!")
-        if key is not None:
-            try:
-                self.slots.remove(self.keys[key])
-            except:
-                pass
-            self.keys[key] = func
-        self.slots.add(func)
+        is_ns = False
+        if isinstance(key, ObjCInstance):
+            is_ns = True
+            key = key.ptr.value
+        entry = PySig.Entry(func, key, is_ns)
+        self.entries.append(entry)
     def disconnect(self, func_or_key : Any = None) -> None:
         if func_or_key is None:
             self.clear()
             return
         func = None
+        key = None
         if callable(func_or_key):
             func = func_or_key
         else:
-            func = self.keys.pop(func_or_key, None)
-        try:
-            self.slots.remove(func)
-        except KeyError:
-            pass
+            key = func_or_key
+            if isinstance(key, ObjCInstance):
+                key = key.ptr.value
+        for i,entry in enumerate(self.entries):
+            if (key is not None and key == entry.key) or (func is not None and func == entry.func):
+                self.entries.pop(i)
+                return
+        NSLog("PySig disconnect: *** WARNING -- could not find '%s' in list of connections!",str(func_or_key))
+        
     def emit_common(self, require_sync : bool, *args) -> None:
+        #isMainThread = NSThread.currentThread.isMainThread
+        def doIt(entry, *args) -> None:
+            sig = signature(entry.func)
+            # call slot...
+            # release iff NSObject.. autorelease before calling func in case it throws exception
+            #if not isMainThread and entry.is_ns:
+            #    ObjCInstance(objc_id(entry.key)).autorelease()
+            #    NSLog(" *** NSObject autorelease")
+            entry.func(*args[:len(sig.parameters)])
         # guard against slots requesting themselves to be removed while this loop is iterating
-        slots = self.slots.copy() #if require_sync or NSThread.currentThread.isMainThread else self.slots
-        for slot in slots:
-            sig = signature(slot)
+        entries = self.entries.copy()
+        # first, run through all entries that may be NSObjects and retain them
+        #for entry in entries:
+            # if it's an NSObject, retain it then release it in the embedded callback
+            #if not isMainThread and entry.is_ns:
+            #    NSLog(" *** NSObject retain")
+            #    ObjCInstance(objc_id(entry.key)).retain()
+        # next, call the slots in the main thread, optionally releasing any nsobject retained above
+        for entry in entries:
             #if len(sig.parameters) > len(args):
             #    raise ValueError('PySig: One of the slots requires more parameters than were passed-in to emit!')
             if require_sync:
-                do_in_main_thread_sync(slot, *args[:len(sig.parameters)])
+                do_in_main_thread_sync(doIt, entry, *args)
             else:
-                do_in_main_thread(slot,*args[:len(sig.parameters)])
+                do_in_main_thread(doIt, entry, *args)
     def emit(self, *args) -> None:
         self.emit_common(False, *args)
     def emit_sync(self, *args) -> None:

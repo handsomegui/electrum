@@ -61,13 +61,13 @@ class PrivateKeyDialog(UIViewController):
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         self.refresh()
-        parent().cash_addr_sig.connect(lambda: self.refresh(), self.ptr.value)
+        parent().cash_addr_sig.connect(lambda: self.refresh(), self)
         
         
     @objc_method
     def viewWillDisappear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
-        parent().cash_addr_sig.disconnect(self.ptr.value)
+        parent().cash_addr_sig.disconnect(self)
         
     @objc_method
     def refresh(self) -> None:

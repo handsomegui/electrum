@@ -68,7 +68,7 @@
                                             <constraint firstAttribute="height" constant="41" id="Z7j-Oi-MdU"/>
                                         </constraints>
                                         <attributedString key="attributedText">
-                                            <fragment content="No payment requests found. Tap to create one!">
+                                            <fragment content="No payment requests found. Feel free to create one.">
                                                 <attributes>
                                                     <color key="NSColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                                                     <font key="NSFont" size="14" name="SFProDisplay-Italic"/>
@@ -483,12 +483,12 @@
                 <outlet property="delegate" destination="5hO-gj-WnP" id="cpY-fN-2Z7"/>
             </connections>
         </tapGestureRecognizer>
-        <tapGestureRecognizer id="MPP-ig-3TO" userLabel="NoReqs Gesture Recognizer">
+        <tapGestureRecognizer enabled="NO" id="MPP-ig-3TO" userLabel="NoReqs Gesture Recognizer">
             <connections>
                 <action selector="onReceiveBut" destination="5hO-gj-WnP" id="Ez8-7i-EcM"/>
             </connections>
         </tapGestureRecognizer>
-        <tapGestureRecognizer id="ta5-vp-zfA" userLabel="NoTXs Tap Gesture Recognizer">
+        <tapGestureRecognizer enabled="NO" id="ta5-vp-zfA" userLabel="NoTXs Tap Gesture Recognizer">
             <connections>
                 <action selector="onReceiveBut" destination="5hO-gj-WnP" id="7eY-LZ-NP4"/>
             </connections>
