@@ -372,6 +372,9 @@ class ElectrumGui(PrintError):
         utils.NSLog("UI Created Ok")
 
         self.register_network_callbacks()
+        
+        # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
+        utils.call_later(1.0, self.refresh_components('*'))
 
         return True
     

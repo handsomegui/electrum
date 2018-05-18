@@ -129,7 +129,6 @@ class TxHistoryHelper(TxHistoryHelperBase):
 
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
-        # TODO: Implement this properly
         h = _GetTxs(self)
         rows = 0
         self.haveShowMoreTxs = False
@@ -141,7 +140,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
             rows = min(rows,len_h)
             self.haveShowMoreTxs = len_h > rows
         return rows
-
+    
     @objc_method
     def tableView_viewForFooterInSection_(self, tv, section : int) -> ObjCInstance:
         if self.haveShowMoreTxs:

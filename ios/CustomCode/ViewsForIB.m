@@ -145,6 +145,11 @@
 @implementation TxHistoryCell
 // auto-sythesized properties
 
+- (void) dealloc {
+    // this is required to make sure our KVO observing gets uninstalled!
+    self.desc = nil;
+}
+
 - (void) setDesc:(UILabel *)desc {
     if (_desc == desc) return;
     if (_desc) {
@@ -173,6 +178,7 @@
         [self polishLayout:isAttributed];
     }
 }
+
 @end
 
 @implementation ReqTVDBase
@@ -181,6 +187,11 @@
 
 @implementation RequestListCell
 // auto-sythesized properties
+
+- (void) dealloc {
+    // this is required to make sure our KVO observing gets uninstalled!
+    self.desc = nil;
+}
 
 - (void) setDesc:(UILabel *)desc {
     if (_desc == desc) return;
