@@ -374,7 +374,7 @@ class ElectrumGui(PrintError):
         self.register_network_callbacks()
         
         # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
-        utils.call_later(1.0, lambda: self.refresh_components('*'))
+        utils.call_later(1.0, lambda: self.refresh_all())
 
         return True
     
