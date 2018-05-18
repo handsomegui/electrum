@@ -191,7 +191,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
         h = _GetTxs(self)
-        if not h:
+        if not h or indexPath.row >= len(h):
             identifier = "Cell"
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
             if cell is None:
