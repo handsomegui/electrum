@@ -7,7 +7,7 @@ from electroncash.address import Address, PublicKey
 from .uikit_bindings import *
 from .custom_objc import *
 from collections import namedtuple
-import time
+import time, sys, traceback
 
 ContactsEntry = namedtuple("ContactsEntry", "name address address_str tx_hashes")
 
@@ -27,6 +27,7 @@ class ContactsVC(ContactsVCBase):
     doneBut = objc_property()
     cancelBut = objc_property()
     selected = objc_property()
+    hax = objc_property()
 
     # preferred c'tor
     @objc_method
@@ -57,6 +58,7 @@ class ContactsVC(ContactsVCBase):
         self.pickSingle = True
         self.tabBarItem.image = UIImage.imageNamed_("tab_contacts_new.png")
         self.title = _("Contacts")
+        self.hax = False
 
         self.selected = []
         self.addBut = None
@@ -68,7 +70,7 @@ class ContactsVC(ContactsVCBase):
                 UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemCancel, self, SEL(b'onPickerCancel')).autorelease(),
             ]
             buts = [
-                UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onPickerPayTo')).autorelease(),
+                UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_chk"), UIBarButtonItemStyleDone, self, SEL(b'onPickerPayTo')).autorelease(),
                 UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_plus"), UIBarButtonItemStylePlain, self, SEL(b'onAddBut')).autorelease(),
             ]
             self.cancelBut = lbuts[0]
@@ -99,6 +101,7 @@ class ContactsVC(ContactsVCBase):
         self.doneBut = None
         self.addBut = None
         self.pickSingle = None
+        self.hax = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
@@ -166,9 +169,17 @@ class ContactsVC(ContactsVCBase):
                 ats = NSMutableAttributedString.alloc().initWithString_(c.address_str).autorelease()
                 r = NSRange(0, ats.length())
                 ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(16.0, UIFontWeightRegular), r)
-                ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('nav'), r)
-                ats.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleSingle, r)
+                enabledLink = self.mode == ModeNormal
+                if enabledLink:
+                    ats.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleSingle, r)
+                    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('nav'), r)
+                else:
+                    ats.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleNone, r)
+                    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('dark'), r)
                 cell.address.attributedText = ats
+                addrgrs = py_from_ns(cell.address.gestureRecognizers)
+                if addrgrs:
+                    addrgrs[0].setEnabled_(enabledLink)
                 self.setupAccessoryForCell_atIndex_(cell, indexPath.row)                    
         except Exception as e:
             utils.NSLog("exception in Contacts tableView_cellForRowAtIndexPath_: %s",str(e))
@@ -201,7 +212,7 @@ class ContactsVC(ContactsVCBase):
                 self.selected = self.updateSelectionButtons()
             else:
                 # force only 1 contact to be selected, clearing all others
-                self.selected = [contacts[indexPath.row].address_str]
+                self.selected = [contacts[indexPath.row].address_str] if not self.isIndexSelected_(indexPath.row) else []
                 self.selected = self.updateSelectionButtons()
                 self.tv.reloadData() # force redraw of all checkmarks
         else:
@@ -227,12 +238,43 @@ class ContactsVC(ContactsVCBase):
                 contacts = _Get()
                 self.needsRefresh = False
                 if len(contacts):
-                    tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
+                    if not self.hax:
+                        tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
                     self.selected = self.updateSelectionButtons()
                     self.blockRefresh = was
                 else:
                     self.blockRefresh = was
                     self.refresh()
+
+    @objc_method
+    def tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        ''' This method is called in iOS 11.0+ only .. so we only create this UISwipeActionsConfiguration ObjCClass
+            here rather than in uikit_bindings.py
+        '''
+        try:
+            row = int(indexPath.row) # save param outside objcinstance object and into python for 'handler' closure
+            section = int(indexPath.section)
+            def handler(a : objc_id, v : objc_id, c : objc_id) -> None:
+                result = False
+                try:
+                    ip = NSIndexPath.indexPathForRow_inSection_(row,section)
+                    self.hax = True
+                    self.tableView_commitEditingStyle_forRowAtIndexPath_(tv, UITableViewCellEditingStyleDelete, ip)
+                    self.hax = False
+                    result = True
+                except:
+                    traceback.print_exc(file=sys.stderr)
+                ObjCBlock(c)(bool(result)) # inform UIKit if we deleted it or not by calling the block handler callback
+            action = UIContextualAction.contextualActionWithStyle_title_handler_(UIContextualActionStyleDestructive,
+                                                                                 _("Remove"),
+                                                                                 Block(handler))
+            action.image = UIImage.imageNamed_("trashcan_red.png")
+            action.backgroundColor = utils.uicolor_custom('red')
+            return UISwipeActionsConfiguration.configurationWithActions_([action])
+        except:
+            utils.NSLog("ContactsTV.tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_, got exception: %s", str(sys.exc_info()[1]))
+            traceback.print_exc(file=sys.stderr)
+        return None
 
     ### end UITableView related methods
 
@@ -467,6 +509,7 @@ class NewContactVC(NewContactBase):
         if editContact:
             self.address.text = editContact.address_str
             self.name.text = editContact.name
+            self.blurb.font = UIFont.systemFontOfSize_weight_(20.0, UIFontWeightSemibold)
         
         self.okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onOk)
         self.cancelBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCancel)
@@ -507,11 +550,12 @@ class NewContactVC(NewContactBase):
     @objc_method
     def translateUI(self) -> None:
         if not self.viewIfLoaded: return
+        isnew = not utils.nspy_get_byname(self, 'edit_contact')
+        self.title = _("New Contact") if isnew else _("Edit Contact")
         self.blurb.text = _("Contacts are a convenient feature to associate addresses with user-friendly names. "
-                            "Contacts can be accessed when sending a payment via the 'Send' tab.")
+                            "Contacts can be accessed when sending a payment via the 'Send' tab.") if isnew else self.title
         self.addressTit.text = _("Address") + ':'
         self.nameTit.text = _("Name") + ':'
-        self.title = _("New Contact")
         self.name.placeholder = _("Name")
         self.address.placeholdeer = _("Address")
         self.okBut.setTitle_forState_(_("OK"), UIControlStateNormal)
@@ -546,6 +590,7 @@ def build_contact_tx_list(address : Address) -> list:
     ret = list()
     if isinstance(address, Address) and parent and parent.sigHistory:
         alltxs = parent.sigHistory.get(None)
+        seen = set() # 'seen' set.. guard against the same address appearing in both inputs and outputs
         for hentry in alltxs:
             if hentry.tx:
                 ins = hentry.tx.inputs()
@@ -553,16 +598,19 @@ def build_contact_tx_list(address : Address) -> list:
                     xa = x['address']
                     if isinstance(xa, PublicKey):
                         xa = xa.toAddress()
-                    if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string():
+                    if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string() and hentry.tx_hash not in seen:
                         ret.append(hentry.tx_hash)
+                        seen.add(hentry.tx_hash)
                         break
                 outs = hentry.tx.get_outputs()
                 for x in outs:
                     xa, dummy = x
-                    if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string():
+                    if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string() and hentry.tx_hash not in seen:
                         ret.append(hentry.tx_hash)
+                        seen.add(hentry.tx_hash)
                         break
     #print("build_contact_tx_list: address", address.to_ui_string(), "found", len(ret),"associated txs")
+    ret.reverse() # in reverse order from most recent to least recent
     return ret
 
 
