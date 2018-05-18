@@ -42,7 +42,7 @@ import time
 from electroncash.i18n import _
 
 
-bundle_identifier = NSBundle.mainBundle.bundleIdentifier
+bundle_identifier = str(NSBundle.mainBundle.bundleIdentifier)
 bundle_domain = '.'.join(bundle_identifier.split('.')[0:-1])
 bundle_short_name = bundle_domain + ".ElectronCash"
 
