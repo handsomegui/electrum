@@ -30,8 +30,14 @@ StatusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
 ]
 
 from . import txdetail
+from . import contacts
 
 def get_history(domain : list = None, statusImagesOverride : list = None, forceNoFX : bool = False) -> list:
+    # contacts entires store history entries within themselves.. so just return that
+    if isinstance(domain, contacts.ContactsEntry):
+        return contacts.build_contact_tx_list(domain.address) # force refresh of tx's from wallet
+        #return domain.hist_entries
+    
     ''' For a given set of addresses (or None for all addresses), builds a list of
         HistoryEntry '''
     t0 = time.time()
@@ -94,7 +100,8 @@ from typing import Any
 class HistoryMgr(utils.DataMgr):
     def doReloadForKey(self, key : Any) -> Any:
         hist = get_history(domain = key)
-        utils.NSLog("HistoryMgr refresh for domain: %s", str(key))
+        dstr = str(key) if not isinstance(key, contacts.ContactsEntry) else '[ContactsEntry: ' + key.address_str + ']'
+        utils.NSLog("HistoryMgr refresh for domain: %s", dstr[:80])
         return hist
 
 _tx_cell_height = 76.0 # TxHistoryCell height in points

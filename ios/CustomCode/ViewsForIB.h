@@ -292,4 +292,17 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UILabel *numTxs;
 @end
 
+@interface ContactDetailVCBase: UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *name;
+@property (nonatomic, weak) IBOutlet UIImageView *qr;
+@property (nonatomic, weak) IBOutlet UILabel *address;
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, weak) IBOutlet UIButton *payToBut;
+@property (nonatomic, weak) TxHistoryHelper *helper;
+@end
+
+// stub for python -- implemented in contacts.py
+@interface ContactDetailVC : ContactDetailVCBase
+- (IBAction) onPayTo;
+@end
 #endif /* ViewsForIB_h */

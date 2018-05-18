@@ -9,7 +9,9 @@ from .custom_objc import *
 from collections import namedtuple
 import time, sys, traceback
 
-ContactsEntry = namedtuple("ContactsEntry", "name address address_str tx_hashes")
+ContactsEntry = namedtuple("ContactsEntry", "name address address_str hist_entries")
+
+from . import history
 
 _CellIdentifier = "ContactsCell"  # New UI cell identifier
 
@@ -135,6 +137,16 @@ class ContactsVC(ContactsVCBase):
         gui.ElectrumGui.gui.sigContacts.connect(lambda:self.refresh(), self) 
         self.refresh()
 
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        presel = utils.nspy_get_byname(self, 'preselected') 
+        if presel:
+            utils.nspy_pop_byname(self, 'preselected')
+            self.selected = [presel]
+            self.selected = self.updateSelectionButtons()
+            self.tv.reloadData()
+
     #### UITableView delegate/dataSource methods...
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -165,7 +177,7 @@ class ContactsVC(ContactsVCBase):
                 cell.address.tag = indexPath.row # associate the tapped 'link' with this contact
                 c = contacts[indexPath.row]
                 cell.name.text = c.name
-                cell.numTxs.text = str(len(c.tx_hashes) if c.tx_hashes else 0) + " " + _('Transactions')
+                cell.numTxs.text = str(len(c.hist_entries) if c.hist_entries else 0) + " " + _('Transactions')
                 ats = NSMutableAttributedString.alloc().initWithString_(c.address_str).autorelease()
                 r = NSRange(0, ats.length())
                 ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(16.0, UIFontWeightRegular), r)
@@ -216,8 +228,11 @@ class ContactsVC(ContactsVCBase):
                 self.selected = self.updateSelectionButtons()
                 self.tv.reloadData() # force redraw of all checkmarks
         else:
-            # TODO: push new detail view controller on nav stack here...
-            pass
+            if self.navigationController:
+                # push new detail view controller on nav stack here...
+                vc = ContactDetailVC.new().autorelease()
+                _SetContact(vc, contacts[indexPath.row])
+                self.navigationController.pushViewController_animated_(vc, True)
 
     @objc_method
     def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
@@ -573,6 +588,48 @@ class NewContactVC(NewContactBase):
         if utils.is_landscape():
             self.topCS.constant = 0
 
+class ContactDetailVC(ContactDetailVCBase):
+    
+    @objc_method
+    def loadView(self) -> None:
+        NSBundle.mainBundle.loadNibNamed_owner_options_("ContactDetail", self, None)
+        
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        self.title = _("Contact Info")
+        
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        c = _Contact(self)
+        if c:
+            self.address.text = c.address_str
+            self.name.text = c.name
+            self.payToBut.text = _("Pay to")
+        if not self.helper:
+            self.helper = history.NewTxHistoryHelper(tv = self.tv, vc = self, noRefreshControl = True, cls = history.TxHistoryHelperWithHeader, domain = c) 
+        self.refresh()
+        
+    @objc_method
+    def refresh(self) -> None:
+        if not self.viewIfLoaded: return
+        
+        size = CGSizeMake(200.0,200.0) # the returned image has a 10 pix margin -- this compensates for it
+        self.qr.contentMode = UIViewContentModeCenter # if the image pix margin changes -- FIX THIS
+        self.qr.image = utils.get_qrcode_image_for_data(self.address.text, size = size)
+
+        self.tv.reloadData()
+        
+    @objc_method
+    def onPayTo(self) -> None:
+        pay_to([self.address.text])
+        
+def _Contact(slf : ObjCInstance) -> ContactsEntry:
+    return utils.nspy_get_byname(slf, 'contact_entry')
+
+def _SetContact(slf : ObjCInstance, entry : ContactsEntry) -> None:
+    utils.nspy_put_byname(slf, entry, 'contact_entry')
 
 class ContactsMgr(utils.DataMgr):
     def doReloadForKey(self, key) -> list:
@@ -599,18 +656,17 @@ def build_contact_tx_list(address : Address) -> list:
                     if isinstance(xa, PublicKey):
                         xa = xa.toAddress()
                     if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string() and hentry.tx_hash not in seen:
-                        ret.append(hentry.tx_hash)
+                        ret.append(hentry)
                         seen.add(hentry.tx_hash)
                         break
                 outs = hentry.tx.get_outputs()
                 for x in outs:
                     xa, dummy = x
                     if isinstance(xa, Address) and xa.to_storage_string() == address.to_storage_string() and hentry.tx_hash not in seen:
-                        ret.append(hentry.tx_hash)
+                        ret.append(hentry)
                         seen.add(hentry.tx_hash)
                         break
     #print("build_contact_tx_list: address", address.to_ui_string(), "found", len(ret),"associated txs")
-    ret.reverse() # in reverse order from most recent to least recent
     return ret
 
 
@@ -618,7 +674,7 @@ def get_contacts() -> list:
     ''' Builds a list of
         ContactsEntry tuples:
         
-        ContactsEntry = namedtuple("ContactsEntry", "name address address_str tx_hashes")
+        ContactsEntry = namedtuple("ContactsEntry", "name address address_str hist_entries")
 
         '''
     t0 = time.time()
@@ -633,8 +689,8 @@ def get_contacts() -> list:
         typ, name = tupl
         if typ == 'address' and Address.is_valid(addr):
             address = Address.from_string(addr)
-            tx_hashes = build_contact_tx_list(address)
-            entry = ContactsEntry(name, address, addr, tx_hashes)
+            hist_entries = build_contact_tx_list(address)
+            entry = ContactsEntry(name, address, addr, hist_entries)
             contacts.append(entry)    
     contacts.sort(key=lambda x: [x.name, x.address_str], reverse=False)
     utils.NSLog("get_contacts: fetched %d contacts in %f ms",len(contacts), (time.time()-t0)*1000.0)

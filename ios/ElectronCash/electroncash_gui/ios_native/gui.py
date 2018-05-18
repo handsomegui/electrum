@@ -1315,7 +1315,8 @@ class ElectrumGui(PrintError):
         if components & {'network', 'servers','connection', 'interfaces', *al} and self.sigNetwork not in signalled:
             signalled.add(self.sigNetwork)
             self.sigNetwork.emit()
-        if components & {'contact', 'contacts', *al} and self.sigContacts not in signalled:
+        # history implies contacts refresh because contacts contain HistoryEntries embedded in them.. so need to rebuild
+        if components & {'contact', 'contacts', 'history', *al} and self.sigContacts not in signalled:
             signalled.add(self.sigContacts)
             self.sigContacts.emit() # implicitly does an emptyCache() then emit()
 
@@ -1521,10 +1522,15 @@ class ElectrumGui(PrintError):
                     onOk = None
                     if callable(doneCallback):
                         onOk = doneCallback
-                    parent.show_message(message=_('Payment sent.') + '\n' + msg, onOk = onOk)
-                    #self.invoice_list.update()
-                    if self.sendVC:
-                        self.sendVC.clear()
+                    def myCallback() -> None:
+                        if onOk: onOk()
+                        #self.invoice_list.update()
+                        if self.sendVC and not self.sendVC.isBeingDismissed():
+                            self.sendVC.clear()
+                            self.sendVC.dismissOnAppear = True
+                            if self.sendVC.presentingViewController and not self.sendVC.presentedViewController and self.sendNav and self.sendNav.topViewController.ptr.value == self.sendVC.ptr.value:
+                                self.sendVC.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+                    parent.show_message(message=_('Payment sent.') + '\n' + msg, onOk = myCallback)
                 else:
                     parent.show_error(msg)
         def on_error(exc_info):

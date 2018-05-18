@@ -48,6 +48,7 @@ class SendVC(SendBase):
     notEnoughFunds = objc_property()
     excessiveFee = objc_property()
     timer = objc_property()
+    dismissOnAppear = objc_property()
     
     @objc_method
     def init(self):
@@ -61,6 +62,7 @@ class SendVC(SendBase):
         self.notEnoughFunds = False
         self.excessiveFee = False
         self.timer = None
+        self.dismissOnAppear = False
         
         self.navigationItem.leftItemsSupplementBackButton = True
                 
@@ -76,6 +78,7 @@ class SendVC(SendBase):
         self.notEnoughFunds = None
         self.qr = None
         self.qrvc = None
+        self.dismissOnAppear = None
         if self.timer: self.timer.invalidate()  # kill a timer if it hasn't fired yet
         self.timer = None
         self.excessiveFee = None
@@ -222,6 +225,10 @@ class SendVC(SendBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        
+        if self.dismissOnAppear and self.presentingViewController and not self.isBeingDismissed():
+            self.presentingViewController.dismissViewControllerAnimated_completion_(animated, None)
+            return
 
         # redo amount label if prefs changed
         lbl = self.amtTit
@@ -342,6 +349,8 @@ class SendVC(SendBase):
         vc = contacts.ContactsVC.alloc().initWithMode_(contacts.ModePicker).autorelease()                
         nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(vc).autorelease())
         utils.add_callback(vc, 'on_pay_to', onPayTo)
+        if self.payTo and self.payTo.text:
+            utils.nspy_put_byname(vc, self.payTo.text, 'preselected')
         self.presentViewController_animated_completion_(nav, True, None)
 
 

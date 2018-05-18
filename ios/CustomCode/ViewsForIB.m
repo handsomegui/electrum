@@ -235,3 +235,7 @@
 @implementation ContactsCell
 // auto synthesized properties
 @end
+
+@implementation ContactDetailVCBase
+// auto synthesized properties
+@end

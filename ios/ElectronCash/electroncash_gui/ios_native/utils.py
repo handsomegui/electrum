@@ -629,12 +629,15 @@ def present_qrcode_vc_for_data(vc : ObjCInstance, data : str, title : str = "QR 
     vc.presentViewController_animated_completion_(nav,True,None)
     return qvc
 
-def get_qrcode_image_for_data(data : str) -> ObjCInstance:
+def get_qrcode_image_for_data(data : str, size : CGSize = None) -> ObjCInstance:
     global _qr_cache
     if not isinstance(data, (str, bytes)):
         raise TypeError('argument to get_qrcode_for_data should be of type str or bytes!')
     if type(data) is bytes: data = data.decode('utf-8')
-    uiimage = _qr_cache.get(data)
+    defaultSize = CGSizeMake(256.0,256.0)
+    uiimage = None
+    if not size: size = defaultSize
+    uiimage = _qr_cache.get(data) if size == defaultSize else None
     if uiimage is None:
         qr = qrcode.QRCode(image_factory=qrcode.image.svg.SvgPathFillImage)
         qr.add_data(data)
@@ -648,11 +651,12 @@ def get_qrcode_image_for_data(data : str) -> ObjCInstance:
         os.remove(fname)
         uiimage = UIImage.imageWithSVGString_targetSize_fillColor_cachedName_(
             contents,
-            CGSizeMake(256,256),
+            size,
             UIColor.blackColor,
             None
         )
-        _qr_cache.put(data, uiimage)
+        if size == defaultSize:
+            _qr_cache.put(data, uiimage)
     return uiimage
 
 #########################################################################################
@@ -887,7 +891,13 @@ class PySig:
             if (key is not None and key == entry.key) or (func is not None and func == entry.func):
                 self.entries.pop(i)
                 return
-        NSLog("PySig disconnect: *** WARNING -- could not find '%s' in list of connections!",str(func_or_key))
+        name = "<Unknown NSObject>"
+        try:
+            name = str(func_or_key)
+        except:
+            print(str(sys.exc_info()[1]))
+        finally:
+            NSLog("PySig disconnect: *** WARNING -- could not find '%s' in list of connections!",name)
         
     def emit_common(self, require_sync : bool, *args) -> None:
         def doIt(entry, wasMainThread, *args) -> None:
