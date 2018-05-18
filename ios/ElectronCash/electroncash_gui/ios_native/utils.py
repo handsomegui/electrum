@@ -890,34 +890,38 @@ class PySig:
         NSLog("PySig disconnect: *** WARNING -- could not find '%s' in list of connections!",str(func_or_key))
         
     def emit_common(self, require_sync : bool, *args) -> None:
-        #isMainThread = NSThread.currentThread.isMainThread
-        def doIt(entry, *args) -> None:
-            sig = signature(entry.func)
-            # call slot...
-            # release iff NSObject..
+        def doIt(entry, wasMainThread, *args) -> None:
             try:
-                entry.func(*args[:len(sig.parameters)])
+                if not wasMainThread and (not self.entries or entry not in self.entries):
+                    # entry was removed from underneath us before callback ran!
+                    pass
+                else:
+                    sig = signature(entry.func)
+                    # call slot...
+                    entry.func(*args[:len(sig.parameters)])
             finally:
-                pass
-                #if not isMainThread and entry.is_ns:
+                #if not wasMainThread and entry.is_ns:
+                # release iff NSObject..
                 #    ObjCInstance(objc_id(entry.key)).release()
-                #    NSLog(" *** NSObject autorelease")
+                #    NSLog(" *** NSObject release")
+                pass
+        isMainThread = bool(NSThread.currentThread.isMainThread)
         # guard against slots requesting themselves to be removed while this loop is iterating
         entries = self.entries.copy()
-        # first, run through all entries that may be NSObjects and retain them
-        #for entry in entries:
-            # if it's an NSObject, retain it then release it in the embedded callback
-            #if not isMainThread and entry.is_ns:
-            #    NSLog(" *** NSObject retain")
-            #    ObjCInstance(objc_id(entry.key)).retain()
+        #if not isMainThread: # first, run through all entries that may be NSObjects and retain them
+            #for entry in entries: 
+                # if it's an NSObject, retain it then release it in the embedded callback
+                #if entry.is_ns:
+                #    NSLog(" *** NSObject retain")
+                #    ObjCInstance(objc_id(entry.key)).retain()
         # next, call the slots in the main thread, optionally releasing any nsobject retained above
         for entry in entries:
-            #if len(sig.parameters) > len(args):
-            #    raise ValueError('PySig: One of the slots requires more parameters than were passed-in to emit!')
-            if require_sync:
-                do_in_main_thread_sync(doIt, entry, *args)
+            if isMainThread:
+                doIt(entry, isMainThread, *args)
+            elif require_sync:
+                do_in_main_thread_sync(doIt, entry, isMainThread, *args)
             else:
-                do_in_main_thread(doIt, entry, *args)
+                do_in_main_thread(doIt, entry, isMainThread, *args)
     def emit(self, *args) -> None:
         self.emit_common(False, *args)
     def emit_sync(self, *args) -> None:

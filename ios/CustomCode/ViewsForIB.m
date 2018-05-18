@@ -69,14 +69,14 @@
     CGRect frame = self.drawer.frame, frameBottom = self.drawerBottom.frame;
     frame.size.height = 63.0;
     frameBottom.size.height = 0.0;
-    const BOOL doChevron = !self.chevron.animationImages.count;
+    const BOOL rotateChevron = !self.chevron.animationImages.count;
 
     if (animated && !isRotating) {
 
         isRotating = YES;
 
         [UIView animateWithDuration:0.2 delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
-            if (doChevron)
+            if (rotateChevron)
                 self.chevron.transform = CGAffineTransformIdentity;
             self.drawer.frame = frame;
             self.drawerHeight.constant = 63.0;
@@ -85,12 +85,16 @@
         } completion:^(BOOL finished) {
             isRotating = NO;
             self.isOpen = NO;
+            if (!rotateChevron)
+                self.chevron.image = self.chevron.animationImages.lastObject;
         }];
 
     } else {
         [self.chevron.layer removeAllAnimations];
-        if (doChevron)
+        if (rotateChevron)
             self.chevron.transform = CGAffineTransformIdentity;
+        else
+            self.chevron.image = self.chevron.animationImages.lastObject;
         self.drawer.frame = frame;
         self.drawerHeight.constant = 63.0;
         isRotating = NO;
@@ -105,14 +109,14 @@
     CGRect frame = self.drawer.frame, frameBottom = self.drawerBottom.frame;
     frame.size.height = 300.0;
     frameBottom.size.height = 237.0;
-    const BOOL doChevron = !self.chevron.animationImages.count;
+    const BOOL rotateChevron = !self.chevron.animationImages.count;
 
     if (animated && !isRotating) {
 
         isRotating = YES;
 
         [UIView animateWithDuration:0.2 delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
-            if (doChevron)
+            if (rotateChevron)
                 self.chevron.transform = CGAffineTransformMakeRotation(DEGREES_TO_RADIANS(179.9f));
             self.drawerHeight.constant = frame.size.height;
             self.drawer.frame = frame;
@@ -121,12 +125,16 @@
             isRotating = NO;
             self.isOpen = YES;
             self.drawerBottom.hidden = NO;
+            if (!rotateChevron)
+                self.chevron.image = self.chevron.animationImages.lastObject;
         }];
 
     } else {
         [self.chevron.layer removeAllAnimations];
-        if (doChevron)
+        if (rotateChevron)
             self.chevron.transform = CGAffineTransformMakeRotation(DEGREES_TO_RADIANS(179.9f));
+        else
+            self.chevron.image = self.chevron.animationImages.lastObject;
         self.drawerHeight.constant = frame.size.height;
         self.drawer.frame = frame;
         isRotating = NO;

@@ -90,6 +90,8 @@ class WalletsVC(WalletsVCBase):
         if self.lineHider:
             self.lineHider.removeFromSuperview()
             self.lineHider = None
+        if self.drawerHelper.isOpen:
+            self.drawerHelper.closeAnimated_(True)
 
     @objc_method
     def viewLayoutMarginsDidChange(self) -> None:
@@ -314,8 +316,6 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
             self.chevron.startAnimating()
         else:
             self.chevron.stopAnimating()
-        self.chevron.image = VChevronImages[-1]
-        #self.isOpen = True
         send_super(__class__, self, 'openAnimated:', animated, argtypes=[c_bool])
 
     # overrides base
@@ -328,6 +328,4 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
             self.chevron.startAnimating()
         else:
             self.chevron.stopAnimating()
-        self.chevron.image = VChevronImages[0]
-        #self.isOpen = False
         send_super(__class__, self, 'closeAnimated:', animated, argtypes=[c_bool])

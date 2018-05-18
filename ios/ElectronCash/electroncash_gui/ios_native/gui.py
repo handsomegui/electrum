@@ -1320,9 +1320,9 @@ class ElectrumGui(PrintError):
             self.sigContacts.emit() # implicitly does an emptyCache() then emit()
 
     def empty_caches(self, doEmit = False):
-        self.sigHistory.emptyCache(not doEmit)
-        self.sigRequests.emptyCache(not doEmit)
-        self.sigContacts.emptyCache(not doEmit)
+        self.sigHistory.emptyCache(noEmit=not doEmit)
+        self.sigRequests.emptyCache(noEmit=not doEmit)
+        self.sigContacts.emptyCache(noEmit=not doEmit)
         
 
     def on_new_daemon(self):
@@ -1341,7 +1341,7 @@ class ElectrumGui(PrintError):
     def stop_daemon(self):
         if not self.daemon_is_running(): return
         self.unregister_network_callbacks()
-        self.empty_caches()
+        self.empty_caches(doEmit=False)
         if self.wallet and self.wallet.storage:
             self.daemon.stop_wallet(self.wallet.storage.path)
         self.daemon.stop()
