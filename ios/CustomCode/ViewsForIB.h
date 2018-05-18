@@ -56,17 +56,22 @@
 @end
 
 @interface NewContactBase : UIViewController
-@property (nonatomic, weak) IBOutlet UILabel *blurb;
+@property (nonatomic, weak) IBOutlet UIBarButtonItem *okBut;
 @property (nonatomic, weak) IBOutlet UILabel *nameTit;
 @property (nonatomic, weak) IBOutlet UITextField *name;
 @property (nonatomic, weak) IBOutlet UILabel *addressTit;
 @property (nonatomic, weak) IBOutlet UITextField *address;
 @property (nonatomic, weak) IBOutlet UIButton *qrBut;
-@property (nonatomic, weak) IBOutlet UIButton *okBut;
-@property (nonatomic, weak) IBOutlet UIButton *cancelBut;
 @property (nonatomic, weak) IBOutlet UIButton *cpyAddressBut;
 @property (nonatomic, weak) IBOutlet UIButton *cpyNameBut;
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS;
+@end
+
+// stub for Python -- implemented in contacts.py
+@interface NewContactVC : NewContactBase
+-(IBAction) onQR;
+-(IBAction) onOk;
+-(IBAction) onCancel;
+-(IBAction) onCpy:(id)sender;
 @end
 
 // dummy stub for Interface Builder -- actual implementation is in python in amountedit.py

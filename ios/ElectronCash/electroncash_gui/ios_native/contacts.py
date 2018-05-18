@@ -413,7 +413,8 @@ class ContactsVC(ContactsVCBase):
 
     @objc_method
     def showNewEditForm_(self, index : int) -> None:
-        vc = NewContactVC.new().autorelease()
+        nav = NSBundle.mainBundle.loadNibNamed_owner_options_("NewContact", None, None)[0]
+        vc = nav.viewControllers[0]
         if index > -1:
             contacts = _Get()
             if contacts and index < len(contacts):
@@ -422,13 +423,13 @@ class ContactsVC(ContactsVCBase):
         def onOk(entry : ContactsEntry) -> None:
             #print ("parent onOK called...")
             if entry is not None:
-                oldEntry = utils.nspy_get_byname(vc, 'edit_contact')
+                oldEntry = utils.nspy_get_byname(vc, 'old_contact')
                 if oldEntry:
                     delete_contact(oldEntry, False)
                 add_contact(entry)
                 _Updated()
         utils.add_callback(vc, 'on_ok', onOk)
-        self.presentViewController_animated_completion_(vc, True, None)
+        self.presentViewController_animated_completion_(nav, True, None)
         
             
     @objc_method
@@ -441,96 +442,77 @@ class NewContactVC(NewContactBase):
     
     qr = objc_property()
     qrvc = objc_property()
-    topCSOrig = objc_property()
-    
-    @objc_method
-    def init(self) -> ObjCInstance:
-        self = ObjCInstance(send_super(__class__, self, 'init'))
-        if self:
-            self.title = _("New Contact")
-            self.modalPresentationStyle = UIModalPresentationOverFullScreen
-            self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
-        return self
-    
+    editMode = objc_property()
+        
     @objc_method
     def dealloc(self) -> None:
         self.qrvc = None
         self.qr = None
-        self.topCSOrig = None
+        self.editMode = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         print("NewContactVC dealloc")
         send_super(__class__, self, 'dealloc')
     
     @objc_method
-    def loadView(self) -> None:
-        NSBundle.mainBundle.loadNibNamed_owner_options_("NewContact",self,None)
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')        
+        
+    @objc_method
+    def onOk(self) -> None:
+        #print("On OK...")
+        address_str = cleanup_address_remove_colon(self.address.text)
+        name = self.name.text
+        if not Address.is_valid(address_str):
+            gui.ElectrumGui.gui.show_error(_("Invalid Address"))
+            return
+        if not name:
+            gui.ElectrumGui.gui.show_error(_("Name is empty"))
+            return                
+        def doCB() -> None:
+            cb = utils.get_callback(self, 'on_ok')
+            if callable(cb):
+                entry = None
+                if name and address_str and Address.is_valid(address_str):
+                    address = Address.from_string(address_str)
+                    entry = ContactsEntry(name, address, address_str, build_contact_tx_list(address))
+                cb(entry)
+            self.autorelease()
+        self.retain()
+        self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
 
     @objc_method
-    def viewDidLoad(self) -> None:
-        send_super(__class__, self, 'viewDidLoad')
+    def onCancel(self) -> None:
+        #print("On Cancel...")
+        def doCB() -> None:
+            cb = utils.get_callback(self, 'on_cancel')
+            if callable(cb): cb()
+            self.autorelease()
+        self.retain()
+        self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
 
-        def onOk(bid : objc_id) -> None:
-            #print("On OK...")
-            address_str = cleanup_address_remove_colon(self.address.text)
-            name = self.name.text
-            if not Address.is_valid(address_str):
-                gui.ElectrumGui.gui.show_error(_("Invalid Address"))
-                return
-            if not name:
-                gui.ElectrumGui.gui.show_error(_("Name is empty"))
-                return                
-            def doCB() -> None:
-                cb = utils.get_callback(self, 'on_ok')
-                if callable(cb):
-                    entry = None
-                    if name and address_str and Address.is_valid(address_str):
-                        address = Address.from_string(address_str)
-                        entry = ContactsEntry(name, address, address_str, build_contact_tx_list(address))
-                    cb(entry)
-                self.autorelease()
-            self.retain()
-            self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
-        def onCancel(bid : objc_id) -> None:
-            #print("On Cancel...")
-            def doCB() -> None:
-                cb = utils.get_callback(self, 'on_cancel')
-                if callable(cb): cb()
-                self.autorelease()
-            self.retain()
-            self.presentingViewController.dismissViewControllerAnimated_completion_(True, doCB)
-        def onQR(bid : objc_id) -> None:
-            #print("On QR...")
-            if not QRCodeReader.isAvailable:
-                utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
-            else:
-                self.qr = QRCodeReader.new().autorelease()
-                self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
-                self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
-                self.qrvc.delegate = self
-                self.presentViewController_animated_completion_(self.qrvc, True, None)
-        def onCpy(bid : objc_id) -> None:
-            try:
-                datum = str(self.name.text) if bid.value == self.cpyNameBut.ptr.value else str(self.address.text)
-                UIPasteboard.generalPasteboard.string = datum
-                print ("copied to clipboard =", datum)
-                utils.show_notification(message=_("Text copied to clipboard"))
-            except:
-                import sys
-                utils.NSLog("Exception during NewContactVC 'onCpy': %s",str(sys.exc_info()[1]))
+    @objc_method
+    def onQR(self) -> None:
+        #print("On QR...")
+        if not QRCodeReader.isAvailable:
+            utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
+        else:
+            self.qr = QRCodeReader.new().autorelease()
+            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
+            self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
+            self.qrvc.delegate = self
+            self.presentViewController_animated_completion_(self.qrvc, True, None)
 
-        
-        editContact = utils.nspy_get_byname(self, 'edit_contact')
-        if editContact:
-            self.address.text = editContact.address_str
-            self.name.text = editContact.name
-            self.blurb.font = UIFont.systemFontOfSize_weight_(20.0, UIFontWeightSemibold)
-        
-        self.okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onOk)
-        self.cancelBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCancel)
-        self.qrBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)
-        self.cpyNameBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy)
-        self.cpyAddressBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy)
+    @objc_method
+    def onCpy_(self, sender) -> None:
+        try:
+            datum = str(self.name.text) if sender.ptr.value == self.cpyNameBut.ptr.value else str(self.address.text)
+            UIPasteboard.generalPasteboard.string = datum
+            print ("copied to clipboard =", datum)
+            utils.show_notification(message=_("Text copied to clipboard"))
+        except:
+            import sys
+            utils.NSLog("Exception during NewContactVC 'onCpy_': %s",str(sys.exc_info()[1]))
 
     @objc_method
     def reader_didScanResult_(self, reader, result) -> None:
@@ -560,33 +542,68 @@ class NewContactVC(NewContactBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        editContact = utils.nspy_get_byname(self, 'edit_contact')
+        if editContact:
+            self.editMode = True
+            utils.nspy_pop_byname(self, 'edit_contact')
+            utils.nspy_put_byname(self, editContact, 'old_contact')
+            self.address.text = editContact.address_str
+            self.name.text = editContact.name
+
         self.translateUI()
         
     @objc_method
     def translateUI(self) -> None:
         if not self.viewIfLoaded: return
-        isnew = not utils.nspy_get_byname(self, 'edit_contact')
-        self.title = _("New Contact") if isnew else _("Edit Contact")
-        self.blurb.text = _("Contacts are a convenient feature to associate addresses with user-friendly names. "
-                            "Contacts can be accessed when sending a payment via the 'Send' tab.") if isnew else self.title
-        self.addressTit.text = _("Address") + ':'
-        self.nameTit.text = _("Name") + ':'
-        self.name.placeholder = _("Name")
-        self.address.placeholdeer = _("Address")
-        self.okBut.setTitle_forState_(_("OK"), UIControlStateNormal)
-        self.cancelBut.setTitle_forState_(_("Cancel"), UIControlStateNormal)
+        self.title = _("New Contact") if not self.editMode else _("Edit Contact")
+        #self.blurb.text = _("Contacts are a convenient feature to associate addresses with user-friendly names. "
+        #                    "Contacts can be accessed when sending a payment via the 'Send' tab.") if not self.editMode else self.title
+        self.addressTit.text = _("Address") 
+        self.nameTit.text = _("Name") 
+        self.name.placeholder = _("Satoshi Nakamoto")
+        self.address.placeholdeer = _("Paste an address or use QR")
+        
+        tfwts = { self.name : 0, self.address : 1 }
+        for tf in tfwts:
+            tf.tag = tfwts[tf]
+            redoTfAttrs(tf) #this hackily reads tag for the font weight
 
     @objc_method
     def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
-        if self.topCSOrig is not None:
-            self.topCS.constant = self.topCSOrig
+        redoTfAttrs(tf)
 
     @objc_method
     def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
-        if self.topCSOrig is None:
-            self.topCSOrig = self.topCS.constant
-        if utils.is_landscape():
-            self.topCS.constant = 0
+        pass
+    
+    @objc_method
+    def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
+        tf.resignFirstResponder()
+        return True
+
+def redoTfAttrs(tf : ObjCInstance) -> None:
+    weight = UIFontWeightBold if tf.tag == 1 else UIFontWeightRegular
+    # TESTING ATTRIBUTED STRING STUFF..
+    # 1. Placeholder
+    ats = NSMutableAttributedString.alloc().initWithString_(tf.placeholder).autorelease()
+    r = NSRange(0,ats.length())
+    ats.addAttribute_value_range_(NSFontAttributeName, UIFont.italicSystemFontOfSize_(14.0), r)
+    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('light'), r)
+    ps = NSMutableParagraphStyle.new().autorelease()
+    ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
+    ps.lineBreakMode = NSLineBreakByTruncatingMiddle
+    ps.firstLineHeadIndent = 10.0
+    ps.tailIndent = -10.0
+    ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+    tf.attributedPlaceholder = ats
+    # 2. Actual text
+    ats = NSMutableAttributedString.alloc().initWithString_(tf.text)
+    r = NSRange(0,ats.length())
+    ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(14.0, weight), r)
+    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('dark'), r)
+    ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+    tf.attributedText = ats
+
 
 class ContactDetailVC(ContactDetailVCBase):
     

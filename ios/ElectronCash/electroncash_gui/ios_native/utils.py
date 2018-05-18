@@ -93,11 +93,12 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
 
 # new color schem from Max
 _ColorScheme = {
-    'dark' : UIColor.colorInDeviceRGBWithHexString_("#414141").retain(), 
-    'light': UIColor.colorInDeviceRGBWithHexString_("#CCCCCC").retain(),
-    'nav'  : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
-    'navtint' : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
-    'red'  : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
+    'dark'      : UIColor.colorInDeviceRGBWithHexString_("#414141").retain(), 
+    'light'     : UIColor.colorInDeviceRGBWithHexString_("#CCCCCC").retain(),
+    'ultralight': UIColor.colorInDeviceRGBWithHexString_("#F6F6F6").retain(),
+    'nav'       : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
+    'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
+    'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
 }
     
 def uicolor_custom(name : str) -> ObjCInstance:
