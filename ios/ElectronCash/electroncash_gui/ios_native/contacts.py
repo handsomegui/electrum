@@ -682,7 +682,7 @@ def get_contacts() -> list:
     wallet = parent.wallet
     if wallet is None:
         utils.NSLog("get_contacts: wallent was None, returning early")
-        return None
+        return list()
     c = wallet.contacts
     contacts = list()
     for addr,tupl in c.items():

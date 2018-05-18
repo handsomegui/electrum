@@ -47,7 +47,7 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
     daemon = parent.daemon
     if wallet is None or daemon is None:
         utils.NSLog("get_history: wallent and/or daemon was None, returning early")
-        return None
+        return list()
     h = wallet.get_history(domain)
     fx = daemon.fx if daemon.fx and daemon.fx.show_history() else None
     history = list()

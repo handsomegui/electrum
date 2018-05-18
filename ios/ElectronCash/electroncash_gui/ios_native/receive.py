@@ -434,7 +434,7 @@ class RequestsMgr(utils.DataMgr):
     def doReloadForKey(self, ignored):
         wallet = parent().wallet
         daemon = parent().daemon
-        if not wallet: return # wallet not open for whatever reason (can happen due to app backgrounding)
+        if not wallet: return list() # wallet not open for whatever reason (can happen due to app backgrounding)
         
         domain = wallet.get_addresses()
 
@@ -516,13 +516,14 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
         reqs = _GetReqs()
-        if not reqs: return None
         identifier = "RequestListCell"
         if not self.didReg.containsObject_(tv.ptr.value):
             nib = UINib.nibWithNibName_bundle_(identifier, None)
             tv.registerNib_forCellReuseIdentifier_(nib, identifier)
             self.didReg.addObject_(tv.ptr.value)
-        assert indexPath.row >= 0 and indexPath.row < len(reqs)
+        if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
+            # this sometimes happens on app re-foregrounding.. so guard against it
+            return UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "Cell").autorelease()
         cell = tv.dequeueReusableCellWithIdentifier_(identifier)
         #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
         item = reqs[indexPath.row]
@@ -595,12 +596,12 @@ class ReqTVDTiny(ReqTVD):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
         reqs = _GetReqs()
-        if not reqs: return None
-        assert indexPath.row >= 0 and indexPath.row < len(reqs)
         identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
         cell = tv.dequeueReusableCellWithIdentifier_(identifier)
         if cell is None:
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()        
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+        if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
+            return cell # can sometimes happen on app re-foregrounding
         item = reqs[indexPath.row]
         #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
         cell.textLabel.text = ((item.dateStr + " - ") if item.dateStr else "") + (item.message if item.message else "")
