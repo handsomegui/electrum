@@ -457,17 +457,18 @@ class NewContactVC(NewContactBase):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')        
+
         
     @objc_method
     def onOk(self) -> None:
         #print("On OK...")
         address_str = cleanup_address_remove_colon(self.address.text)
-        name = self.name.text
+        name = str(self.name.text).strip()
         if not Address.is_valid(address_str):
-            gui.ElectrumGui.gui.show_error(_("Invalid Address"))
+            gui.ElectrumGui.gui.show_error(_("Invalid Address"), title=self.title)
             return
         if not name:
-            gui.ElectrumGui.gui.show_error(_("Name is empty"))
+            gui.ElectrumGui.gui.show_error(_("Name is empty"), title=self.title)
             return                
         def doCB() -> None:
             cb = utils.get_callback(self, 'on_ok')

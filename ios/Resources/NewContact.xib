@@ -29,8 +29,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="603"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Address" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Vpr-8E-Q63">
-                                <rect key="frame" x="15" y="32" width="252" height="18"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Name" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Vpr-8E-Q63">
+                                <rect key="frame" x="15" y="32" width="256" height="18"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="18" id="7kI-W3-wa8"/>
                                 </constraints>
@@ -38,8 +38,8 @@
                                 <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Name" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jra-sW-lxd">
-                                <rect key="frame" x="15" y="126" width="303" height="18"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Address" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jra-sW-lxd">
+                                <rect key="frame" x="15" y="126" width="260" height="18"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="18" id="uwC-l9-7r8"/>
                                 </constraints>
@@ -47,14 +47,14 @@
                                 <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="Paste an address or use QR" adjustsFontSizeToFit="NO" minimumFontSize="13" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="XJM-gy-2uZ">
+                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="Satoshi Nakamoto" adjustsFontSizeToFit="NO" minimumFontSize="13" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="XJM-gy-2uZ">
                                 <rect key="frame" x="15" y="55" width="345" height="38"/>
                                 <color key="backgroundColor" red="0.96470588235294119" green="0.96470588235294119" blue="0.96470588235294119" alpha="1" colorSpace="deviceRGB"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="38" id="syq-xE-rlE"/>
                                 </constraints>
                                 <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
-                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="14"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartInsertDeleteType="no" smartQuotesType="no"/>
                                 <userDefinedRuntimeAttributes>
                                     <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
@@ -65,11 +65,11 @@
                                     <outlet property="delegate" destination="D4K-cs-S0R" id="ZbF-DN-dPN"/>
                                 </connections>
                             </textField>
-                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="John Doe" minimumFontSize="12" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="H2D-r0-UJd">
+                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="Paste an address or use QR" minimumFontSize="12" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="H2D-r0-UJd">
                                 <rect key="frame" x="15" y="149" width="345" height="38"/>
                                 <color key="backgroundColor" red="0.96470588239999999" green="0.96470588239999999" blue="0.96470588239999999" alpha="1" colorSpace="deviceRGB"/>
                                 <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartInsertDeleteType="no" smartQuotesType="no"/>
                                 <userDefinedRuntimeAttributes>
                                     <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
@@ -80,19 +80,8 @@
                                     <outlet property="delegate" destination="D4K-cs-S0R" id="auF-Uj-OfB"/>
                                 </connections>
                             </textField>
-                            <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="b2v-gQ-f3n">
-                                <rect key="frame" x="337" y="24" width="23" height="23"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="23" id="nNq-83-HWp"/>
-                                    <constraint firstAttribute="width" constant="23" id="vao-v4-Ywj"/>
-                                </constraints>
-                                <state key="normal" image="qrcode_new_framed.png"/>
-                                <connections>
-                                    <action selector="onQR" destination="D4K-cs-S0R" eventType="primaryActionTriggered" id="IY1-Qb-tkd"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ExN-RF-zJl" userLabel="Copy Address Button">
-                                <rect key="frame" x="295" y="24" width="18" height="22"/>
+                            <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ExN-RF-zJl" userLabel="Copy Name Button">
+                                <rect key="frame" x="299" y="24" width="18" height="22"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="22" id="Vgb-ag-GOo"/>
                                     <constraint firstAttribute="width" constant="18" id="y0z-Hp-QWg"/>
@@ -102,8 +91,8 @@
                                     <action selector="onCpy:" destination="D4K-cs-S0R" eventType="primaryActionTriggered" id="JvC-ke-3CJ"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="o9P-eo-pwD" userLabel="Copy Name Button">
-                                <rect key="frame" x="342" y="119" width="18" height="22"/>
+                            <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="o9P-eo-pwD" userLabel="Copy Address Button">
+                                <rect key="frame" x="299" y="119" width="18" height="22"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="18" id="C8J-gh-Hyv"/>
                                     <constraint firstAttribute="height" constant="22" id="CE2-wu-c1J"/>
@@ -113,27 +102,38 @@
                                     <action selector="onCpy:" destination="D4K-cs-S0R" eventType="primaryActionTriggered" id="hrp-fl-11m"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="b2v-gQ-f3n">
+                                <rect key="frame" x="337" y="118" width="23" height="23"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="23" id="nNq-83-HWp"/>
+                                    <constraint firstAttribute="width" constant="23" id="vao-v4-Ywj"/>
+                                </constraints>
+                                <state key="normal" image="qrcode_new_framed.png"/>
+                                <connections>
+                                    <action selector="onQR" destination="D4K-cs-S0R" eventType="primaryActionTriggered" id="IY1-Qb-tkd"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="o9P-eo-pwD" firstAttribute="leading" secondItem="jra-sW-lxd" secondAttribute="trailing" constant="24" id="05A-wF-q1p"/>
                             <constraint firstItem="H2D-r0-UJd" firstAttribute="top" secondItem="jra-sW-lxd" secondAttribute="bottom" constant="5" id="A7I-kT-aA8"/>
-                            <constraint firstItem="b2v-gQ-f3n" firstAttribute="leading" secondItem="ExN-RF-zJl" secondAttribute="trailing" constant="24" id="BTU-vB-Gka"/>
                             <constraint firstItem="H2D-r0-UJd" firstAttribute="height" secondItem="XJM-gy-2uZ" secondAttribute="height" id="D4F-7T-7Fp"/>
                             <constraint firstItem="jra-sW-lxd" firstAttribute="top" secondItem="XJM-gy-2uZ" secondAttribute="bottom" constant="33" id="GGb-mY-w28"/>
                             <constraint firstItem="b2v-gQ-f3n" firstAttribute="trailing" secondItem="XJM-gy-2uZ" secondAttribute="trailing" id="IN2-kh-zBq"/>
-                            <constraint firstItem="b2v-gQ-f3n" firstAttribute="top" secondItem="FBv-m5-Km7" secondAttribute="top" constant="24" id="KLp-GK-PtX"/>
                             <constraint firstItem="FBv-m5-Km7" firstAttribute="trailing" secondItem="b2v-gQ-f3n" secondAttribute="trailing" constant="15" id="Rzp-Mr-YTC"/>
                             <constraint firstItem="H2D-r0-UJd" firstAttribute="leading" secondItem="jra-sW-lxd" secondAttribute="leading" id="TJN-W0-SNN"/>
                             <constraint firstItem="o9P-eo-pwD" firstAttribute="top" secondItem="XJM-gy-2uZ" secondAttribute="bottom" constant="26" id="YlW-LR-NPp"/>
                             <constraint firstItem="Vpr-8E-Q63" firstAttribute="leading" secondItem="FBv-m5-Km7" secondAttribute="leading" constant="15" id="aRh-Lt-uXf"/>
                             <constraint firstItem="XJM-gy-2uZ" firstAttribute="top" secondItem="Vpr-8E-Q63" secondAttribute="bottom" constant="5" id="cBs-hl-gYZ"/>
-                            <constraint firstItem="o9P-eo-pwD" firstAttribute="trailing" secondItem="XJM-gy-2uZ" secondAttribute="trailing" id="dGJ-Gh-Q01"/>
                             <constraint firstItem="ExN-RF-zJl" firstAttribute="top" secondItem="FBv-m5-Km7" secondAttribute="top" constant="24" id="epo-xR-ajE"/>
                             <constraint firstItem="XJM-gy-2uZ" firstAttribute="leading" secondItem="Vpr-8E-Q63" secondAttribute="leading" id="kpl-nM-3eN"/>
+                            <constraint firstItem="o9P-eo-pwD" firstAttribute="centerX" secondItem="ExN-RF-zJl" secondAttribute="centerX" id="mfW-iD-uLa"/>
                             <constraint firstItem="H2D-r0-UJd" firstAttribute="trailing" secondItem="XJM-gy-2uZ" secondAttribute="trailing" id="pj0-kE-sGD"/>
                             <constraint firstItem="ExN-RF-zJl" firstAttribute="leading" secondItem="Vpr-8E-Q63" secondAttribute="trailing" constant="28" id="qNA-0k-xug"/>
+                            <constraint firstItem="b2v-gQ-f3n" firstAttribute="leading" secondItem="o9P-eo-pwD" secondAttribute="trailing" constant="20" id="qm5-uR-wi4"/>
                             <constraint firstItem="H2D-r0-UJd" firstAttribute="leading" secondItem="XJM-gy-2uZ" secondAttribute="leading" id="tkL-QQ-d1s"/>
+                            <constraint firstItem="b2v-gQ-f3n" firstAttribute="bottom" secondItem="o9P-eo-pwD" secondAttribute="bottom" id="vW4-xK-S4s"/>
                             <constraint firstItem="Vpr-8E-Q63" firstAttribute="top" secondItem="FBv-m5-Km7" secondAttribute="top" constant="32" id="vWD-FF-Ejv"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="FBv-m5-Km7"/>
@@ -151,12 +151,12 @@
                         </barButtonItem>
                     </navigationItem>
                     <connections>
-                        <outlet property="address" destination="XJM-gy-2uZ" id="ehJ-CR-4RL"/>
-                        <outlet property="addressTit" destination="Vpr-8E-Q63" id="oaF-Kx-8yL"/>
-                        <outlet property="cpyAddressBut" destination="ExN-RF-zJl" id="Bvc-4b-OuB"/>
-                        <outlet property="cpyNameBut" destination="o9P-eo-pwD" id="7JR-2f-KRo"/>
-                        <outlet property="name" destination="H2D-r0-UJd" id="n7l-B0-zxx"/>
-                        <outlet property="nameTit" destination="jra-sW-lxd" id="GxS-KA-I9y"/>
+                        <outlet property="address" destination="H2D-r0-UJd" id="hXl-Ok-Nm2"/>
+                        <outlet property="addressTit" destination="jra-sW-lxd" id="ntT-qO-JBV"/>
+                        <outlet property="cpyAddressBut" destination="o9P-eo-pwD" id="J3R-BC-TZK"/>
+                        <outlet property="cpyNameBut" destination="ExN-RF-zJl" id="P5i-hq-bGE"/>
+                        <outlet property="name" destination="XJM-gy-2uZ" id="Ybn-Di-XpE"/>
+                        <outlet property="nameTit" destination="Vpr-8E-Q63" id="cbl-lj-UHp"/>
                         <outlet property="okBut" destination="qDY-nD-0ss" id="8R9-yq-Pgb"/>
                         <outlet property="qrBut" destination="b2v-gQ-f3n" id="O2D-TS-at3"/>
                     </connections>
