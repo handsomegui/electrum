@@ -375,7 +375,9 @@ class ContactsVC(ContactsVCBase):
 
     @objc_method
     def onTapEdit_(self, gr : ObjCInstance) -> None:
-        self.showNewEditForm_(int(gr.view.tag))
+        view = gr.view if isinstance(gr, UIGestureRecognizer) else self.view
+        contact = _Get()[gr.view.tag]
+        show_contact_options_actionsheet(contact, self, view)
 
     @objc_method
     def updateSelectionButtons(self) -> ObjCInstance:
@@ -413,23 +415,12 @@ class ContactsVC(ContactsVCBase):
 
     @objc_method
     def showNewEditForm_(self, index : int) -> None:
-        nav = NSBundle.mainBundle.loadNibNamed_owner_options_("NewContact", None, None)[0]
-        vc = nav.viewControllers[0]
+        contact = None
         if index > -1:
             contacts = _Get()
             if contacts and index < len(contacts):
-                utils.nspy_put_byname(vc, contacts[index], 'edit_contact')
-
-        def onOk(entry : ContactsEntry) -> None:
-            #print ("parent onOK called...")
-            if entry is not None:
-                oldEntry = utils.nspy_get_byname(vc, 'old_contact')
-                if oldEntry:
-                    delete_contact(oldEntry, False)
-                add_contact(entry)
-                _Updated()
-        utils.add_callback(vc, 'on_ok', onOk)
-        self.presentViewController_animated_completion_(nav, True, None)
+                contact = contacts[index]
+        show_new_edit_contact(contact, self)
         
             
     @objc_method
@@ -616,22 +607,25 @@ class ContactDetailVC(ContactDetailVCBase):
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         self.title = _("Contact Info")
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_options"), UIBarButtonItemStylePlain, self, SEL(b'onOptions')).autorelease()
+        self.payToBut.text = _("Pay to")
+
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
-        c = _Contact(self)
-        if c:
-            self.address.text = c.address_str
-            self.name.text = c.name
-            self.payToBut.text = _("Pay to")
-        if not self.helper:
-            self.helper = history.NewTxHistoryHelper(tv = self.tv, vc = self, noRefreshControl = True, cls = history.TxHistoryHelperWithHeader, domain = c) 
         self.refresh()
         
     @objc_method
     def refresh(self) -> None:
         if not self.viewIfLoaded: return
+
+        c = _Contact(self)
+        if c:
+            self.address.text = c.address_str
+            self.name.text = c.name
+            if not self.helper:
+                self.helper = history.NewTxHistoryHelper(tv = self.tv, vc = self, noRefreshControl = True, cls = history.TxHistoryHelperWithHeader, domain = c) 
         
         size = CGSizeMake(200.0,200.0) # the returned image has a 10 pix margin -- this compensates for it
         self.qr.contentMode = UIViewContentModeCenter # if the image pix margin changes -- FIX THIS
@@ -642,6 +636,28 @@ class ContactDetailVC(ContactDetailVCBase):
     @objc_method
     def onPayTo(self) -> None:
         pay_to([self.address.text])
+        
+    @objc_method
+    def onOptions(self) -> None:
+        def onEdit(contact : ContactsEntry) -> None:
+            old = _Contact(self)
+            _SetContact(self, contact)
+            if old.address_str != contact.address_str:
+                '''
+                Contact domain changed (user changed the address). The below self.helper = None will
+                force a re-create of tx history helper for the new contact domain in the refresh() call that follows.
+                Note this means that the old txHistoryHelper will become an inert 'zombie' that does nothing and will live for a time
+                (since the helpers are objc associateed objects with the UITableView, and live until it is dealloc'd).
+                The idle zombies will get dealloc'd when self.tv finally dies (after this VC is popped off stack and autoreleased).
+                While I normally hate zombie data living in memory that is useless,considering it will be cleaned up soon and how
+                little memory it takes up, how it's a corner case, and how otherwise ephemeral this screen is and how much it
+                reduces code complexity to do it this way, it's an ok compromise here.  -Calin May '18
+                '''
+                if self.helper:
+                    self.helper.tv = None # NB: this relies on Helper being ok with NULL self.tv, which is is
+                    self.helper = None 
+            self.refresh()
+        show_contact_options_actionsheet(_Contact(self), self, self.address, navBackOnDelete = True, onEdit = onEdit)
         
 def _Contact(slf : ObjCInstance) -> ContactsEntry:
     return utils.nspy_get_byname(slf, 'contact_entry')
@@ -787,3 +803,71 @@ def pay_to(addys : list) -> bool:
         return False
     gui.ElectrumGui.gui.jump_to_send_with_pay_to(addys[0])
     return True
+
+def show_new_edit_contact(contact, parentvc, onEdit = None) -> ObjCInstance:
+    nav = NSBundle.mainBundle.loadNibNamed_owner_options_("NewContact", None, None)[0]
+    vc = nav.viewControllers[0]
+    if contact:
+        utils.nspy_put_byname(vc, contact, 'edit_contact')
+
+    def onOk(entry : ContactsEntry) -> None:
+        #print ("parent onOK called...")
+        if entry is not None:
+            oldEntry = utils.nspy_get_byname(vc, 'old_contact')
+            if oldEntry:
+                delete_contact(oldEntry, False)
+            add_contact(entry)
+            _Updated()
+            if callable(onEdit):
+                onEdit(entry)
+    utils.add_callback(vc, 'on_ok', onOk)
+    parentvc.presentViewController_animated_completion_(nav, True, None)
+
+
+def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance, view : ObjCInstance, navBackOnDelete = False, onEdit = None) -> None:
+    #print ("On Options But")
+    try:
+        parent = gui.ElectrumGui.gui
+        def on_block_explorer() -> None:
+            parent.view_on_block_explorer(contact.address, 'addr')
+        def on_pay_to() -> None:
+            pay_to([contact.address_str])
+        def on_cpy() -> None:
+            UIPasteboard.generalPasteboard.string = contact.address_str
+            print ("copied to clipboard =", contact.address_str)
+            utils.show_notification(message=_("Text copied to clipboard"))
+        def on_edit() -> None:
+            show_new_edit_contact(contact, vc, onEdit = onEdit)
+        def on_delete() -> None:
+            def doDelete() -> None:
+                if delete_contact(contact):
+                    _Updated()
+                if navBackOnDelete and vc.navigationController:
+                    vc.navigationController.popViewControllerAnimated_(True)
+                #utils.show_notification(message = _("Contact deleted."))
+            parent.question(title=_("Confirm Delete"),message=_("Are you sure you wish to delete the contact: '{}'?").format(contact.name),onOk=doDelete,vc=vc)
+            
+        actions = [
+                [ _('Cancel') ],
+                [ _("View on block explorer"), on_block_explorer ],
+                [ _("Copy Address"), on_cpy ],
+                [ _("Edit Contact"), on_edit],
+                [ _("Pay to"), on_pay_to ],
+                [ _("Delete"), on_delete ],
+            ]
+                        
+                
+        utils.show_alert(
+            vc = vc,
+            title = contact.name,#_("Options"),
+            message = contact.address_str,
+            actions = actions,
+            cancel = _('Cancel'),
+            destructive = _('Delete'),
+            style = UIAlertControllerStyleActionSheet,
+            ipadAnchor =  view.convertRect_toView_(view.bounds, vc.view)
+        )
+        #print ("address =", entry.address_str)
+    except:
+        import sys
+        utils.NSLog("Exception during contacts.py 'show_contact_options_actionsheet': %s",str(sys.exc_info()[1]))
