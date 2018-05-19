@@ -99,6 +99,7 @@ _ColorScheme = {
     'nav'       : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
     'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
     'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
+    'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(),
 }
     
 def uicolor_custom(name : str) -> ObjCInstance:
@@ -480,7 +481,9 @@ def present_modal_picker(parentVC : ObjCInstance,
 ###################################################
 def show_notification(message : str,
                       duration : float = 2.0, # the duration is in seconds may be None but in that case must specify a completion
-                      color : tuple = None, # color needs to have r,g,b,a components -- length 4!
+                      color : tuple = None, # color needs to have r,g,b,a components -- length 4, or be a UIColor
+                      textColor : tuple = None, # color needs to have r,g,b,a components or be a UIColor
+                      font : ObjCInstance = None,
                       style : int = CWNotificationStyleStatusBarNotification,
                       animationStyle : int = CWNotificationAnimationStyleTop,
                       animationType : int = CWNotificationAnimationTypeReplace,
@@ -497,12 +500,27 @@ def show_notification(message : str,
         if onTapCallback is not None: onTapCallback()
         if not cw_notif.notificationIsDismissing and not noTapDismiss:
             cw_notif.dismissNotification()
+    
+    if isinstance(color, UIColor):
+        pass
+    elif color is None or not isinstance(color, (tuple, list)) or len(color) != 4 or [c for c in color if type(c) not in [float,int] ]:
+        color = uicolor_custom('notif')
+    else:
+        color = UIColor.colorWithRed_green_blue_alpha_(*color)
+    if isinstance(textColor, UIColor):
+        pass
+    elif textColor is None or not isinstance(textColor, (tuple, list)) or len(textColor) != 4 or [c for c in textColor if type(c) not in [float,int] ]:
+        textColor = uicolor_custom('dark')
+    else:
+        textColor = UIColor.colorWithRed_green_blue_alpha_(*textColor)
+    if not isinstance(font, UIFont):
+        font = UIFont.systemFontOfSize_weight_(12, UIFontWeightMedium)
+
         
-    if color is None or len(color) != 4 or [c for c in color if type(c) not in [float,int] ]:
-        color = (0.0, 122.0/255.0, 1.0, 1.0)
-      
     # set default blue color (since iOS 7.1, default window tintColor is black)
-    cw_notif.notificationLabelBackgroundColor = UIColor.colorWithRed_green_blue_alpha_(*color)
+    cw_notif.notificationLabelBackgroundColor = color
+    cw_notif.notificationLabelTextColor = textColor
+    cw_notif.notificationLabelFont = font
     cw_notif.notificationStyle = style
     cw_notif.notificationAnimationInStyle = animationStyle
     cw_notif.notificationAnimationOutStyle = animationStyle
