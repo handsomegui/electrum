@@ -648,15 +648,9 @@ class ContactDetailVC(ContactDetailVCBase):
                 '''
                 Contact domain changed (user changed the address). The below self.helper = None will
                 force a re-create of tx history helper for the new contact domain in the refresh() call that follows.
-                Note this means that the old txHistoryHelper will become an inert 'zombie' that does nothing and will live for a time
-                (since the helpers are objc associateed objects with the UITableView, and live until it is dealloc'd).
-                The idle zombies will get dealloc'd when self.tv finally dies (after this VC is popped off stack and autoreleased).
-                While I normally hate zombie data living in memory that is useless,considering it will be cleaned up soon and how
-                little memory it takes up, how it's a corner case, and how otherwise ephemeral this screen is and how much it
-                reduces code complexity to do it this way, it's an ok compromise here.  -Calin May '18
+                (history.NewTxHistoryHelper() factory func will reap the old helper that was associated with self.tv as a side-effect)
                 '''
                 if self.helper:
-                    self.helper.tv = None # NB: this relies on Helper being ok with NULL self.tv, which is is
                     self.helper = None 
             self.refresh()
         show_contact_options_actionsheet(_Contact(self), self, self.navigationItem.rightBarButtonItem, navBackOnDelete = True, onEdit = onEdit)

@@ -288,6 +288,8 @@ def NewTxHistoryHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = Non
     if not cls:
         cls = TxHistoryHelper
     helper = cls.new().autorelease()
+    if tv.delegate and tv.dataSource and tv.delegate == tv.dataSource and isinstance(tv.delegate, TxHistoryHelper):
+        TxHistoryHelperDissociate(tv.delegate)
     tv.dataSource = helper
     tv.delegate = helper
     helper.tv = tv
@@ -301,6 +303,19 @@ def NewTxHistoryHelper(tv : ObjCInstance, vc : ObjCInstance, domain : list = Non
     from rubicon.objc.runtime import libobjc            
     libobjc.objc_setAssociatedObject(tv.ptr, helper.ptr, helper.ptr, 0x301)
     return helper
+
+def TxHistoryHelperDissociate(helper):
+    if helper and helper.tv:
+        if helper.tv.dataSource: helper.tv.dataSource = None
+        if helper.tv.delegate: helper.tv.delegate = None
+        helper.vc = None
+        # below clears object association -- will auto-release the helper as a side-effect
+        from rubicon.objc.runtime import libobjc
+        theTV = helper.tv
+        helper.tv = None
+        if libobjc.objc_getAssociatedObject(theTV.ptr, helper.ptr).value == helper.ptr.value:
+            libobjc.objc_setAssociatedObject(theTV.ptr, helper.ptr, None, 0x301)
+        
 
 # this should be a method of TxHistoryHelper but it returns a python object, so it has to be a standalone global function
 def _GetTxs(txsHelper : object) -> list:
