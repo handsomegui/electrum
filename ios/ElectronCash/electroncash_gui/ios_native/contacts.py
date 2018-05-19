@@ -582,7 +582,7 @@ class NewContactVC(NewContactBase):
         return True
 
 def redoTfAttrs(tf : ObjCInstance) -> None:
-    weight = UIFontWeightBold if tf.tag == 1 else UIFontWeightRegular
+    weight = UIFontWeightMedium if tf.tag == 1 else UIFontWeightRegular
     # TESTING ATTRIBUTED STRING STUFF..
     # 1. Placeholder
     ats = NSMutableAttributedString.alloc().initWithString_(tf.placeholder).autorelease()
