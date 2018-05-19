@@ -177,6 +177,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
             vc = UIViewController.new().autorelease()
             vc.title = _("All Transactions")
             vc.view = UITableView.alloc().initWithFrame_style_(self.vc.view.frame, UITableViewStylePlain).autorelease()
+            vc.view.separatorInset = UIEdgeInsetsZero
             helper = NewTxHistoryHelper(tv = vc.view, vc = self.vc, domain = _GetDomain(self))
             self.vc.navigationController.pushViewController_animated_(vc, True)
         c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)

@@ -499,9 +499,11 @@ class NewContactVC(NewContactBase):
     def onCpy_(self, sender) -> None:
         try:
             datum = str(self.name.text) if sender.ptr.value == self.cpyNameBut.ptr.value else str(self.address.text)
+            msg = _("Name copied to clipboard") if sender.ptr.value == self.cpyNameBut.ptr.value else _("Address copied to clipboard")
+            
             UIPasteboard.generalPasteboard.string = datum
             print ("copied to clipboard =", datum)
-            utils.show_notification(message=_("Text copied to clipboard"))
+            utils.show_notification(message=msg)
         except:
             import sys
             utils.NSLog("Exception during NewContactVC 'onCpy_': %s",str(sys.exc_info()[1]))
@@ -657,7 +659,7 @@ class ContactDetailVC(ContactDetailVCBase):
                     self.helper.tv = None # NB: this relies on Helper being ok with NULL self.tv, which is is
                     self.helper = None 
             self.refresh()
-        show_contact_options_actionsheet(_Contact(self), self, self.address, navBackOnDelete = True, onEdit = onEdit)
+        show_contact_options_actionsheet(_Contact(self), self, self.navigationItem.rightBarButtonItem, navBackOnDelete = True, onEdit = onEdit)
         
 def _Contact(slf : ObjCInstance) -> ContactsEntry:
     return utils.nspy_get_byname(slf, 'contact_entry')
@@ -835,7 +837,7 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
         def on_cpy() -> None:
             UIPasteboard.generalPasteboard.string = contact.address_str
             print ("copied to clipboard =", contact.address_str)
-            utils.show_notification(message=_("Text copied to clipboard"))
+            utils.show_notification(message=_("Address copied to clipboard"))
         def on_edit() -> None:
             show_new_edit_contact(contact, vc, onEdit = onEdit)
         def on_delete() -> None:
@@ -865,7 +867,7 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
             cancel = _('Cancel'),
             destructive = _('Delete'),
             style = UIAlertControllerStyleActionSheet,
-            ipadAnchor =  view.convertRect_toView_(view.bounds, vc.view)
+            ipadAnchor =  view.convertRect_toView_(view.bounds, vc.view) if isinstance(view, UIView) else view
         )
         #print ("address =", entry.address_str)
     except:
