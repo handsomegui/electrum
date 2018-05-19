@@ -1142,7 +1142,7 @@ class ElectrumGui(PrintError):
         return self.show_message(message=message, title=title, onOk=onOk, localRunLoop=localRunLoop, vc=vc)
     
     # full stop question for user -- appropriate for send tx dialog
-    def question(self, message, title = _("Question"), yesno = False, onOk = None, vc = None) -> bool:
+    def question(self, message, title = _("Question"), yesno = False, onOk = None, vc = None, destructive = False, okButTitle = None) -> bool:
         ret = False
         localRunLoop = True if onOk is None else False
         def local_onOk() -> None:
@@ -1152,12 +1152,14 @@ class ElectrumGui(PrintError):
         extrakwargs = {}
         if yesno:
             extrakwargs = { 'cancelButTitle' : _("No"), 'okButTitle' : _("Yes") }
-        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs, vc = vc)
+        if okButTitle:
+            extrakwargs['okButTitle'] = okButTitle
+        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs, vc = vc, destructive = destructive)
         return ret
     
     # can be called from any thread, always runs in main thread
     def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False,
-                     cancelButTitle = _('Cancel'), okButTitle = _('OK'), vc = None):
+                     cancelButTitle = _('Cancel'), okButTitle = _('OK'), vc = None, destructive = False):
         def func() -> None:
             myvc = self.get_presented_viewcontroller() if vc is None else vc
             actions = [ [str(okButTitle)] ]
@@ -1171,6 +1173,7 @@ class ElectrumGui(PrintError):
                 actions = actions,
                 localRunLoop = localRunLoop,
                 cancel = cancelButTitle if hasCancel else None,
+                destructive = str(okButTitle) if destructive else None,
             )
         if localRunLoop: return utils.do_in_main_thread_sync(func)
         return utils.do_in_main_thread(func)

@@ -841,7 +841,9 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
                 if navBackOnDelete and vc.navigationController:
                     vc.navigationController.popViewControllerAnimated_(True)
                 #utils.show_notification(message = _("Contact deleted."))
-            parent.question(title=_("Confirm Delete"),message=_("Are you sure you wish to delete the contact: '{}'?").format(contact.name),onOk=doDelete,vc=vc)
+            parent.question(title=_("Confirm Delete"),
+                            message=_("Are you sure you wish to delete this contact?"),
+                            onOk=doDelete, vc=vc, destructive = True, okButTitle = _('Delete'))
             
         actions = [
                 [ _('Cancel') ],
