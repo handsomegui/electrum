@@ -1,6 +1,7 @@
 from . import utils
 from . import gui
 from . import heartbeat
+from . import addrconv
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 import time
@@ -9,7 +10,7 @@ from .uikit_bindings import *
 import electroncash.web as web
 
 
-SECTION_TITLES = [ 'Fees', 'Transactions', 'Appearance', 'Fiat',
+SECTION_TITLES = [ 'Tools', 'Fees', 'Transactions', 'Appearance', 'Fiat',
                   #'Identity'
                   ]
 
@@ -33,14 +34,24 @@ class PrefsVC(UITableViewController):
     
     normalButtonColor = objc_property() # UIColor instance
     warnButtonColor = objc_property()
+    
+    networkStatusText = objc_property()
+    networkStatusIcon = objc_property()
+    lockIcon = objc_property()
+    hasSeed = objc_property()
         
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', UITableViewStyleGrouped, argtypes=[c_int]))
-        self.title = _("Preferences")
+        self.title = _("Settings")
+        self.tabBarItem.image = UIImage.imageNamed_("tab_settings.png")
         self.currencies = None
         self.exchanges = None
         self.normalButtonColor = None
+        self.networkStatusText = None
+        self.networkStatusIcon = None
+        self.lockIcon = None
+        self.hasSeed = None
         self.warnButtonColor = UIColor.colorWithRed_green_blue_alpha_(0.8,0.0,0.0,1.0)
         self.updateCurrencies()
         self.updateExchanges()
@@ -60,6 +71,10 @@ class PrefsVC(UITableViewController):
         self.normalButtonColor = None
         self.currencies = None
         self.exchanges = None
+        self.networkStatusText = None
+        self.networkStatusIcon = None
+        self.lockIcon = None
+        self.hasSeed = None
         send_super(__class__, self, 'dealloc')
 
     @objc_method
@@ -79,7 +94,7 @@ class PrefsVC(UITableViewController):
     def updateCurrencies(self):
         parent = gui.ElectrumGui.gui
         self.currencies = [_('None')]
-        if not parent.daemon.fx: return
+        if not parent.daemon or not parent.daemon.fx: return
         currencies = [self.currencies[0],*sorted(parent.daemon.fx.get_currencies(parent.daemon.fx.get_history_config()))]
         special = [ 'USD', 'EUR', 'GBP', 'CAD', 'AUD' ]
         i = 1
@@ -96,7 +111,7 @@ class PrefsVC(UITableViewController):
     @objc_method
     def updateExchanges(self):
         parent = gui.ElectrumGui.gui
-        fx = parent.daemon.fx
+        fx = parent.daemon.fx if parent.daemon else None
         self.exchanges = []
         if not fx: return
         b = fx.is_enabled()
@@ -124,7 +139,9 @@ class PrefsVC(UITableViewController):
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         assert section >= 0 and section < len(SECTION_TITLES)
         secName = SECTION_TITLES[section]
-        if secName == 'Fees':
+        if secName == 'Tools':
+            return 3 if not self.hasSeed else 4
+        elif secName == 'Fees':
             return 2
         elif secName == 'Transactions':
             return 3
@@ -139,22 +156,79 @@ class PrefsVC(UITableViewController):
         assert indexPath.section >= 0 and indexPath.section < len(SECTION_TITLES)
         section,row = indexPath.section, indexPath.row
         secName = SECTION_TITLES[section]
-        identifier = "%s_%s_%s"%(str(__class__) , str(secName), str(row))
+        identifier = "%s_%s"%(str(secName), str(row))
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
         if cell is None:
             cell = self.createCellForSection_row_(secName,row)
-            cell.reuseIdentifier = identifier
         self.setupCell_section_row_(cell,secName,row)
         return cell
+    
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
+        tv.deselectRowAtIndexPath_animated_(indexPath,True)
+        parent = gui.ElectrumGui.gui
+        section,row = indexPath.section, indexPath.row
+        secName = SECTION_TITLES[section]
+        
+        if secName == "Tools":
+            if row == 0: # AddrConv
+                if not self.navigationController: return
+                vc = addrconv.AddrConvVC.new().autorelease()
+                self.navigationController.pushViewController_animated_(vc, True)
+            elif row == 1: # Network Dialog
+                parent.show_network_dialog(vc = self)
+            elif row == 2: # Password dialog
+                parent.show_change_password(vc = self)
+            elif row == 3 and self.hasSeed:
+                def gotPW(pw) -> None:
+                    parent.show_seed_dialog2(pw)
+                parent.prompt_password_if_needed_asynch(vc=self, callBack = gotPW)
+
+    @objc_method
+    def tableView_accessoryButtonTappedForRowWithIndexPath_(self, tv, indexPath) -> None:
+        section,row = indexPath.section, indexPath.row
+        secName = SECTION_TITLES[section]
+        parent = gui.ElectrumGui.gui
+        
+        if secName == 'Tools' and row == 1: parent.show_network_dialog()
 
     @objc_method
     def setupCell_section_row_(self, cell : ObjCInstance, secName_oc : ObjCInstance, row : int) -> None:
         secName = py_from_ns(secName_oc)
         parent = gui.ElectrumGui.gui
-        fx = parent.daemon.fx
+        fx = parent.daemon.fx if parent.daemon else None
         cell.tag = 0
         cell.contentView.tag = TAG_CONTENTVIEW
-        if secName == 'Fees':
+        if secName == 'Tools':
+            if row == 0:
+                cell.imageView.image = parent.cashaddr_icon()
+                cell.textLabel.text = _("Address Converter")
+                cell.detailTextLabel.text = _("Convert between Legacy and Cashaddr formats")
+                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+            elif row == 1:
+                statusText = self.networkStatusText if self.networkStatusText else _("Offline")
+                cell.imageView.image = self.networkStatusIcon if self.networkStatusIcon else UIImage.imageNamed_("status_disconnected")
+                cell.textLabel.text = _("Network Settings")
+                cell.detailTextLabel.text = _("Status:") + " " + statusText
+                cell.accessoryType = UITableViewCellAccessoryNone
+            elif row == 2:
+                cell.imageView.image = UIImage.imageNamed_(self.lockIcon) if self.lockIcon else None
+                cell.textLabel.text = _("Change or Set Password")
+                cell.detailTextLabel.text = _("Modify wallet password & encryption settings")
+                cell.accessoryType = UITableViewCellAccessoryNone
+            elif row == 3:
+                cell.imageView.image = UIImage.imageNamed_("seed")
+                cell.textLabel.text = _("Wallet Recovery Seed")
+                cell.detailTextLabel.text = _("View the wallet seed phrase used for wallet recovery")
+                cell.accessoryType = UITableViewCellAccessoryNone
+
+            # ensure all of the above icons are the same size: 24x24, centered, unscaled
+            cell.imageView.contentMode = UIViewContentModeCenter
+            f = cell.imageView.frame
+            f.size = CGSizeMake(24,24)
+            cell.imageView.frame = f
+
+        elif secName == 'Fees':
             if row == 0:
                 l = cell.viewWithTag_(1)
                 tf = cell.viewWithTag_(2)
@@ -258,7 +332,7 @@ class PrefsVC(UITableViewController):
                 if b is not None:
                     b.tag = TAG_FIAT_CURRENCY
                     b.enabled = True
-                    curr = fx.get_currency() if fx.is_enabled() else _('None')
+                    curr = fx.get_currency() if fx and fx.is_enabled() else _('None')
                     b.setTitle_forState_(curr, UIControlStateNormal)
                     if b.allTargets.count <= 0:
                         b.addTarget_action_forControlEvents_(self, SEL(b'onFiatCurrencyBut:'), UIControlEventPrimaryActionTriggered)                        
@@ -290,13 +364,14 @@ class PrefsVC(UITableViewController):
                     b.setTitle_forState_(_("None"), UIControlStateNormal)
                     self.setFiatExchangeButtonText_(b)
                     if b.allTargets.count <= 0:
-                        b.addTarget_action_forControlEvents_(self, SEL(b'onFiatExchangeBut:'), UIControlEventPrimaryActionTriggered)                        
+                        b.addTarget_action_forControlEvents_(self, SEL(b'onFiatExchangeBut:'), UIControlEventPrimaryActionTriggered)
+                        
    
     @objc_method
     def setFiatExchangeButtonText_(self, b : ObjCInstance) -> None:
         b = self.tableView.viewWithTag_(TAG_FIAT_EXCHANGE) if b is None else b
         if b is None: return
-        fx = gui.ElectrumGui.gui.daemon.fx
+        fx = gui.ElectrumGui.gui.daemon.fx if gui.ElectrumGui.gui.daemon else None
         ex = fx.config_exchange() if fx else None
         ex = ex if ex in self.exchanges else None
         if ex is None:
@@ -311,9 +386,11 @@ class PrefsVC(UITableViewController):
     def createCellForSection_row_(self, secName_oc : ObjCInstance, row : int) -> ObjCInstance:
         secName = py_from_ns(secName_oc)
         cell = None
-        ident = ("%s_%d"%(secName,row))
+        ident = "%s_%s"%(str(secName), str(row))
         
-        if ident in ['Fees_1', 'Transactions_0', 'Transactions_1', 'Transactions_2', 'Appearance_0', 'Appearance_1','Fiat_1', 'Fiat_2']:
+        if secName in ['Tools']:
+            cell =  UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, ident).autorelease()
+        elif ident in ['Fees_1', 'Transactions_0', 'Transactions_1', 'Transactions_2', 'Appearance_0', 'Appearance_1','Fiat_1', 'Fiat_2']:
             objs = NSBundle.mainBundle.loadNibNamed_owner_options_("BoolCell",self.tableView,None)
             assert objs is not None and len(objs)
             cell = objs[0] 
@@ -393,7 +470,7 @@ class PrefsVC(UITableViewController):
     @objc_method
     def onFiatCurrencyBut_(self, but : ObjCInstance) -> None:
         parent = gui.ElectrumGui.gui
-        fx = parent.daemon.fx
+        fx = parent.daemon.fx if parent.daemon else None
         ccy = fx.get_currency()
         ccys = py_from_ns(self.currencies)
         idx = [i for i,v in enumerate(ccys) if v == ccy]
@@ -414,7 +491,7 @@ class PrefsVC(UITableViewController):
     @objc_method
     def onFiatExchangeBut_(self, but : ObjCInstance) -> None:
         parent = gui.ElectrumGui.gui
-        fx = parent.daemon.fx
+        fx = parent.daemon.fx if parent.daemon else None
         ex = fx.config_exchange() if fx else 'None'
         exs = py_from_ns(self.exchanges)
         idx = [i for i,v in enumerate(exs) if v == ex]
@@ -466,7 +543,7 @@ class PrefsVC(UITableViewController):
     @objc_method
     def onFiatHistory_(self, s: ObjCInstance) -> None:
         parent = gui.ElectrumGui.gui
-        fx = parent.daemon.fx
+        fx = parent.daemon.fx if parent.daemon else None
         if not fx: return
         fx.set_history_config(s.isOn())
         self.updateExchanges()
@@ -477,7 +554,7 @@ class PrefsVC(UITableViewController):
     @objc_method
     def onFiatBal_(self, s: ObjCInstance) -> None:
         parent = gui.ElectrumGui.gui
-        fx = parent.daemon.fx
+        fx = parent.daemon.fx if parent.daemon else None
         if not fx: return
         fx.set_fiat_address_config(s.isOn())
         parent.refresh_components('addresses')

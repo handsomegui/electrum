@@ -867,5 +867,4 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
         )
         #print ("address =", entry.address_str)
     except:
-        import sys
-        utils.NSLog("Exception during contacts.py 'show_contact_options_actionsheet': %s",str(sys.exc_info()[1]))
+        utils.NSLog("*** WARNING: Exception during contacts.py 'show_contact_options_actionsheet': %s",str(sys.exc_info()[1]))

@@ -125,7 +125,7 @@ class SeedDisplayVC(UIViewController):
                                                 title = _('Wallet Seed'))
 
         closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self, SEL(b'onModalClose:')).autorelease()
-        qrvc.navigationItem.rightBarButtonItem = closeButton
+        qrvc.navigationItem.leftBarButtonItem = closeButton
     
     @objc_method
     def onModalClose_(self, but : ObjCInstance) -> None:
