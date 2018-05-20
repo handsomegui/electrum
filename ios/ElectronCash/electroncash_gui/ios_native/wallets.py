@@ -36,7 +36,8 @@ class WalletsNav(WalletsNavBase):
 
 class WalletsVC(WalletsVCBase):
     lineHider = objc_property()
-
+    selWalletIndex = objc_property()
+    
     @objc_method
     def dealloc(self) -> None:
         # cleanup code here..
@@ -44,6 +45,7 @@ class WalletsVC(WalletsVCBase):
         gui.ElectrumGui.gui.sigRequests.disconnect(self)
 
         self.lineHider = None
+        self.selWalletIndex = None
         send_super(__class__, self, 'dealloc')  
 
     @objc_method
@@ -51,6 +53,7 @@ class WalletsVC(WalletsVCBase):
         # put additional setup code here
         self.status = StatusOffline # re-does the text/copy and colors
         self.walletAmount.text = "0"
+        self.selWalletIndex = 0
         # Custom Segmented Control setup
         self.segControl.items = [_("Transactions"), _("Requests")]
         self.segControl.showsCount = False
@@ -69,7 +72,6 @@ class WalletsVC(WalletsVCBase):
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         self.commonInit()
-        self.drawerHelper.miscSetup()
         self.txsHelper.miscSetup()
 
     @objc_method
@@ -90,8 +92,6 @@ class WalletsVC(WalletsVCBase):
         if self.lineHider:
             self.lineHider.removeFromSuperview()
             self.lineHider = None
-        if self.drawerHelper.isOpen:
-            self.drawerHelper.closeAnimated_(True)
 
     @objc_method
     def viewLayoutMarginsDidChange(self) -> None:
@@ -135,23 +135,61 @@ class WalletsVC(WalletsVCBase):
             self.statusLabel.text = _("Offline")
             
         self.statusBlurb.sizeToFit()
+        
+    @objc_method
+    def setAmount_andUnits_unconf_(self, amt, units, unconf) -> None:
+        #ats = NSMutableAttributedString.alloc().initWithString_(units).autorelease()
+        if unconf:
+            unconf = " " + unconf.strip()
+            '''ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(
+                unconf,
+                {
+                    NSFontAttributeName: UIFont.systemFontOfSize_(11.0)
+                }
+                ).autorelease())
+            '''
+        else:
+            unconf = ''
+        self.walletAmount.text = amt
+        #self.walletUnits.attributedText = ats
+        self.walletUnits.text = units+unconf
+        if self.modalDrawerVC:
+            self.modalDrawerVC.amount.text = amt
+            #self.modalDrawerVC.units.attributedText = ats
+            self.modalDrawerVC.units.text = units+unconf
+            
 
     @objc_method
     def toggleDrawer(self) -> None:
-        if self.drawerHelper.isOpen:
-            self.drawerHelper.closeAnimated_(True)
+        '''
+        Fancy tricky code below to create the "drawer opening" effect.
+        Fades-in the WalletsDrawerVC view controller (which overlays on top of our view), while
+        opening the drawer and animating the chevron. This creates the effect of the drawer opening and everything
+        behind it fading darker.  It's pretty smoothe. Potential glitches include the layout constraints in the
+        modal not lining up perfectly with our view's drawer stub.  But this has been tested and works on all extant
+        iPhones & iPads in the simulator.
+        '''
+        if not self.modalDrawerVC:
+            NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsDrawerVC", self, None)
+            vc = self.modalDrawerVC # Note: self.modalDrawerVC weak ref auto-set by Nib loader
+            if not vc:
+                utils.NSLog("**** Warning: toggleDrawer could not find the requisite view controller in WalletsDrawerVC.nib!")
+                return
+            vc.selectedRow = self.selWalletIndex
+            vc.amount.text = self.walletAmount.text
+            #vc.units.attributedText = self.walletUnits.attributedText
+            vc.units.text = self.walletUnits.text
+            vc.name.text = self.walletName.text
+            semiclear = vc.view.backgroundColor.copy()
+            vc.view.backgroundColor = UIColor.clearColor
+            def compl() -> None:
+                vc.view.backgroundColorAnimationToColor_duration_reverses_completion_(semiclear.autorelease(), 0.2, False, None)
+                vc.openAnimated_(True)
+            self.presentViewController_animated_completion_(vc, False, compl)
         else:
-            self.drawerHelper.openAnimated_(True)
-
-    @objc_method
-    def addWallet(self) -> None:
-        if self.addWalletView.hasAnimations:
-            print("addWalletView animation already active, ignoring spurious second tap....")
-            return
-        c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
-        def doAddWallet() -> None:
-            gui.ElectrumGui.gui.show_message(message="'Add Wallet' is not yet implemented.", title="Coming Soon!")
-        self.addWalletView.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,doAddWallet)
+            # NB: weak ref self.modalDrawerVC will be auto-cleared by obj-c runtime after it is dismissed
+            utils.call_later(0.100, self.dismissViewControllerAnimated_completion_,True, None)
+            self.modalDrawerVC.closeAnimated_(True)
         
     @objc_method
     def didChangeSegment_(self, control : ObjCInstance) -> None:
@@ -216,7 +254,7 @@ class WalletsVC(WalletsVCBase):
             self.reqstv.setHidden_(not bool(nreq))
 
 
-class WalletsDrawerHelper(WalletsDrawerHelperBase):
+class WalletsDrawerVC(WalletsDrawerVCBase):
     selectedRow = objc_property()
     bluchk = objc_property()
         
@@ -228,20 +266,11 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
         send_super(__class__, self, 'dealloc')
      
     @objc_method 
-    def miscSetup(self) -> None:
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsMisc",None,None)
-        for obj in objs:
-            if isinstance(obj, UIView) and obj.tag == 2000:
-                self.tv.tableFooterView = obj
-                self.vc.addWalletView = obj
-        for obj in objs:
-            if isinstance(obj, UIGestureRecognizer) and obj.view and self.vc.addWalletView \
-                   and obj.view.ptr.value == self.vc.addWalletView.ptr.value:
-                obj.addTarget_action_(self.vc, SEL(b'addWallet'))
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        self.tv.tableFooterView = self.tableFooter
         nib = UINib.nibWithNibName_bundle_("WalletsDrawerCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsDrawerCell")
-
-        
        
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -258,15 +287,13 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
 
     @objc_method
     def tableView_viewForHeaderInSection_(self, tableView, section) -> ObjCInstance:
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsMisc",None,None)
-        for obj in objs:
-            if isinstance(obj, UIView) and obj.tag == 1000:
-                name = obj.viewWithTag_(1)
-                size = obj.viewWithTag_(2)
-                name.setText_withKerning_(_("Name"), utils._kern) 
-                size.setText_withKerning_(_("Size:").translate({ord(i):None for i in ':'}), utils._kern)
-                return obj
-        return None
+        ret = self.tableHeader
+        if ret:
+            name = ret.viewWithTag_(1)
+            size = ret.viewWithTag_(2)
+            name.setText_withKerning_(_("Name"), utils._kern) 
+            size.setText_withKerning_(_("Size:").translate({ord(i):None for i in ':'}), utils._kern)
+        return ret
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
@@ -305,7 +332,24 @@ class WalletsDrawerHelper(WalletsDrawerHelperBase):
         if old: old.viewWithTag_(1).image = None
         iv.image = self.bluchk
         self.selectedRow = indexPath.row
-        
+        #todo : inform wallets vc of selection here...!
+        if self.vc:
+            # temporary hack to 'remember' the selection..
+            # TODO: really implement wallet selection here!
+            self.vc.selWalletIndex = self.selectedRow
+
+    @objc_method
+    def addWallet(self) -> None:
+        if not self.tableFooter: return
+        addWalletView = self.tableFooter
+        if addWalletView.hasAnimations:
+            print('"Add Wallet View" animation already active, ignoring spurious second tap....')
+            return
+        c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
+        def doAddWallet() -> None:
+            gui.ElectrumGui.gui.show_message(message="'Add Wallet' is not yet implemented.", title="Coming Soon!")
+        addWalletView.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,doAddWallet)
+     
     # overrides base
     @objc_method
     def openAnimated_(self, animated : bool) -> None:

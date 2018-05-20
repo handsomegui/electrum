@@ -713,6 +713,7 @@ class ElectrumGui(PrintError):
         walletStatus = wallets.StatusOffline
         walletBalanceTxt = ""
         walletUnitTxt = ""
+        walletUnconfTxt = ""
 
         if self.daemon.network is None or not self.daemon.network.is_running():
             text = _("Offline")
@@ -741,14 +742,17 @@ class ElectrumGui(PrintError):
                 walletBalanceTxt = self.format_amount(c)
                 walletUnitTxt = self.base_unit()
                 text =  _("Balance" ) + ": %s "%(self.format_amount_and_units(c))
+                ux = 0
                 if u:
                     s = " [%s unconfirmed]"%(self.format_amount(u, True).strip())
                     text +=  s
-                    walletUnitTxt += s.replace('unconfirmed', 'unconf.')
+                    ux += u
                 if x:
                     s = " [%s unmatured]"%(self.format_amount(x, True).strip())
                     text += s
-                    walletUnitTxt += s.replace('unmatured', 'unmat.')
+                    ux += x
+                if ux:
+                    walletUnconfTxt += "[%s unconf.]"%(self.format_amount(ux, True)).strip()
 
                 # append fiat balance and price
                 if self.daemon.fx.is_enabled():
@@ -801,8 +805,7 @@ class ElectrumGui(PrintError):
             self.dismiss_downloading_notif()
         
         self.walletsVC.status = walletStatus
-        self.walletsVC.walletAmount.text = walletBalanceTxt
-        self.walletsVC.walletUnit.text = walletUnitTxt
+        self.walletsVC.setAmount_andUnits_unconf_(walletBalanceTxt, walletUnitTxt, walletUnconfTxt)
 
             
     def notify_transactions(self):

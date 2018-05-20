@@ -170,7 +170,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
     WalletsStatusSynchronizing = 3
 };
 
-@class WalletsDrawerHelper;
+@class WalletsDrawerVC;
 @class TxHistoryHelper;
 @class ReqTVD;
 
@@ -184,11 +184,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UIView *blueBarTop;
 
 #pragma mark Drawer Related
-@property (nonatomic, weak) IBOutlet UILabel *walletName;
-@property (nonatomic, weak) IBOutlet UILabel *walletAmount;
-@property (nonatomic, weak) IBOutlet UILabel *walletUnit;
-@property (nonatomic, strong) IBOutlet WalletsDrawerHelper *drawerHelper;
-@property (nonatomic, weak) UIView *addWalletView;
+@property (nonatomic, weak) IBOutlet WalletsDrawerVC *modalDrawerVC;
+@property (nonatomic, weak) IBOutlet UILabel *walletName, *walletAmount, *walletUnits;
 
 #pragma mark Main View Area Related
 @property (nonatomic, weak) IBOutlet DZNSegmentedControl *segControl;
@@ -212,19 +209,22 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // stub to represent python -- implemented in python wallets.py
 @interface WalletsNav : WalletsNavBase
 @end
-@interface WalletsDrawerHelperBase : NSObject
-@property (nonatomic, weak) IBOutlet WalletsVC *vc;
+@interface WalletsDrawerVCBase : UIViewController
+@property (nonatomic, weak) IBOutlet WalletsVC *vc; // parent viewcontroller that presented us
 @property (nonatomic, weak) IBOutlet UIImageView *chevron;
+@property (nonatomic, weak) IBOutlet UILabel *name, *amount, *units; // top labels
 @property (nonatomic, weak) IBOutlet UIView *drawer; // the wallet 'drawer' dropdown
 @property (nonatomic, weak) IBOutlet UIView *drawerBottom; // the wallet 'drawer' dropdown's bottom (sometimes hidden) area
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *drawerHeight;
 @property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, strong) IBOutlet UIView *tableHeader, *tableFooter;
 @property (nonatomic, assign) BOOL isOpen;
 -(void)openAnimated:(BOOL)animated;
 -(void)closeAnimated:(BOOL)animated;
 @end
 // stub to represent python -- implemented in python wallets.py
-@interface WalletsDrawerHelper : WalletsDrawerHelperBase
+@interface WalletsDrawerVC : WalletsDrawerVCBase
+-(IBAction)addWallet;
 @end
 
 @interface TxHistoryHelperBase : NSObject

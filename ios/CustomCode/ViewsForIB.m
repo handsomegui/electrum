@@ -60,7 +60,7 @@
 @end
 
 
-@implementation WalletsDrawerHelperBase {
+@implementation WalletsDrawerVCBase {
     BOOL isRotating;
 }
 // synthesized properties

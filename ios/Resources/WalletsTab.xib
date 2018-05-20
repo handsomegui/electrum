@@ -53,7 +53,7 @@
                                 </connections>
                             </view>
                             <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Mg4-cl-SaW" userLabel="NoReqsView">
-                                <rect key="frame" x="89" y="248" width="196" height="107"/>
+                                <rect key="frame" x="89.5" y="248" width="196" height="107"/>
                                 <subviews>
                                     <imageView userInteractionEnabled="NO" tag="4040" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="empty_table_icon.png" translatesAutoresizingMaskIntoConstraints="NO" id="mu2-Qr-shs">
                                         <rect key="frame" x="66.5" y="0.0" width="62" height="36"/>
@@ -95,7 +95,7 @@
                                 </connections>
                             </view>
                             <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="heh-Ue-jMi" userLabel="NoTXsView">
-                                <rect key="frame" x="89" y="248" width="196" height="107"/>
+                                <rect key="frame" x="89.5" y="248" width="196" height="107"/>
                                 <subviews>
                                     <imageView userInteractionEnabled="NO" tag="4040" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="empty_table_icon.png" translatesAutoresizingMaskIntoConstraints="NO" id="dNj-eP-Aky">
                                         <rect key="frame" x="66.5" y="0.0" width="62" height="36"/>
@@ -195,7 +195,7 @@
                                     <action selector="onReceiveBut" destination="5hO-gj-WnP" eventType="primaryActionTriggered" id="Vzp-tL-mEB"/>
                                 </connections>
                             </button>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIH-KO-Jwz">
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIH-KO-Jwz" userLabel="Drawer">
                                 <rect key="frame" x="15" y="0.0" width="345" height="63"/>
                                 <subviews>
                                     <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="wallets_gray.png" translatesAutoresizingMaskIntoConstraints="NO" id="vij-qB-guJ">
@@ -243,39 +243,11 @@
                                             <outletCollection property="gestureRecognizers" destination="pa5-zC-5FB" appends="YES" id="ek9-rd-5Ad"/>
                                         </connections>
                                     </view>
-                                    <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gW5-an-JFm">
-                                        <rect key="frame" x="0.0" y="64" width="345" height="237"/>
-                                        <subviews>
-                                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="q82-K5-LwN">
-                                                <rect key="frame" x="15" y="25" width="315" height="192"/>
-                                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                                <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
-                                                <connections>
-                                                    <outlet property="dataSource" destination="5Fi-QJ-VBN" id="lSh-Ye-HGX"/>
-                                                    <outlet property="delegate" destination="5Fi-QJ-VBN" id="EoO-Hr-yFX"/>
-                                                </connections>
-                                            </tableView>
-                                        </subviews>
-                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                        <constraints>
-                                            <constraint firstItem="q82-K5-LwN" firstAttribute="leading" secondItem="gW5-an-JFm" secondAttribute="leading" constant="15" id="5cC-qw-2Cu"/>
-                                            <constraint firstAttribute="trailing" secondItem="q82-K5-LwN" secondAttribute="trailing" constant="15" id="5oL-uh-j6S"/>
-                                            <constraint firstAttribute="bottom" secondItem="q82-K5-LwN" secondAttribute="bottom" constant="20" id="N9h-hA-8c6"/>
-                                            <constraint firstAttribute="height" constant="237" id="P4v-Qu-De9"/>
-                                            <constraint firstItem="q82-K5-LwN" firstAttribute="top" secondItem="gW5-an-JFm" secondAttribute="top" constant="25" id="zmE-92-odw"/>
-                                        </constraints>
-                                        <userDefinedRuntimeAttributes>
-                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                                <integer key="value" value="2"/>
-                                            </userDefinedRuntimeAttribute>
-                                        </userDefinedRuntimeAttributes>
-                                    </view>
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <gestureRecognizers/>
                                 <constraints>
                                     <constraint firstAttribute="trailing" secondItem="cva-4a-KS4" secondAttribute="trailing" id="02h-fe-AzH"/>
-                                    <constraint firstItem="gW5-an-JFm" firstAttribute="leading" secondItem="VIH-KO-Jwz" secondAttribute="leading" id="28j-GK-ngu"/>
                                     <constraint firstItem="cva-4a-KS4" firstAttribute="centerY" secondItem="vij-qB-guJ" secondAttribute="centerY" id="2Q8-9G-1HA"/>
                                     <constraint firstItem="WuM-H7-ckL" firstAttribute="baseline" secondItem="BuO-xT-ft9" secondAttribute="baseline" id="5Tn-gA-NHP"/>
                                     <constraint firstItem="Ksp-Gc-sLq" firstAttribute="leading" secondItem="VIH-KO-Jwz" secondAttribute="leading" id="63C-6Q-MFv"/>
@@ -284,14 +256,12 @@
                                     <constraint firstItem="BuO-xT-ft9" firstAttribute="top" secondItem="Kex-Zb-fxf" secondAttribute="bottom" id="QIz-5J-zSk"/>
                                     <constraint firstItem="Kex-Zb-fxf" firstAttribute="leading" secondItem="vij-qB-guJ" secondAttribute="trailing" constant="15" id="SI9-IV-CYU"/>
                                     <constraint firstItem="WuM-H7-ckL" firstAttribute="leading" secondItem="BuO-xT-ft9" secondAttribute="trailing" constant="4" id="Zoa-O4-Ysm"/>
-                                    <constraint firstAttribute="trailing" secondItem="gW5-an-JFm" secondAttribute="trailing" id="bK6-OC-vRq"/>
                                     <constraint firstItem="vij-qB-guJ" firstAttribute="top" secondItem="VIH-KO-Jwz" secondAttribute="top" constant="20" id="bdP-BD-SlB"/>
                                     <constraint firstItem="WuM-H7-ckL" firstAttribute="top" secondItem="Kex-Zb-fxf" secondAttribute="bottom" constant="12.5" id="hgw-Q9-U9s"/>
                                     <constraint firstAttribute="trailing" secondItem="WuM-H7-ckL" secondAttribute="trailing" id="iZw-gx-jWh"/>
                                     <constraint firstItem="BuO-xT-ft9" firstAttribute="leading" secondItem="Kex-Zb-fxf" secondAttribute="leading" id="kCZ-Yx-JW3"/>
                                     <constraint firstItem="Kex-Zb-fxf" firstAttribute="top" secondItem="VIH-KO-Jwz" secondAttribute="top" constant="8" id="m5n-H1-r52"/>
                                     <constraint firstItem="Ksp-Gc-sLq" firstAttribute="top" secondItem="VIH-KO-Jwz" secondAttribute="top" id="qIH-eN-8hR"/>
-                                    <constraint firstItem="gW5-an-JFm" firstAttribute="top" secondItem="Ksp-Gc-sLq" secondAttribute="bottom" constant="1" id="wOf-i7-4fb"/>
                                     <constraint firstAttribute="height" constant="63" id="z2S-er-bZS"/>
                                     <constraint firstItem="BuO-xT-ft9" firstAttribute="leading" secondItem="vij-qB-guJ" secondAttribute="trailing" constant="15" id="zlY-2G-wBa"/>
                                 </constraints>
@@ -419,7 +389,6 @@
                     </navigationItem>
                     <connections>
                         <outlet property="blueBarTop" destination="xTn-fY-y6D" id="oB1-hK-q52"/>
-                        <outlet property="drawerHelper" destination="5Fi-QJ-VBN" id="6Xp-Cw-0UK"/>
                         <outlet property="navBar" destination="6um-IK-2g2" id="vNX-hi-luK"/>
                         <outlet property="noReqsView" destination="Mg4-cl-SaW" id="YTK-dF-hbx"/>
                         <outlet property="noTXsView" destination="heh-Ue-jMi" id="DRv-wf-VM4"/>
@@ -431,9 +400,9 @@
                         <outlet property="statusBlurb" destination="atn-VB-xdN" id="GJh-hZ-2ps"/>
                         <outlet property="statusLabel" destination="lYw-Ew-yYB" id="Y5R-MU-vsd"/>
                         <outlet property="txsHelper" destination="qSh-mO-1cK" id="ab9-o5-bHD"/>
-                        <outlet property="walletAmount" destination="BuO-xT-ft9" id="5O7-uc-dXv"/>
-                        <outlet property="walletName" destination="Kex-Zb-fxf" id="3Mx-PJ-Jse"/>
-                        <outlet property="walletUnit" destination="WuM-H7-ckL" id="afw-e4-6eg"/>
+                        <outlet property="walletAmount" destination="BuO-xT-ft9" id="Wtm-NL-3w2"/>
+                        <outlet property="walletName" destination="Kex-Zb-fxf" id="IeL-PF-vYh"/>
+                        <outlet property="walletUnits" destination="WuM-H7-ckL" id="Gym-Av-itd"/>
                     </connections>
                 </viewController>
             </viewControllers>
@@ -448,21 +417,6 @@
                 <action selector="toggleDrawer" destination="5hO-gj-WnP" id="ILi-Q6-WY1"/>
             </connections>
         </tapGestureRecognizer>
-        <customObject id="5Fi-QJ-VBN" customClass="WalletsDrawerHelper">
-            <userDefinedRuntimeAttributes>
-                <userDefinedRuntimeAttribute type="number" keyPath="selectedRow">
-                    <integer key="value" value="0"/>
-                </userDefinedRuntimeAttribute>
-            </userDefinedRuntimeAttributes>
-            <connections>
-                <outlet property="chevron" destination="cva-4a-KS4" id="0Op-bt-2JJ"/>
-                <outlet property="drawer" destination="VIH-KO-Jwz" id="1Ly-Gg-Bhi"/>
-                <outlet property="drawerBottom" destination="gW5-an-JFm" id="Vba-00-tgi"/>
-                <outlet property="drawerHeight" destination="z2S-er-bZS" id="6v3-li-q4B"/>
-                <outlet property="tv" destination="q82-K5-LwN" id="g7K-J6-oty"/>
-                <outlet property="vc" destination="5hO-gj-WnP" id="aAX-a9-Lw6"/>
-            </connections>
-        </customObject>
         <customObject id="qSh-mO-1cK" userLabel="Tx History Helper" customClass="TxHistoryHelper">
             <userDefinedRuntimeAttributes>
                 <userDefinedRuntimeAttribute type="boolean" keyPath="compactMode" value="YES"/>
