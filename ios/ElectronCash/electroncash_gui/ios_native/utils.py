@@ -367,7 +367,10 @@ def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
 ###
 pickerCallables = dict()
 class UTILSModalPickerHelper(UIViewController):
-    
+    ''' This class has this funny name because in the obj-c space, all class names are in the global namespace
+        and as this class really is a private class to utils.py, we name it using the UTILS prefix to keep things
+        isolated. '''
+
     items = objc_property()
     lastSelection = objc_property()
     needsDismiss = objc_property()
@@ -375,9 +378,11 @@ class UTILSModalPickerHelper(UIViewController):
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self,'init'))
-        self.items = None
-        self.lastSelection = 0
-        self.needsDismiss = False
+        if self:
+            self.items = None
+            self.lastSelection = 0
+            self.needsDismiss = False
+            self.modalPresentationStyle = UIModalPresentationOverFullScreen
         return self
     
     @objc_method
@@ -451,26 +456,24 @@ def present_modal_picker(parentVC : ObjCInstance,
     objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ModalPickerView",helper,None)
     if objs is None or not len(objs):
         raise Exception("Could not load ModalPickerView nib!")
-    mpv = objs[0]
-    p = mpv.viewWithTag_(200)
+    mpv = helper.view # auto-attached by NIB loader above because connection was made in NIB to file's owner.view
+    p = mpv.viewWithTag_(200) # note UIPickerView p is auto-connected to helper as dataSource and delegate by NIB
     okBut = mpv.viewWithTag_(1)
     okLbl = mpv.viewWithTag_(11)
     cancelBut = mpv.viewWithTag_(2)
     cancelLbl = mpv.viewWithTag_(22)
-    assert p and okBut and cancelBut
+    helper.items = items
     if okButtonTitle is not None and okLbl is not None: okLbl.text = okButtonTitle
     if cancelButtonTitle is not None and cancelLbl is not None: cancelLbl.text = cancelButtonTitle
-    helper.view = mpv
-    helper.items = items
-    okBut.addTarget_action_forControlEvents_(helper, SEL(b'onOk:'), UIControlEventPrimaryActionTriggered)
-    cancelBut.addTarget_action_forControlEvents_(helper, SEL(b'onCancel:'), UIControlEventPrimaryActionTriggered)
-    p.delegate = helper
-    p.dataSource = helper
+    if okBut and cancelBut:
+        okBut.addTarget_action_forControlEvents_(helper, SEL(b'onOk:'), UIControlEventPrimaryActionTriggered)
+        cancelBut.addTarget_action_forControlEvents_(helper, SEL(b'onCancel:'), UIControlEventPrimaryActionTriggered)
+    else:
+        raise Exception('Picker NIB loaded but could not find the OK or Cancel button views! FIXME!')
     if okCallback is not None: pickerCallables[helper.ptr.value] = okCallback
     if selectedIndex > 0 and selectedIndex < len(items):
         p.selectRow_inComponent_animated_(selectedIndex, 0, False)
         helper.lastSelection = selectedIndex
-    helper.modalPresentationStyle = UIModalPresentationOverCurrentContext
     parentVC.view.endEditing_(True) # NB: do not use setDisablesAutomaticKeyboardDismissal because it is missing on newer iOS! (caused an app crash) -- so we do this instead
     parentVC.presentViewController_animated_completion_(helper, True, None)
     helper.needsDismiss = True
