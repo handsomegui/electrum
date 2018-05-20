@@ -68,6 +68,9 @@ CollapsableSectionHeaderView = ObjCClass('CollapsableSectionHeaderView')
 
 ForwardingDelegate = ObjCClass('ForwardingDelegate')
 
+# Custom activity indicator created by Calin
+CCActivityIndicator = ObjCClass('CCActivityIndicator')
+
 # The below are found in ViewForIB.h
 HistoryCellLarge = ObjCClass('HistoryCellLarge')
 CoinsCellLarge = ObjCClass('CoinsCellLarge')

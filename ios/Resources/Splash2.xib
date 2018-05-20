@@ -1,10 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="11762" systemVersion="15G20015" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14109" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
     <device id="retina5_5" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11757"/>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14088"/>
         <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -25,23 +26,34 @@
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" verticalHuggingPriority="251" image="ec_logo.png" translatesAutoresizingMaskIntoConstraints="NO" id="Hxd-NI-mv9">
-                        <rect key="frame" x="5" y="270.33333333333331" width="404" height="195.33333333333337"/>
+                        <rect key="frame" x="5" y="270.33333333333331" width="404" height="195.33333333333331"/>
                         <constraints>
                             <constraint firstAttribute="width" secondItem="Hxd-NI-mv9" secondAttribute="height" multiplier="64:31" id="Jki-Ua-D0n"/>
                         </constraints>
                     </imageView>
-                    <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" animating="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="GKF-hU-V2s">
-                        <rect key="frame" x="188.66666666666666" y="489.33333333333337" width="37" height="37.000000000000114"/>
-                    </activityIndicatorView>
+                    <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Gfd-cp-cff" userLabel="CCActivityIndicator" customClass="CCActivityIndicator">
+                        <rect key="frame" x="177" y="489.33333333333326" width="60" height="60"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="60" id="0hP-jW-K5M"/>
+                            <constraint firstAttribute="height" constant="60" id="8un-5Y-3Ru"/>
+                        </constraints>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="boolean" keyPath="animating" value="YES"/>
+                            <userDefinedRuntimeAttribute type="color" keyPath="color">
+                                <color key="value" red="0.91746425629999995" green="0.95870447160000005" blue="0.99979293349999998" alpha="1" colorSpace="calibratedRGB"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </view>
                 </subviews>
                 <color key="backgroundColor" red="0.4549019608" green="0.53725490200000003" blue="0.6588235294" alpha="1" colorSpace="calibratedRGB"/>
                 <constraints>
                     <constraint firstItem="Hxd-NI-mv9" firstAttribute="centerY" secondItem="Zx0-e1-7tr" secondAttribute="centerY" id="CJg-30-LtI"/>
+                    <constraint firstItem="Gfd-cp-cff" firstAttribute="centerX" secondItem="Hxd-NI-mv9" secondAttribute="centerX" id="IN4-2N-eJW"/>
                     <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Hxd-NI-mv9" secondAttribute="trailing" constant="5" id="LlC-bF-tdL"/>
-                    <constraint firstItem="GKF-hU-V2s" firstAttribute="centerX" secondItem="Zx0-e1-7tr" secondAttribute="centerX" id="Ym5-8Z-R8x"/>
                     <constraint firstItem="Hxd-NI-mv9" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Zx0-e1-7tr" secondAttribute="leading" constant="5" id="a80-yf-lsT"/>
                     <constraint firstItem="Hxd-NI-mv9" firstAttribute="centerX" secondItem="Zx0-e1-7tr" secondAttribute="centerX" id="bAF-I4-xk9"/>
-                    <constraint firstItem="GKF-hU-V2s" firstAttribute="top" secondItem="Hxd-NI-mv9" secondAttribute="bottom" constant="23.5" id="kd6-um-Jl5"/>
+                    <constraint firstItem="Gfd-cp-cff" firstAttribute="top" secondItem="Hxd-NI-mv9" secondAttribute="bottom" constant="23.5" id="ebv-N5-fBP"/>
                 </constraints>
             </view>
         </viewController>
