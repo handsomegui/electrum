@@ -101,7 +101,7 @@
     if (!_inInit) [_tv reloadData];
 }
 - (void) setFlushLeft:(BOOL)flushLeft {
-    if (!!_flushLeft == flushLeft) return;
+    if (!!_flushLeft == !!flushLeft) return;
     _flushLeft = flushLeft;
     if (_flushLeft) {
         _lmarginCS.active = YES;
