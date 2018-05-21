@@ -63,6 +63,9 @@ static const CGFloat epsilon = 0.00001;
 - (void) animateLayer:(int)index {
     if (index <= 0 || index > kNumCircles) return;
     CALayer *l = _layers[index];
+    // variant 1:
+    //static const CGFloat kAlphaMuls[kNumCircles+1] = {0.0,0.33, 1.33, 2.12};
+    // variant 2:
     static const CGFloat kAlphaMuls[kNumCircles+1] = {0, 0.6175, 1.53, -0.98};
     CABasicAnimation* rotationAnimation;
     CGFloat gamma = kAlphaMuls[index];
