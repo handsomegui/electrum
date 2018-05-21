@@ -476,6 +476,8 @@ class ElectrumGui(PrintError):
             if (self.downloadingNotif_view is not None
                 and dnf.customView is not None
                 and self.downloadingNotif_view.isDescendantOfView_(dnf.customView)):
+                activityIndicator = self.downloadingNotif_view.viewWithTag_(1)
+                activityIndicator.animating = False # turn off animation to save CPU cycles
                 self.downloadingNotif_view.removeFromSuperview()
             dnf.release()
         dnf.dismissNotificationWithCompletion_(compl)
