@@ -273,7 +273,27 @@ class ElectrumGui(PrintError):
         
         # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
         utils.call_later(1.0, lambda: self.refresh_all())
-                
+        
+        '''  
+        # TESTING
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ComboDrawerPicker", None, None)
+        vc = objs[0]
+        vc.autoOpenCloseOnTap = True
+        def openClose(b : bool) -> None:
+            print("OPEN/CLOSE:",b)     
+        def selected(i : int) -> None:
+            print("SELECTED:",i)
+        def bgTap(p : CGPoint) -> None:
+            print("BG TAP", p.x, p.y)
+            vc.flushLeft = not vc.flushLeft
+        def fgTap() -> None:
+            print("FG TAP")
+        vc.openClosedBlock = Block(openClose)
+        vc.selectedBlock = Block(selected)
+        vc.backgroundTappedBlock = Block(bgTap)
+        vc.controlTappedBlock = Block(fgTap)
+        self.tabController.presentViewController_animated_completion_(vc, True, None)
+        '''
         return True
 
     
