@@ -9,31 +9,103 @@
 #import "CCActivityIndicator.h"
 
 static const CGFloat epsilon = 0.00001;
+#define DEGREES_TO_RADIANS(x) (M_PI * (x) / 180.0)
+#define kNumCircles 3
+
+@interface MyDrawer : NSObject<CALayerDelegate>
+@property (nonatomic, assign) NSInteger index;
+@property (nonatomic, weak) CCActivityIndicator *parent;
+- (void) drawLayer:(CALayer *)layer inContext:(CGContextRef)context;
+@end
 
 @implementation CCActivityIndicator {
-    CGFloat _alpha;
-    NSTimer *_timer;
+    MyDrawer *_drawers[kNumCircles + 1];
+    CALayer *_layers[kNumCircles + 1];
 }
+
 - (void) dealloc {
-    [_timer invalidate];
-    _timer = nil;
+    if (_animating) self.animating = NO;
 }
+
 - (void)ccCommonInit {
     self.backgroundColor = UIColor.clearColor;
     self.opaque = NO;
     // below attempts to politely not overwrite any values set by Interface Builder
-    if (_speed <= epsilon) self.speed = 1.0;
-    if (_fps <= epsilon) self.fps = 25.0;
     if (!_color) self.color = UIColor.whiteColor;
+    self.clearsContextBeforeDrawing = YES;
+    for (int i = 0; i < kNumCircles+1; ++i) {
+        CALayer *l = CALayer.layer;
+        MyDrawer *d = [MyDrawer new];
+        _layers[i] = l;
+        _drawers[i] = d;
+        d.index = i;
+        d.parent = self;
+        l.drawsAsynchronously = YES;
+        l.delegate = _drawers[i];
+        [self.layer addSublayer:l];
+        [l setNeedsDisplay];
+    }
+    [self.layer setNeedsDisplay];
 }
 - (instancetype)init { if ((self=[super init])) [self ccCommonInit]; return self;}
 - (instancetype)initWithFrame:(CGRect)frame { if ((self=[super initWithFrame:frame])) [self ccCommonInit]; return self;}
 - (instancetype)initWithCoder:(NSCoder *)coder { if ((self=[super initWithCoder:coder])) [self ccCommonInit]; return self; }
-- (void)drawRect:(CGRect)rect
-{
+
+- (void)layoutSubviews {
+    CGRect f = self.bounds;
+    for (int i = 0; i < kNumCircles+1; ++i) {
+        _layers[i].frame = f;
+        [_layers[i] setNeedsDisplay];
+    }
+    [self.layer setNeedsDisplay];
+}
+
+- (void) animateLayer:(int)index {
+    if (index <= 0 || index > kNumCircles) return;
+    CALayer *l = _layers[index];
+    static const CGFloat kAlphaMuls[kNumCircles+1] = {0, 0.6175, 1.53, -0.98};
+    CABasicAnimation* rotationAnimation;
+    CGFloat gamma = kAlphaMuls[index];
+    CGFloat duration = 1.0;
+    rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotationAnimation.toValue = [NSNumber numberWithFloat: M_PI * 2.0 /* full rotation*/ * 1.0 * gamma ];
+    rotationAnimation.duration = duration;
+    rotationAnimation.cumulative = YES;
+    rotationAnimation.repeatCount = HUGE_VALF;
+    [l addAnimation:rotationAnimation forKey:@"rotationAnimation"];
+}
+
+- (void) setLineWidth:(CGFloat)lineWidth {
+    _lineWidth = lineWidth;
+    [self layoutSubviews]; // force redraw
+}
+
+- (void) setColor:(UIColor *)color {
+    _color = [color copy];
+    [self layoutSubviews];
+}
+
+- (void) setAnimating:(BOOL)b {
+    if (!!_animating == !!b) return;
+    _animating = b;
+    if (!_animating) {
+        [self.layer removeAllAnimations];
+        for (int i = 1; i < kNumCircles+1; ++i)
+            [_layers[i] removeAllAnimations];
+    } else {
+        for (int i = 1; i < kNumCircles+1; ++i)
+            [self animateLayer:i];
+    }
+}
+@end
+@implementation MyDrawer
+- (void) drawLayer:(CALayer *)layer inContext:(CGContextRef)context {
+    int index = (int)self.index;
+    if (index < 0 || index > kNumCircles || !_parent) return;
+    CGRect rect = CGContextGetClipBoundingBox(context);
 
     const CGFloat height = MIN(CGRectGetHeight(rect), CGRectGetWidth(rect));
-    CGFloat lineWidth = _lineWidth;
+    CGFloat lineWidth = _parent.lineWidth;
     CGFloat smallCircleHeight = height / 4.0f;
     if (smallCircleHeight < 4.0)
         smallCircleHeight = 4.0;
@@ -50,61 +122,27 @@ static const CGFloat epsilon = 0.00001;
 
     const CGPoint rectCenter = CGPointMake(CGRectGetMidX(rect), CGRectGetMidY(rect));
 
-    CGContextRef context = UIGraphicsGetCurrentContext();
-
     CGContextSetLineWidth(context, lineWidth);
 
-    CGContextSetStrokeColorWithColor(context, _color.CGColor);
-    CGContextAddEllipseInRect(context, bigCircleRect);
-    CGContextStrokePath(context);
+    if (index == 0) { // big circle layer
+        CGContextSetStrokeColorWithColor(context, _parent.color.CGColor);
+        CGContextAddEllipseInRect(context, bigCircleRect);
+        CGContextStrokePath(context);
 
-    CGContextSetFillColorWithColor(context, _color.CGColor);
+        return;
+    }
 
-
-    static const NSUInteger kNumCircles = 3u;
-    static const CGFloat kAlphaMuls[kNumCircles] = {0.33, 1.33, 2.12};
+    CGContextSetFillColorWithColor(context, _parent.color.CGColor);
     static const CGFloat kSizeMuls[kNumCircles] = {1.0, 0.75, 0.66};
-    static const CGFloat kClamp = (M_PI * 2.0)*1e3;
-    if (_alpha > kClamp)
-        // clamp alpha to some fixed high value to avoid floating point degeneration
-        _alpha = _alpha - kClamp;
-    CGFloat alpha = _alpha;
+    CGFloat alpha = (index-1) * (M_PI / (kNumCircles / 2.0f));
 
-    for (NSUInteger i = 0; i < kNumCircles; ++i)
-    {
-        const CGFloat myalpha = alpha*kAlphaMuls[i];
-        const CGFloat myheight = smallCircleHeight*kSizeMuls[i];
-        CGPoint smallCircleCenter = CGPointMake(rectCenter.x  + bigCircleRadius * cos(myalpha) - myheight/2.0f , rectCenter.y + bigCircleRadius * sin(myalpha) - myheight / 2.0f );
-        CGRect smallCircleRect = CGRectMake(smallCircleCenter.x,smallCircleCenter.y,myheight,myheight);
+    const CGFloat myheight = smallCircleHeight*kSizeMuls[index-1];
+    CGPoint smallCircleCenter = CGPointMake(rectCenter.x  + bigCircleRadius * cos(alpha) - myheight/2.0f , rectCenter.y + bigCircleRadius * sin(alpha) - myheight / 2.0f );
+    CGRect smallCircleRect = CGRectMake(smallCircleCenter.x,smallCircleCenter.y,myheight,myheight);
 
-        CGContextAddEllipseInRect(context, smallCircleRect);
-        CGContextFillPath(context);
-        alpha += M_PI / (kNumCircles / 2.0f);
-    }
+    CGContextAddEllipseInRect(context, smallCircleRect);
+    CGContextFillPath(context);
 }
-
-- (void) setAnimating:(BOOL)b {
-    if (!!_animating == !!b) return;
-    _animating = b;
-    __weak CCActivityIndicator * weakSelf = self;
-    if (_animating) {
-        CGFloat fps = self.fps;
-        if (fps < 0.25) fps = 0.25;
-        if (fps > 60.0) fps = 60.0;
-        _timer = [NSTimer scheduledTimerWithTimeInterval:1.0/fps repeats:YES block:^(NSTimer *t) {
-            __strong CCActivityIndicator *strongSelf = weakSelf;
-            if (strongSelf) {
-                strongSelf->_alpha += (5.0 * strongSelf->_speed) / fps;
-                //NSLog(@"Timer called for: %@", weakSelf);
-                [strongSelf setNeedsDisplay];
-            }
-        }];
-    } else {
-        [_timer invalidate];
-        _timer = nil;
-    }
-}
-
 @end
 
 
