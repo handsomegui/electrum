@@ -24,7 +24,7 @@
     if (!_colorTitle) self.colorTitle = UIColor.grayColor;
     if (!_colorTitle2) self.colorTitle2 = UIColor.blueColor;
     if (!_colorItems) self.colorItems = UIColor.blackColor;
-    _lmarginCS.active = NO;
+    self.flushLeft = _flushLeft; // in case it was preset with key-value setup in XIB, redo setup for it
     _chevronImages = [NSMutableArray arrayWithCapacity:6];
     _chevronImagesReversed = [NSMutableArray arrayWithCapacity:6];
     for (int i = 0; i < 6; ++i) {
@@ -44,8 +44,8 @@
     _chevron.highlightedAnimationImages = _chevronImagesReversed;
     _chevron.highlightedImage = _chevronImagesReversed[0];
     _chevron.image = _chevronImages[0];
-    self.topTitle = @"Title";
-    self.items = @[@"Item 1", @"Item 2", @"Item 3", @"Item 4"];
+    if (!_topTitle) self.topTitle = @"Title";
+    if (!_items) self.items = @[@"Item 1", @"Item 2", @"Item 3", @"Item 4"];
     _savedBottomHeight = _bottomHeightCS.constant;
     if (!_opened) {
         _bottomHeightCS.constant = 0;
@@ -101,7 +101,6 @@
     if (!_inInit) [_tv reloadData];
 }
 - (void) setFlushLeft:(BOOL)flushLeft {
-    if (!!_flushLeft == !!flushLeft) return;
     _flushLeft = flushLeft;
     if (_flushLeft) {
         _lmarginCS.active = YES;
