@@ -17,11 +17,19 @@
                 <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
-                    <view opaque="NO" contentMode="scaleToFill" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="2VD-JC-42z" userLabel="DummyTop1">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="64"/>
+                    <view opaque="NO" contentMode="scaleToFill" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="2VD-JC-42z" userLabel="DummyTop1a">
+                        <rect key="frame" x="0.0" y="0.0" width="187.5" height="64"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <connections>
                             <outletCollection property="gestureRecognizers" destination="Slp-Z9-ay7" appends="YES" id="Suw-7d-N4A"/>
+                        </connections>
+                    </view>
+                    <view opaque="NO" contentMode="scaleToFill" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="MTK-pN-E4T" userLabel="DummyTop1b">
+                        <rect key="frame" x="187.5" y="0.0" width="187.5" height="64"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <gestureRecognizers/>
+                        <connections>
+                            <outletCollection property="gestureRecognizers" destination="LJ0-X4-FoI" appends="YES" id="3Rb-Ww-rIH"/>
                         </connections>
                     </view>
                     <view opaque="NO" contentMode="scaleToFill" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="zN7-Bq-pq7" userLabel="DummyTop2">
@@ -89,7 +97,6 @@
                             <constraint firstItem="ser-jZ-cRE" firstAttribute="centerY" secondItem="Ocm-Oi-8Hi" secondAttribute="centerY" id="Xgx-wq-t7J"/>
                             <constraint firstAttribute="trailing" secondItem="ra4-px-lSo" secondAttribute="trailing" id="bQR-3o-Tft"/>
                             <constraint firstAttribute="height" constant="42" id="eH2-Ok-luv"/>
-                            <constraint firstAttribute="width" constant="187" id="g2s-av-RXQ"/>
                             <constraint firstItem="ra4-px-lSo" firstAttribute="centerY" secondItem="Ocm-Oi-8Hi" secondAttribute="centerY" id="oL1-WX-GXH"/>
                             <constraint firstItem="ser-jZ-cRE" firstAttribute="leading" secondItem="Ocm-Oi-8Hi" secondAttribute="leading" id="vnK-1R-ftK"/>
                         </constraints>
@@ -104,19 +111,24 @@
                     <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="leading" secondItem="wxR-uk-we6" secondAttribute="leading" priority="999" id="00s-bq-CEM"/>
                     <constraint firstItem="zN7-Bq-pq7" firstAttribute="width" secondItem="uks-4C-x0E" secondAttribute="width" id="1A4-R1-AVG"/>
                     <constraint firstItem="DsC-f8-vXf" firstAttribute="leading" secondItem="wxR-uk-we6" secondAttribute="leading" id="3eX-us-n4u"/>
+                    <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="width" secondItem="MTK-pN-E4T" secondAttribute="width" id="A3X-O6-hE2"/>
+                    <constraint firstItem="MTK-pN-E4T" firstAttribute="leading" secondItem="2VD-JC-42z" secondAttribute="trailing" id="AiU-Nj-DBp"/>
                     <constraint firstItem="fys-Bc-Jq4" firstAttribute="top" secondItem="DsC-f8-vXf" secondAttribute="bottom" id="CLE-wU-CV1"/>
                     <constraint firstItem="zN7-Bq-pq7" firstAttribute="centerX" secondItem="uks-4C-x0E" secondAttribute="centerX" id="CmB-kC-O4l"/>
-                    <constraint firstItem="wxR-uk-we6" firstAttribute="trailing" secondItem="2VD-JC-42z" secondAttribute="trailing" id="ERv-HB-dtY"/>
+                    <constraint firstItem="MTK-pN-E4T" firstAttribute="top" secondItem="uks-4C-x0E" secondAttribute="top" id="E68-Ed-kQx"/>
+                    <constraint firstItem="MTK-pN-E4T" firstAttribute="trailing" secondItem="wxR-uk-we6" secondAttribute="trailing" id="EKl-qP-wWQ"/>
                     <constraint firstItem="wxR-uk-we6" firstAttribute="bottom" secondItem="fys-Bc-Jq4" secondAttribute="bottom" id="HD7-mD-x8Y"/>
                     <constraint firstItem="DsC-f8-vXf" firstAttribute="trailing" secondItem="wxR-uk-we6" secondAttribute="trailing" id="Tgb-nq-VSL"/>
                     <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="trailing" secondItem="wxR-uk-we6" secondAttribute="trailing" id="YeU-hJ-GKM"/>
                     <constraint firstItem="wxR-uk-we6" firstAttribute="trailing" secondItem="fys-Bc-Jq4" secondAttribute="trailing" id="ahb-y5-Egt"/>
+                    <constraint firstItem="zN7-Bq-pq7" firstAttribute="top" secondItem="MTK-pN-E4T" secondAttribute="bottom" id="clJ-1t-Crs"/>
                     <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="centerY" secondItem="zN7-Bq-pq7" secondAttribute="centerY" id="hsI-Oa-kmp"/>
                     <constraint firstItem="DsC-f8-vXf" firstAttribute="top" secondItem="Ocm-Oi-8Hi" secondAttribute="bottom" id="iLd-dT-tLM"/>
                     <constraint firstItem="DsC-f8-vXf" firstAttribute="top" secondItem="zN7-Bq-pq7" secondAttribute="bottom" id="lW1-Zn-QSG"/>
                     <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="top" secondItem="wxR-uk-we6" secondAttribute="top" constant="44" id="m7g-4S-C3q"/>
                     <constraint firstItem="2VD-JC-42z" firstAttribute="leading" secondItem="wxR-uk-we6" secondAttribute="leading" id="px4-Jq-tzS"/>
                     <constraint firstItem="fys-Bc-Jq4" firstAttribute="leading" secondItem="wxR-uk-we6" secondAttribute="leading" id="quO-5a-hoE"/>
+                    <constraint firstItem="MTK-pN-E4T" firstAttribute="width" secondItem="2VD-JC-42z" secondAttribute="width" id="tz5-DD-nM9"/>
                     <constraint firstItem="2VD-JC-42z" firstAttribute="top" secondItem="uks-4C-x0E" secondAttribute="top" id="vM3-29-eXb"/>
                     <constraint firstItem="zN7-Bq-pq7" firstAttribute="top" secondItem="2VD-JC-42z" secondAttribute="bottom" id="xqx-wG-ZSn"/>
                 </constraints>
@@ -145,7 +157,7 @@
             </connections>
             <point key="canvasLocation" x="33.5" y="54.5"/>
         </viewController>
-        <tapGestureRecognizer id="xRS-IL-pBO">
+        <tapGestureRecognizer id="xRS-IL-pBO" userLabel="Drawer Tap Gesture Recognizer">
             <connections>
                 <action selector="tappedControl" destination="5aM-p3-OzZ" id="JL3-Za-Hag"/>
             </connections>
@@ -163,6 +175,11 @@
         <tapGestureRecognizer cancelsTouchesInView="NO" id="UrG-lF-eGj" userLabel="Outside3 Tap Gesture Recognizer">
             <connections>
                 <action selector="tappedOutside:" destination="5aM-p3-OzZ" id="Pfh-qa-BKP"/>
+            </connections>
+        </tapGestureRecognizer>
+        <tapGestureRecognizer id="LJ0-X4-FoI" userLabel="Outside4 Tap Gesture Recognizer">
+            <connections>
+                <action selector="tappedOutside:" destination="5aM-p3-OzZ" id="egS-T2-pUL"/>
             </connections>
         </tapGestureRecognizer>
     </objects>
