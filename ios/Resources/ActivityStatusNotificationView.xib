@@ -21,19 +21,27 @@
                     <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <nil key="highlightedColor"/>
                 </label>
-                <activityIndicatorView opaque="NO" tag="1" contentMode="scaleAspectFit" horizontalHuggingPriority="750" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" placeholderIntrinsicWidth="12" placeholderIntrinsicHeight="12" hidesWhenStopped="YES" animating="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="r93-cW-Ts4">
-                    <rect key="frame" x="298" y="4" width="12" height="182"/>
-                    <rect key="contentStretch" x="0.0" y="0.0" width="0.0" height="0.0"/>
-                </activityIndicatorView>
+                <view opaque="NO" tag="1" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Emp-VQ-7eH" customClass="CCActivityIndicator">
+                    <rect key="frame" x="236.5" y="89" width="12" height="12"/>
+                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="12" id="Edb-oF-9n2"/>
+                        <constraint firstAttribute="width" constant="12" id="oUI-Oy-2oT"/>
+                    </constraints>
+                    <userDefinedRuntimeAttributes>
+                        <userDefinedRuntimeAttribute type="color" keyPath="color">
+                            <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        </userDefinedRuntimeAttribute>
+                    </userDefinedRuntimeAttributes>
+                </view>
             </subviews>
             <color key="backgroundColor" red="0.050357615568848359" green="0.20937224133726198" blue="0.24630681818181818" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
             <constraints>
                 <constraint firstAttribute="centerX" secondItem="z9l-SY-8er" secondAttribute="centerX" priority="750" id="64P-Uw-ajT"/>
-                <constraint firstAttribute="bottom" secondItem="r93-cW-Ts4" secondAttribute="bottom" constant="4" id="8cB-VL-uNF"/>
-                <constraint firstAttribute="trailing" secondItem="r93-cW-Ts4" secondAttribute="trailing" constant="10" id="DeR-Ck-iiU"/>
-                <constraint firstItem="r93-cW-Ts4" firstAttribute="centerY" secondItem="z9l-SY-8er" secondAttribute="centerY" priority="750" id="Qc1-1z-FyY"/>
-                <constraint firstItem="r93-cW-Ts4" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="4" id="gaG-S3-BGI"/>
                 <constraint firstAttribute="centerY" secondItem="z9l-SY-8er" secondAttribute="centerY" priority="750" id="pzf-Hi-YQD"/>
+                <constraint firstItem="Emp-VQ-7eH" firstAttribute="leading" secondItem="z9l-SY-8er" secondAttribute="trailing" priority="999" constant="16" id="vo7-LA-hJU"/>
+                <constraint firstItem="Emp-VQ-7eH" firstAttribute="centerY" secondItem="z9l-SY-8er" secondAttribute="centerY" id="yVR-de-otB"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Emp-VQ-7eH" secondAttribute="trailing" constant="4" id="yWQ-Ha-uod"/>
             </constraints>
             <nil key="simulatedStatusBarMetrics"/>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>

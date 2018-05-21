@@ -321,9 +321,6 @@ class ElectrumGui(PrintError):
             lbl = objs[0].viewWithTag_(2)
             if lbl is not None:
                 lbl.text = _("Downloading blockchain headers...")
-            activityIndicator = objs[0].viewWithTag_(1)
-            if activityIndicator is not None:
-                activityIndicator.affineScaleX_scaleY_(0.5, 0.5)
             self.downloadingNotif_view = objs[0].retain()
     
     def __del__(self):
@@ -450,11 +447,14 @@ class ElectrumGui(PrintError):
             lbl = self.downloadingNotif_view.viewWithTag_(2)
             if lbl is not None: lbl.text = txt
 
+        activityIndicator = self.downloadingNotif_view.viewWithTag_(1)
+        if not activityIndicator.animating:
+            activityIndicator.animating = True
+
         if self.is_downloading_notif_showing():
             return
 
         def Completion() -> None:
-            #print ("Show completion")
             pass
         self.downloadingNotif_view.removeFromSuperview()
         self.downloadingNotif.displayNotificationWithView_completion_(

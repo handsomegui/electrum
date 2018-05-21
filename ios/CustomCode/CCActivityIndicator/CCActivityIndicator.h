@@ -19,5 +19,6 @@
 @property (nonatomic, assign) BOOL animating;
 @property (nonatomic, assign) CGFloat fps; //< defaults to 25.0. Just how much CPU do you want to devote to this view? :) Note setting the value to negative or 0.0 will result in undefined behavior.
 @property (nonatomic, assign) CGFloat speed; //< defaults to 1.0.  Set it to negative for retrograde motion, or >1.0 to speed up the animation, or <1.0 to slow it down
+@property (nonatomic, assign) CGFloat lineWidth; //< defaults to 0.0, which means auto (based on size of View).  Otherwise, if specified, it's the thickness of the stroked circle's line.
 @end
 

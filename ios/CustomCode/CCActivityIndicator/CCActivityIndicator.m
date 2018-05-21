@@ -8,6 +8,8 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import "CCActivityIndicator.h"
 
+static const CGFloat epsilon = 0.00001;
+
 @implementation CCActivityIndicator {
     CGFloat _alpha;
     NSTimer *_timer;
@@ -20,7 +22,6 @@
     self.backgroundColor = UIColor.clearColor;
     self.opaque = NO;
     // below attempts to politely not overwrite any values set by Interface Builder
-    static const CGFloat epsilon = 0.00001;
     if (_speed <= epsilon) self.speed = 1.0;
     if (_fps <= epsilon) self.fps = 25.0;
     if (!_color) self.color = UIColor.whiteColor;
@@ -32,10 +33,17 @@
 {
 
     const CGFloat height = MIN(CGRectGetHeight(rect), CGRectGetWidth(rect));
-
+    CGFloat lineWidth = _lineWidth;
     CGFloat smallCircleHeight = height / 4.0f;
-    if (smallCircleHeight < 6.0)
-        smallCircleHeight = 6.0;
+    if (smallCircleHeight < 4.0)
+        smallCircleHeight = 4.0;
+
+    if (lineWidth < epsilon) {
+        // do auto line width based on size
+        lineWidth = smallCircleHeight * 0.166;
+        if (lineWidth < .5) lineWidth = .5;
+    }
+
 
     const CGRect bigCircleRect = CGRectInset(rect, smallCircleHeight / 2.0f, smallCircleHeight / 2.0f);
     const CGFloat bigCircleRadius = MIN(CGRectGetHeight(bigCircleRect) / 2.0f, CGRectGetWidth(bigCircleRect) / 2.0f);
@@ -44,7 +52,7 @@
 
     CGContextRef context = UIGraphicsGetCurrentContext();
 
-    CGContextSetLineWidth(context, 2.0f);
+    CGContextSetLineWidth(context, lineWidth);
 
     CGContextSetStrokeColorWithColor(context, _color.CGColor);
     CGContextAddEllipseInRect(context, bigCircleRect);
@@ -54,7 +62,7 @@
 
 
     static const NSUInteger kNumCircles = 3u;
-    static const CGFloat kAlphaMuls[kNumCircles] = {0.33, 1.33, 1.66};
+    static const CGFloat kAlphaMuls[kNumCircles] = {0.33, 1.33, 2.12};
     static const CGFloat kSizeMuls[kNumCircles] = {1.0, 0.75, 0.66};
     static const CGFloat kClamp = (M_PI * 2.0)*1e3;
     if (_alpha > kClamp)
