@@ -66,7 +66,9 @@ static const CGFloat epsilon = 0.00001;
     // variant 1:
     //static const CGFloat kAlphaMuls[kNumCircles+1] = {0.0,0.33, 1.33, 2.12};
     // variant 2:
-    static const CGFloat kAlphaMuls[kNumCircles+1] = {0, 0.6175, 1.53, -0.98};
+    //static const CGFloat kAlphaMuls[kNumCircles+1] = {0, 0.6175, 1.53, -0.98};
+    // variant 3 (Max's):
+    static const CGFloat kAlphaMuls[kNumCircles+1] = {0.0, 0.7, 1.2, 1.8}; //1.33, 2.12};
     CABasicAnimation* rotationAnimation;
     CGFloat gamma = kAlphaMuls[index];
     CGFloat duration = 1.0;
@@ -109,7 +111,7 @@ static const CGFloat epsilon = 0.00001;
 
     const CGFloat height = MIN(CGRectGetHeight(rect), CGRectGetWidth(rect));
     CGFloat lineWidth = _parent.lineWidth;
-    CGFloat smallCircleHeight = height / 4.0f;
+    CGFloat smallCircleHeight = height / 6.0f; //4.0f;
     if (smallCircleHeight < 4.0)
         smallCircleHeight = 4.0;
 
@@ -136,7 +138,7 @@ static const CGFloat epsilon = 0.00001;
     }
 
     CGContextSetFillColorWithColor(context, _parent.color.CGColor);
-    static const CGFloat kSizeMuls[kNumCircles] = {1.0, 0.75, 0.66};
+    static const CGFloat kSizeMuls[kNumCircles] = {1.0, 0.8, 0.6};//0.75, 0.66};
     CGFloat alpha = (index-1) * (M_PI / (kNumCircles / 2.0f));
 
     const CGFloat myheight = smallCircleHeight*kSizeMuls[index-1];

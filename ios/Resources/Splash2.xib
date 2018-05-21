@@ -32,11 +32,11 @@
                         </constraints>
                     </imageView>
                     <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Gfd-cp-cff" userLabel="CCActivityIndicator" customClass="CCActivityIndicator">
-                        <rect key="frame" x="177" y="489.33333333333326" width="60" height="60"/>
+                        <rect key="frame" x="189" y="489.33333333333331" width="36" height="35.999999999999943"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="60" id="0hP-jW-K5M"/>
-                            <constraint firstAttribute="height" constant="60" id="8un-5Y-3Ru"/>
+                            <constraint firstAttribute="width" constant="36" id="0hP-jW-K5M"/>
+                            <constraint firstAttribute="height" constant="36" id="8un-5Y-3Ru"/>
                         </constraints>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="boolean" keyPath="animating" value="YES"/>
