@@ -702,9 +702,16 @@ class AddressesVC(AddressesVCBase):
         
     @objc_method
     def doComboClose_(self, vc) -> None:
+        self.doComboClose_animated_(vc, True)
+
+    @objc_method
+    def doComboClose_animated_(self, vc, animated : bool) -> None:
         # NB: weak ref self.modalDrawerVC will be auto-cleared by obj-c runtime after it is dismissed
-        utils.call_later(0.050, self.dismissViewControllerAnimated_completion_,True, None)
-        vc.closeAnimated_(True)
+        if animated:
+            utils.call_later(0.050, self.dismissViewControllerAnimated_completion_,True, None)
+        else:
+            self.dismissViewControllerAnimated_completion_(False, None)    
+        vc.closeAnimated_(animated)
     
     @objc_method
     def onTapComboProxyL(self) -> None:
