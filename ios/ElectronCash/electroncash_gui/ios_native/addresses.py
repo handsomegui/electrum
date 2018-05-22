@@ -763,7 +763,7 @@ class AddressData:
                 l2.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
                 #print(_TYPES[i],_STATUSES[j],"len",len(l2))
         
-        utils.NSLog("fetched %d addresses from wallet in %f msec",numAddresses,(time.time()-t0)*1e3)
+        utils.NSLog("fetched %d addresses from wallet in %f ms",numAddresses,(time.time()-t0)*1e3)
     
 
 def present_modal_address_picker(callback, vc = None) -> None:
