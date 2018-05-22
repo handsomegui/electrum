@@ -335,14 +335,13 @@ class AddressesVC(AddressesVCBase):
                 self.tabBarItem.image = UIImage.imageNamed_("tab_addresses.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
     
             self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
-            self.updateAddressesFromWallet()
             
             if self.mode == ModePicker:
                 def onRefreshCtl() -> None:
                     self.refresh()
                 self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
      
-            gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.needUpdate(), self)
+            gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self)
        
         return self
 
@@ -399,7 +398,7 @@ class AddressesVC(AddressesVCBase):
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
         try:
-            addrData = utils.nspy_get_byname(self, 'addrData')
+            addrData = _Get()
             return 1 if addrData.master[self.comboL.selection][self.comboR.selection] is not None else 0
         except:
             print("Error in addresses 1:",str(sys.exc_info()[1]))
@@ -408,7 +407,7 @@ class AddressesVC(AddressesVCBase):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView : ObjCInstance, section : int) -> int:
         try:
-            addrData = utils.nspy_get_byname(self, 'addrData')
+            addrData = _Get()
             return max(1,len(addrData.master[self.comboL.selection][self.comboR.selection])) if addrData is not None else 0
         except:
             print("Error in addresses 2:",str(sys.exc_info()[1]))
@@ -425,7 +424,7 @@ class AddressesVC(AddressesVCBase):
             newCell = True
 
         try:
-            addrData = utils.nspy_get_byname(self, 'addrData')
+            addrData = _Get()
             entries = addrData.master[self.comboL.selection][self.comboR.selection]
         except:
             print("Error in addresses 3:",str(sys.exc_info()[1]))
@@ -531,7 +530,7 @@ class AddressesVC(AddressesVCBase):
         #print("DID SELECT ROW CALLED FOR SECTION %s, ROW %s"%(str(indexPath.section),str(indexPath.row)))
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
         try:
-            addrData = utils.nspy_get_byname(self, 'addrData')
+            addrData = _Get()
             section = addrData.master[self.comboL.selection][self.comboR.selection]
             if indexPath.row >= len(section):
                 print("User tapped invalid cell.  Possibly the 'No Results' cell.")
@@ -545,35 +544,17 @@ class AddressesVC(AddressesVCBase):
         except:
             print ("Exception encountered:",str(sys.exc_info()[1]))
     
-    @objc_method
-    def updateAddressesFromWallet(self):
-        addrData = utils.nspy_get_byname(self, 'addrData')
-        if addrData is None:
-            addrData = AddressData(gui.ElectrumGui.gui)
-        addrData.refresh()
-        utils.nspy_put_byname(self, addrData, 'addrData')
 
     @objc_method
     def refresh(self):
         self.needsRefresh = True # mark that a refresh was called in case refresh is blocked
         if self.blockRefresh:
             return
-        self.updateAddressesFromWallet()
         if self.refreshControl: self.refreshControl.endRefreshing()
         if self.tableView: 
             self.tableView.reloadData()
         #print("did address refresh")
         self.needsRefresh = False # indicate refreshing done
-
-    @objc_method
-    def needUpdate(self):
-        if self.needsRefresh: return
-        self.needsRefresh = True
-        self.retain()
-        def inMain() -> None:
-            self.doRefreshIfNeeded()
-            self.autorelease()
-        utils.do_in_main_thread(inMain)
 
     # This method runs in the main thread as it's enqueue using our hacky "Heartbeat" mechanism/workaround for iOS
     @objc_method
@@ -799,12 +780,9 @@ def present_modal_address_picker(callback, vc = None) -> None:
     vc.presentViewController_animated_completion_(nav, True, None)
 
 def EntryForAddress(address : str) -> object:
-    vc = gui.ElectrumGui.gui.addressesVC
-    if not vc:
-        raise ValueError('EntryForAddress: requires a valid ElectrumGui.addressesVC instance!')
     address = str(address)
     address = Address.from_string(address)
-    addrData = utils.nspy_get_byname(vc, 'addrData')
+    addrData = _Get()
     if not addrData: return
     try:
         l = addrData.master[0][0]
@@ -827,3 +805,15 @@ def PushDetail(address_or_entry : object, navController : ObjCInstance) -> ObjCI
     utils.nspy_put_byname(addrDetail, entry, 'entry')
     navController.pushViewController_animated_(addrDetail, True)
     return addrDetail
+
+from typing import Any
+class AddressesMgr(utils.DataMgr):
+    def doReloadForKey(self, key : Any) -> Any:
+        a = AddressData(gui.ElectrumGui.gui)
+        a.refresh()
+        utils.NSLog("AddressMgr refresh")
+        return a
+
+def _Get() -> AddressData:
+    return gui.ElectrumGui.gui.sigAddresses.get(None)
+

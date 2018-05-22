@@ -149,7 +149,7 @@ class ElectrumGui(PrintError):
         # Signals mechanism for publishing data to interested components asynchronously -- see self.refresh_components()
         self.sigHelper = utils.PySig()
         self.sigHistory = history.HistoryMgr() # this DataMgr instance also caches history data
-        self.sigAddresses = utils.PySig()
+        self.sigAddresses = addresses.AddressesMgr()
         self.sigPrefs = utils.PySig()
         self.sigRequests = receive.RequestsMgr()
         self.sigNetwork = utils.PySig()
