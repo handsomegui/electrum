@@ -582,14 +582,6 @@ class AddressesVC(AddressesVCBase):
             self.refresh()
             #print ("ADDRESSES REFRESHED")
 
-
-    @objc_method
-    def showRefreshControl(self):
-        if self.refreshControl is not None and not self.refreshControl.isRefreshing():
-            # the below starts up the table view in the "refreshing" state..
-            self.refreshControl.beginRefreshing()
-            self.tableView.setContentOffset_animated_(CGPointMake(0, self.tableView.contentOffset.y-self.refreshControl.frame.size.height), True)
-
     @objc_method
     def textFieldShouldReturn_(self, tf) -> bool:
         #print("hit return, value is {}".format(tf.text))

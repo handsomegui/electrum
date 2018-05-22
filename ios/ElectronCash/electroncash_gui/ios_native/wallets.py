@@ -101,15 +101,6 @@ class WalletsVC(WalletsVCBase):
             self.doChkTableViewCounts()
 
     @objc_method
-    def showRefreshControl(self):
-        if self.txsHelper.tv and self.txsHelper.tv.refreshControl is not None and not self.txsHelper.tv.refreshControl.isRefreshing():
-            # the below starts up the table view in the "refreshing" state..
-            tv = self.txsHelper.tv
-            rc = self.txsHelper.tv.refreshControl
-            rc.beginRefreshing()
-            tv.setContentOffset_animated_(CGPointMake(0, tv.contentOffset.y-rc.frame.size.height), True)
-
-    @objc_method
     def setStatus_(self, mode : int) -> None:
         send_super(__class__, self, 'setStatus:', mode, argtypes=[c_int])
         if self.viewIfLoaded is None or self.statusLabel is None:
