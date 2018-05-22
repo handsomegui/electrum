@@ -321,6 +321,11 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface AddressesVC : AddressesVCBase
 - (IBAction) onTapComboProxyL;
 - (IBAction) onTapComboProxyR;
+- (IBAction) onTapAddress:(UIGestureRecognizer *)gr;
 @end
 
+@interface AddressesCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UILabel *index, *address, *balanceTit, *balance, *flags, *desc;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS, *midCS;
+@end
 #endif /* ViewsForIB_h */

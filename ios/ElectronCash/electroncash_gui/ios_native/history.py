@@ -198,7 +198,10 @@ class TxHistoryHelper(TxHistoryHelperBase):
             if cell is None:
                 cell =  UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
             cell.textLabel.text = _("No transactions")
-            cell.detailTextLabel.text = _("No transactions for this wallet exist on the blockchain.")
+            cell.textLabel.textColor = utils.uicolor_custom('dark')
+            cell.detailTextLabel.text = _("No transactions were found on the blockchain.")
+            cell.detailTextLabel.font = UIFont.italicSystemFontOfSize_(12.0)
+            cell.detailTextLabel.textColor = utils.uicolor_custom('light')
             return cell            
         identifier = "TxHistoryCell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)

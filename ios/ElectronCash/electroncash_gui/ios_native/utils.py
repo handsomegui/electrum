@@ -115,7 +115,7 @@ def uicolor_custom(name : str) -> ObjCInstance:
     if name in ['frozen', 'frozenaddress', 'frozen address']:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,0.125)
     if name in ['frozentext', 'frozen text', 'frozenaddresstext', 'frozen address text']:
-        return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,1.0)
+        return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,1.0) 
     NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
     return UIColor.grayColor
 
@@ -1075,7 +1075,7 @@ def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCIn
         r = NSRange(ix,l-ix)
         ats.addAttribute_value_range_(NSFontAttributeName,font,r)
     return ats
-def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance, cb : Callable = None, kern : float = None) -> ObjCInstance:
+def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None) -> ObjCInstance:
     #print("str=",amtStr,"pad=",pad,"spacesize=",_s3.width)
     p = ''
     if fiatStr:
@@ -1096,7 +1096,8 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
         ats.addAttribute_value_range_(NSFontAttributeName,_f2,r)
         if kern: ats.addAttribute_value_range_(NSKernAttributeName,kern,r)
         #ats.addAttribute_value_range_(NSBaselineOffsetAttributeName,3.0,r)
-        ats.addAttribute_value_range_(NSForegroundColorAttributeName,color,r)
+        if color:
+            ats.addAttribute_value_range_(NSForegroundColorAttributeName,color,r)
         #ats.addAttribute_value_range_(NSFontAttributeName,_f3,r2)
         #ats.addAttribute_value_range_(NSObliquenessAttributeName,0.1,r)
         #ps = NSMutableParagraphStyle.new().autorelease()

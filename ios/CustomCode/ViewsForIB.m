@@ -243,3 +243,7 @@
 @implementation AddressesVCBase
 // auto synthesized properties
 @end
+
+@implementation AddressesCell
+// auto synthesized properties
+@end
