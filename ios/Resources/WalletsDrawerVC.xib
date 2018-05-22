@@ -21,6 +21,14 @@
                 <rect key="frame" x="0.0" y="0.0" width="375" height="603"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="rFi-7F-vbi" userLabel="BGViewClearForTap">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="603"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <gestureRecognizers/>
+                        <connections>
+                            <outletCollection property="gestureRecognizers" destination="xZI-ff-dKb" appends="YES" id="biD-2S-Ne3"/>
+                        </connections>
+                    </view>
                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Pe2-j8-zom">
                         <rect key="frame" x="15" y="44" width="345" height="63"/>
                         <subviews>
@@ -142,11 +150,15 @@
                 </subviews>
                 <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.40416506901840493" colorSpace="calibratedRGB"/>
                 <constraints>
+                    <constraint firstItem="rFi-7F-vbi" firstAttribute="leading" secondItem="H9p-5Z-vbs" secondAttribute="leading" id="4VM-mH-1qu"/>
+                    <constraint firstItem="rFi-7F-vbi" firstAttribute="top" secondItem="H9p-5Z-vbs" secondAttribute="top" id="9ix-vo-Se8"/>
                     <constraint firstItem="Pe2-j8-zom" firstAttribute="top" secondItem="H9p-5Z-vbs" secondAttribute="top" constant="44" id="EnL-A9-HDR">
                         <variation key="heightClass=compact-widthClass=compact" constant="32"/>
                     </constraint>
                     <constraint firstItem="H9p-5Z-vbs" firstAttribute="trailing" secondItem="Pe2-j8-zom" secondAttribute="trailing" constant="15" id="MEF-r5-5WF"/>
                     <constraint firstItem="Pe2-j8-zom" firstAttribute="leading" secondItem="H9p-5Z-vbs" secondAttribute="leading" constant="15" id="ZbS-FT-OOa"/>
+                    <constraint firstItem="rFi-7F-vbi" firstAttribute="trailing" secondItem="H9p-5Z-vbs" secondAttribute="trailing" id="oVz-dv-8ut"/>
+                    <constraint firstItem="H9p-5Z-vbs" firstAttribute="bottom" secondItem="rFi-7F-vbi" secondAttribute="bottom" id="wTZ-kG-Jb0"/>
                 </constraints>
                 <viewLayoutGuide key="safeArea" id="H9p-5Z-vbs"/>
             </view>
@@ -271,6 +283,11 @@
         <tapGestureRecognizer id="QkJ-8L-iie" userLabel="Add Wallet Gesture Recognizer">
             <connections>
                 <action selector="addWallet" destination="h1e-D1-4xp" id="Qku-ix-YKm"/>
+            </connections>
+        </tapGestureRecognizer>
+        <tapGestureRecognizer id="xZI-ff-dKb" userLabel="BGTap Gesture Recognizer">
+            <connections>
+                <action selector="toggleDrawer" destination="-1" id="o2m-kP-kjT"/>
             </connections>
         </tapGestureRecognizer>
     </objects>

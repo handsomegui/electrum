@@ -311,4 +311,16 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onPayTo;
 @end
 
+@interface AddressesVCBase : UIViewController
+@property (nonatomic, weak) IBOutlet UIView *topComboProxyL, *topComboProxyR;
+@property (nonatomic, weak) IBOutlet UILabel *topLblL, *topLblR;
+@property (nonatomic, weak) IBOutlet UITableView *tableView;
+@end
+
+// stub for python -- implemented in addresses.py
+@interface AddressesVC : AddressesVCBase
+- (IBAction) onTapComboProxyL;
+- (IBAction) onTapComboProxyR;
+@end
+
 #endif /* ViewsForIB_h */

@@ -24,11 +24,12 @@
 @property (nonatomic) NSUInteger selection; // the current selected index. set it to change the selection
 @property (nonatomic, copy) void (^selectedBlock)(NSInteger selection); // optional callback to call whenever the selection changes.
 @property (nonatomic, copy) void (^openClosedBlock)(BOOL isOpen); // optional callback to call whenever the drawer is opened/closed
-@property (nonatomic, copy) void (^backgroundTappedBlock)(CGPoint location);
+@property (nonatomic, copy) void (^backgroundTappedBlock)(CGPoint locationInThisVCsView); // the point passed-in is in thisVC.view's coordinate space.
 @property (nonatomic, copy) void (^controlTappedBlock)(void); // called whenever the user taps the top title control area. If autoOpenCloseOnTap is true, toggleOpen will also be called
 @property (nonatomic, copy) UIColor *colorTitle, *colorTitle2, *colorItems;
 @property (nonatomic) BOOL autoOpenCloseOnTap; // iff true, calls [self toggleOen] automatically when the top drawer is tapped. the controlTappedBlock() callback is always called regardless. Defaults NO
 @property (nonatomic, readonly) NSAttributedString *attributedStringForTopTitle; /// generates an attributed string based on the current selected item, colorTitle, and colorTitle2.  Useful for putting into a UILabel in the stub proxy view used to represent this viewcontroller.
+@property (nonatomic, readonly) UIView *bottomView; // used in hacky code in addresses.py for display flicker prevention when switching drawer tabs
 - (void) toggleOpen;
 
 - (void)openAnimated:(BOOL)animated;

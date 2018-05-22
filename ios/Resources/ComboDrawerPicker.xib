@@ -125,7 +125,9 @@
                     <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="centerY" secondItem="zN7-Bq-pq7" secondAttribute="centerY" id="hsI-Oa-kmp"/>
                     <constraint firstItem="DsC-f8-vXf" firstAttribute="top" secondItem="Ocm-Oi-8Hi" secondAttribute="bottom" id="iLd-dT-tLM"/>
                     <constraint firstItem="DsC-f8-vXf" firstAttribute="top" secondItem="zN7-Bq-pq7" secondAttribute="bottom" id="lW1-Zn-QSG"/>
-                    <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="top" secondItem="wxR-uk-we6" secondAttribute="top" constant="44" id="m7g-4S-C3q"/>
+                    <constraint firstItem="Ocm-Oi-8Hi" firstAttribute="top" secondItem="wxR-uk-we6" secondAttribute="top" constant="44" id="m7g-4S-C3q">
+                        <variation key="heightClass=compact-widthClass=compact" constant="32"/>
+                    </constraint>
                     <constraint firstItem="2VD-JC-42z" firstAttribute="leading" secondItem="wxR-uk-we6" secondAttribute="leading" id="px4-Jq-tzS"/>
                     <constraint firstItem="fys-Bc-Jq4" firstAttribute="leading" secondItem="wxR-uk-we6" secondAttribute="leading" id="quO-5a-hoE"/>
                     <constraint firstItem="MTK-pN-E4T" firstAttribute="width" secondItem="2VD-JC-42z" secondAttribute="width" id="tz5-DD-nM9"/>

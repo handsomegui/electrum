@@ -215,7 +215,7 @@ class ElectrumGui(PrintError):
         self.tabController.tabBar.tintColor = utils.uicolor_custom('nav')
         self.tabController.tabBar.setTranslucent_(False)
     
-        self.addressesVC = adr = addresses.AddressesTableVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
+        self.addressesVC = adr = addresses.AddressesVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
         self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
         self.coinsVC = cns = coins.CoinsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
@@ -1436,11 +1436,6 @@ class ElectrumGui(PrintError):
         self.receiveVC.addr = (str(address))
         self.show_receive_modal()
         
-    def jump_to_addresses_with_address(self, address) -> None:
-        if not isinstance(address, Address) or not self.addressesNav or not self.wallet or not self.wallet.is_mine(address): return
-        self.show_addresses_tab()
-        self.addressesVC.focusAddress_(address.to_ui_string())
-
     def save_tabs_order(self, vcs : list = None) -> None:
         if not self.tabController or not self.config: return
         vcs = py_from_ns(self.tabController.viewControllers) if not vcs else vcs

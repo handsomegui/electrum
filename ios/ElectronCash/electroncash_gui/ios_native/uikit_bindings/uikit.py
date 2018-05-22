@@ -754,4 +754,3 @@ except NameError as e:
     print("iOS 11.0+ UI Swipe Action facility missing, exception was:","["+str(e)+"]")
 
 CIColor = ObjCClass('CIColor') # be careful using CIColor -- it has been known to not work due to iOS bugs
-

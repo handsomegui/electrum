@@ -112,7 +112,7 @@
 }
 
 - (void) setSelection:(NSUInteger)selection {
-    if (_selection == selection || selection > _items.count) return;
+    if (_selection == selection || selection >= _items.count) return;
     _selection = selection;
     if (!_inInit) {
         [self redoTitle];

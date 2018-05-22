@@ -239,3 +239,7 @@
 @implementation ContactDetailVCBase
 // auto synthesized properties
 @end
+
+@implementation AddressesVCBase
+// auto synthesized properties
+@end

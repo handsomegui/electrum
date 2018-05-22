@@ -12,21 +12,11 @@ from electroncash.address import Address
 import time
 import html
 import sys
-import enum
 from collections import namedtuple
 
 from .uikit_bindings import *
 from .custom_objc import *
 
-_TYPES = ("Any","Receiving","Change")
-_STATUSES = ("All", "Funded", "Unused", "Used")
-_TYPES_BY_NAME = dict()
-_STATUSES_BY_NAME = dict()
-
-for i,k in enumerate(_TYPES):
-    _TYPES_BY_NAME[k] = i
-for i,k in enumerate(_STATUSES):
-    _STATUSES_BY_NAME[k] = i
 
 class AddressDetail(UIViewController):
     
@@ -176,8 +166,8 @@ class AddressDetail(UIViewController):
                 pk = None
                 try:
                     pk = parent.wallet.export_private_key(entry.address, password) if parent.wallet else None
-                except:
-                    parent.show_error(str(sys.exc_info()[1]))
+                except Exception as e:
+                    parent.show_error(str(e))
                     return
                 if pk:
                     vc = private_key_dialog.PrivateKeyDialog.alloc().init().autorelease()
@@ -313,36 +303,30 @@ ModeNormal = 0
 ModePicker = 1
 
 # Addresses Tab -- shows addresses, etc
-class AddressesVC(AddressesVCBase):
+class AddressesTableVC(UITableViewController):
     needsRefresh = objc_property()
     blockRefresh = objc_property()
     mode = objc_property()
-    refreshControl = objc_property()
-    comboL = objc_property()
-    comboR = objc_property()
 
     @objc_method
     def initWithMode_(self, mode : int):
-        self = ObjCInstance(send_super(__class__, self, 'init'))
-        if self:
-            self.comboL = None
-            self.comboR = None
-            self.needsRefresh = False
-            self.blockRefresh = False
-            self.mode = int(mode)
-            self.title = _("&Addresses").split('&')[1] if self.mode == ModeNormal else _("Choose Address")
-            if self.mode == ModeNormal:
-                self.tabBarItem.image = UIImage.imageNamed_("tab_addresses.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
-    
-            self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
-            self.updateAddressesFromWallet()
-            
-            if self.mode == ModePicker:
-                def onRefreshCtl() -> None:
-                    self.refresh()
-                self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
-     
-            gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.needUpdate(), self)
+        self = ObjCInstance(send_super(__class__, self, 'initWithStyle:', UITableViewStylePlain, argtypes=[c_int]))
+        self.needsRefresh = False
+        self.blockRefresh = False
+        self.mode = int(mode)
+        self.title = _("&Addresses").split('&')[1] if self.mode == ModeNormal else _("Choose Address")
+        if self.mode == ModeNormal:
+            self.tabBarItem.image = UIImage.imageNamed_("tab_addresses.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
+
+        self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
+        self.updateAddressesFromWallet()
+        
+        if self.mode == ModePicker:
+            def onRefreshCtl() -> None:
+                self.refresh()
+            self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
+ 
+        gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.needUpdate(), self)
        
         return self
 
@@ -352,67 +336,42 @@ class AddressesVC(AddressesVCBase):
         self.needsRefresh = None
         self.mode = None
         self.blockRefresh = None
-        self.refreshControl = None
-        self.comboL = None
-        self.comboR = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
 
     @objc_method
     def loadView(self) -> None:
-        NSBundle.mainBundle.loadNibNamed_owner_options_("Addresses", self, None) # auto-attaches view
-        self.tableView.refreshControl = self.refreshControl
-
+        # frame is pretty much ignored due to autosizie but c'tor needs it...
+        self.tableView = CollapsableTableView.alloc().initWithFrame_style_(CGRectMake(0,0,320,600), UITableViewStylePlain).autorelease()
         if self.mode == ModeNormal:
             uinib = UINib.nibWithNibName_bundle_("AddressListCell", None)
             self.tableView.registerNib_forCellReuseIdentifier_(uinib, str(__class__))
-            
-        # set up the combodrawer "child" vc's (they aren't really children in the iOS sense since I hate the way iOS treats embedded VCs)
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ComboDrawerPicker", None, None)
-        for o in objs:
-            if isinstance(o, ComboDrawerPicker):
-                self.comboL = o
-                break
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ComboDrawerPicker", None, None)
-        for o in objs:
-            if isinstance(o, ComboDrawerPicker):
-                self.comboR = o
-                break
-            
-        self.comboL.flushLeft = True
-        
-    @objc_method
-    def viewDidLoad(self) -> None:
-        send_super(__class__, self, 'viewDidLoad')
-        self.setupComboCallbacks()
-        self.setupComboItems()
-        
-    @objc_method
-    def viewWillAppear_(self, animated : bool) -> None:
-        send_super(__class__, self, 'viewWillAppear:', animated, argtype=[c_bool])
-        
-        # hacky pulling in of attributed text string form the 'child' vc into our proxy stub
-        self.topLblL.attributedText = self.comboL.attributedStringForTopTitle
-        self.topLblR.attributedText = self.comboR.attributedStringForTopTitle
+
 
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
+        addrData = utils.nspy_get_byname(self, 'addrData')
+        return len(addrData.getSections()) if addrData is not None else 0
+    
+    @objc_method
+    def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
         try:
             addrData = utils.nspy_get_byname(self, 'addrData')
-            return 1 if addrData.master[self.comboL.selection][self.comboR.selection] is not None else 0
-        except:
-            print("Error in addresses 1:",str(sys.exc_info()[1]))
-        return 0
-    
+            return addrData.getSections().get(section, ('',None))[0]
+        except Exception as e:
+            print("Error in addresses 1: %s"%str(e))
+            return '*Error*'
+            
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView : ObjCInstance, section : int) -> int:
         try:
             addrData = utils.nspy_get_byname(self, 'addrData')
-            return max(1,len(addrData.master[self.comboL.selection][self.comboR.selection])) if addrData is not None else 0
-        except:
-            print("Error in addresses 2:",str(sys.exc_info()[1]))
-        return 0
+            d = addrData.getSections()
+            return len(d.get(section,(None,[]))[1])
+        except Exception as e:
+            print("Error in addresses 2: %s"%str(e))
+            return 0
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
@@ -423,22 +382,11 @@ class AddressesVC(AddressesVCBase):
         if self.mode == ModePicker and cell is None:
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle,identifier).autorelease()
             newCell = True
+        assert cell is not None
 
-        try:
-            addrData = utils.nspy_get_byname(self, 'addrData')
-            entries = addrData.master[self.comboL.selection][self.comboR.selection]
-        except:
-            print("Error in addresses 3:",str(sys.exc_info()[1]))
-            entries = list()
-        
-        if indexPath.row >= len(entries):
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle,"NoMatchCell").autorelease()
-            cell.textLabel.text = _("No Match")
-            cell.textLabel.textColor = utils.uicolor_custom('dark')
-            cell.detailTextLabel.text = _("No addresses match the specified criteria")
-            cell.detailTextLabel.textColor = utils.uicolor_custom('light')
-            return cell
-        
+        addrData = utils.nspy_get_byname(self, 'addrData')
+        entries = addrData.getSections().get(indexPath.section,(None,[]))[1]
+        assert indexPath.row < len(entries)
         entry = entries[indexPath.row]
         if self.mode == ModeNormal:
             addrlbl = cell.viewWithTag_(10)
@@ -529,21 +477,16 @@ class AddressesVC(AddressesVCBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
         #print("DID SELECT ROW CALLED FOR SECTION %s, ROW %s"%(str(indexPath.section),str(indexPath.row)))
-        tv.deselectRowAtIndexPath_animated_(indexPath,True)
-        try:
-            addrData = utils.nspy_get_byname(self, 'addrData')
-            section = addrData.master[self.comboL.selection][self.comboR.selection]
-            if indexPath.row >= len(section):
-                print("User tapped invalid cell.  Possibly the 'No Results' cell.")
-                return
-            entry = section[indexPath.row]
-            if self.mode == ModeNormal:
-                PushDetail(entry, self.navigationController)
-            else:
-                cb = utils.get_callback(self, 'on_picked')
-                if callable(cb): cb(entry)
-        except:
-            print ("Exception encountered:",str(sys.exc_info()[1]))
+        addrData = utils.nspy_get_byname(self, 'addrData')
+        if addrData is not None:
+            section = addrData.getSections().get(indexPath.section,None)
+            if section is not None and indexPath.row < len(section[1]):
+                entry = section[1][indexPath.row]
+                if self.mode == ModeNormal:
+                    PushDetail(entry, self.navigationController)
+                else:
+                    cb = utils.get_callback(self, 'on_picked')
+                    if callable(cb): cb(entry)
     
     @objc_method
     def updateAddressesFromWallet(self):
@@ -604,115 +547,53 @@ class AddressesVC(AddressesVCBase):
     def textFieldDidEndEditing_(self, tf) -> None:
         address = utils.nspy_get_byname(self, 'tf_dict').get(tf.ptr.value, None)
         
-        if address is not None:
-            tf.text = tf.text.strip()
-            new_label = tf.text
-            print ("new label for address %s = %s"%(address.to_storage_string(), new_label))
-            gui.ElectrumGui.gui.on_label_edited(address, new_label)
+        tf.text = tf.text.strip()
+        new_label = tf.text
+        print ("new label for address %s = %s"%(address.to_storage_string(), new_label))
+        gui.ElectrumGui.gui.on_label_edited(address, new_label)
         # NB: above call implicitly refreshes us, but we need to block it temporarily in case the user just tapped another textfield
         # need to enqueue a call to "doRefreshIfNeeded" because it's possible the user tapped another text field in which case we
         # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
         self.blockRefresh = False # unblock block refreshing
         utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
- 
- 
-    # -----------------------------------
-    # COMBO DRAWER RELATED STUFF BELOW...
-    # -----------------------------------
-    @objc_method
-    def setupComboItems(self) -> None:
-        self.comboL.topTitle = _("Type")
-        self.comboL.items = [ _(x) for x in _TYPES ]
-        self.comboR.topTitle = _("Status")
-        self.comboR.items = [ _(x) for x in _STATUSES ]
-        parent = gui.ElectrumGui.gui
-        if parent.config:
-            self.comboL.selection = parent.config.get("AddressTab_Type_Filter", 0)
-            self.comboR.selection = parent.config.get("AddressTab_Status_Filter", 0)
-
         
     @objc_method
-    def setupComboCallbacks(self) -> None:
-        # TODO: set up comboL and comboR vc's, and other misc. setup
-        def closeLAnim() -> None:
-            self.doComboClose_(self.comboL)
-        def closeRAnim() -> None:
-            self.doComboClose_(self.comboR)
-        def bgTapChk(p : CGPoint) -> None:
-            this = self.presentedViewController
-            if isinstance(this, ComboDrawerPicker):
-                fwl = self.topComboProxyL.convertRect_toView_(self.topComboProxyL.bounds, self.view)
-                fwr = self.topComboProxyR.convertRect_toView_(self.topComboProxyR.bounds, self.view)
-                p = self.view.convertPoint_fromView_(p, self.presentedViewController.view)
-                that = None
-                if CGRectContainsPoint(fwl, p): that = self.comboL
-                elif CGRectContainsPoint(fwr, p): that = self.comboR
-                if that:
-                    # this hack to prevent screen flicker due to delays in present and dismiss viewcontroller.. very hacky but works!!
-                    window = gui.ElectrumGui.gui.window
-                    hax = UIView.alloc().initWithFrame_(window.bounds).autorelease()
-                    hax.backgroundColor = that.view.backgroundColor
-                    hax.opaque = False
-                    hax2 = UIView.alloc().initWithFrame_(this.bottomView.convertRect_toView_(this.bottomView.bounds,None)).autorelease()
-                    hax2.backgroundColor = this.bottomView.backgroundColor
-                    hax.addSubview_(hax2)
-                    window.addSubview_(hax)
-                    that.view.backgroundColor = UIColor.clearColor
-                    this.view.backgroundColor = UIColor.clearColor
-                    def showIt() -> None:
-                        def killHax() -> None:
-                            this.view.backgroundColor = hax.backgroundColor
-                            that.view.backgroundColor = hax.backgroundColor
-                            hax.removeFromSuperview()
-                        that.openAnimated_(False)
-                        self.presentViewController_animated_completion_(that, False, killHax)
-                    self.dismissViewControllerAnimated_completion_(False, showIt)
-                    this.closeAnimated_(False)
-                else:
-                    self.doComboClose_(this)
-        def selectionChanged(sel : int) -> None:
-            which = self.presentedViewController
-            if isinstance(which, ComboDrawerPicker):
-                parent = gui.ElectrumGui.gui
-                if parent.config:
-                    whichKey = "AddressTab_Status_Filter" if which == self.comboR else "AddressTab_Type_Filter"
-                    parent.config.set_key(whichKey, sel, True)
-                whichLbl = self.topLblL if which == self.comboL else self.topLblR
-                whichLbl.attributedText = which.attributedStringForTopTitle
-                self.doComboClose_(which)
-                # TODO: make the selection change take effect in how the table is filtered below..
-                self.tableView.reloadData()
+    def focusAddress_(self, address : ObjCInstance) -> None:
+        address = str(address)
+        #print("FocusAddress called", address)
+        tv = self.tableView
+        address = Address.from_string(address)
+        # find the address
+        addrData = utils.nspy_get_byname(self, 'addrData')
+        if not tv or not addrData: return
+        d = addrData.getSections()
+        for section in d.keys():
+            title, entries = d[section]
+            for row,entry in enumerate(entries):
+                if str(entry.address) == str(address):
+                    #print("Found address at ",section,row)
+                    if isinstance(tv, CollapsableTableView) and not tv.isSectionVisible_(section):
+                        #print("IS collapsible table view, section was not visible, setting section visible...")
+                        tv.setSection_visible_(section,True)
+                        tv.reloadData()
+                    def doScroll() -> None:
+                        #print("doScroll called...")
+                        tv.scrollToRowAtIndexPath_atScrollPosition_animated_(NSIndexPath.indexPathForRow_inSection_(row,section),
+                                                                             UITableViewScrollPositionTop,
+                                                                             True)
+                    if self.navigationController and self.navigationController.topViewController.ptr.value != self.ptr.value:
+                        self.navigationController.popToViewController_animated_(self, True)
+                    if self.presentedViewController:
+                        self.dismissViewControllerAnimated_completion_(True, doScroll)
+                    else:
+                        #print("doing doScroll after delay...")
+                        utils.call_later(0.100, doScroll)
+                        #print("calling doScroll now..")
+                        #doScroll()
+                    return
 
-        self.comboL.backgroundTappedBlock = bgTapChk
-        self.comboL.controlTappedBlock = closeLAnim
-        self.comboL.controlTappedBlock = closeLAnim
-        self.comboL.selectedBlock = selectionChanged
-        self.comboR.backgroundTappedBlock = bgTapChk
-        self.comboR.controlTappedBlock = closeRAnim
-        self.comboR.selectedBlock = selectionChanged
-  
-    @objc_method
-    def doComboOpen_(self, vc) -> None:
-        semiclear = vc.view.backgroundColor.copy()
-        vc.view.backgroundColor = UIColor.clearColor
-        def compl() -> None:
-            vc.view.backgroundColorAnimationToColor_duration_reverses_completion_(semiclear.autorelease(), 0.2, False, None)
-            vc.openAnimated_(True)
-        self.presentViewController_animated_completion_(vc, False, compl)
-        
-    @objc_method
-    def doComboClose_(self, vc) -> None:
-        # NB: weak ref self.modalDrawerVC will be auto-cleared by obj-c runtime after it is dismissed
-        utils.call_later(0.050, self.dismissViewControllerAnimated_completion_,True, None)
-        vc.closeAnimated_(True)
-    
-    @objc_method
-    def onTapComboProxyL(self) -> None:
-        self.doComboOpen_(self.comboL)
+        utils.NSLog("AddressesTableVC.focusAddress: Did not find address!")
 
-    @objc_method
-    def onTapComboProxyR(self) -> None:
-        self.doComboOpen_(self.comboR)
 
 class AddressData:
     
@@ -723,22 +604,20 @@ class AddressData:
         self.clear()
         
     def clear(self):
-        self.show_fx = False        
-        self.master = [ [list() for s in range(0,len(_STATUSES))]  for t in range(0, len(_TYPES)) ]
+        self.receiving = list()
+        self.used = list()
+        self.unspent = list()
+        self.change = list()
+        self.sections = dict()
+        self.show_fx = False
         
     def refresh(self):
-        t0 = time.time()
-
         self.clear()
-
         wallet = self.parent.wallet
         daemon = self.parent.daemon
         if wallet is None: return
-
         receiving_addresses = wallet.get_receiving_addresses()
         change_addresses = wallet.get_change_addresses()
-
-        numAddresses = 0
 
         if daemon and daemon.fx and daemon.fx.get_fiat_address_config():
             fx = daemon.fx
@@ -746,11 +625,15 @@ class AddressData:
         else:
             self.show_fx = False
             fx = None
+        which_list = self.unspent
         sequences = [0,1] if change_addresses else [0]
         for is_change in sequences:
+            if len(sequences) > 1:
+                which_list = self.receiving if not is_change else self.change
+            else:
+                which_list = self.unspent
             addr_list = change_addresses if is_change else receiving_addresses
             for n, address in enumerate(addr_list):
-                numAddresses += 1
                 num = len(wallet.get_address_history(address))
                 is_used = wallet.is_used(address)
                 balance = sum(wallet.get_addr_balance(address))
@@ -762,33 +645,43 @@ class AddressData:
                 #Entry = "address addr_str addr_idx, label, balance_str, fiat_balance_str, num_tx, is_frozen, balance, is_change, is_used"
                 item = AddressData.Entry(address, address_text, n, label, balance_text, fiat_balance, num,
                                          bool(is_frozen), balance, bool(is_change), bool(is_used))
-                
-                #_TYPES = ("Any","Receiving","Change")
-                #_STATUSES = ("All", "Funded", "Unused", "Used")           
-                self.master[0][0].append(item) # item belongs in 'Any,All' regardless
-                self.master[2 if item.is_change else 1][0].append(item) # append to either change or receiving of 'All' list
-                if item.balance:
-                    self.master[0][1].append(item) # item belongs in 'Any,Funded' regardless
-                    self.master[2 if item.is_change else 1][1].append(item) # append to either change or receiving of 'Funded' list
-                if item.num_tx:
-                    self.master[0][3].append(item) # item belongs in the 'Any,Used' always, if used
-                    self.master[2 if item.is_change else 1][3].append(item) # append to either change or receiving of 'All' list
-                else: # Unused list
-                    self.master[0][2].append(item) # item belongs in the 'Any,Unused' always, if unused
-                    self.master[2 if item.is_change else 1][2].append(item) # append to either change or receiving of 'All' list
+                if is_used:
+                    self.used.append(item)
+                else:
+                    if balance <= 0.0 and len(sequences) < 2:
+                        self.receiving.append(item)
+                    else:
+                        if balance > 0.0:
+                            self.unspent.append(item)
+                        else:
+                            which_list.append(item)
         
-        # sort addresses by balance, num_tx, and index, descending
-        for i,l1 in enumerate(self.master):
-            for j,l2 in enumerate(l1):
-                l2.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
-                #print(_TYPES[i],_STATUSES[j],"len",len(l2))
+        self.used.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
+        self.change.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
+        self.unspent.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
+        self.receiving.sort(key=lambda x: [x.balance,x.num_tx,0-x.addr_idx], reverse=True )
         
-        utils.NSLog("fetched %d addresses from wallet in %f msec",numAddresses,(time.time()-t0)*1e3)
-    
+        numAddresses = len(self.used) + len(self.change) + len(self.unspent) + len(self.receiving)
+        utils.NSLog("fetched %d addresses from wallet",numAddresses)
+                    
+    def getSections(self) -> dict:
+        if len(self.sections):
+            return self.sections
+        d = {}
+        if len(self.unspent):
+            d[len(d)] = (_("Unspent"), self.unspent)
+        d[len(d)] = (_("Receiving"), self.receiving)
+        if len(self.used):
+            d[len(d)] = (_("Used"), self.used)
+        if len(self.change):
+            d[len(d)] = (_("Change"), self.change)
+        self.sections = d
+        return d
+
 
 def present_modal_address_picker(callback, vc = None) -> None:
     parent = gui.ElectrumGui.gui
-    avc = AddressesVC.alloc().initWithMode_(ModePicker).autorelease()
+    avc = AddressesTableVC.alloc().initWithMode_(ModePicker).autorelease()
     nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(avc).autorelease())
     def pickedAddress(entry) -> None:
         if callable(callback):
@@ -807,14 +700,12 @@ def EntryForAddress(address : str) -> object:
     address = Address.from_string(address)
     addrData = utils.nspy_get_byname(vc, 'addrData')
     if not addrData: return
-    try:
-        l = addrData.master[0][0]
-        for entry in l:
+    d = addrData.getSections()
+    for section in d.keys():
+        title, entries = d[section]
+        for row,entry in enumerate(entries):
             if str(entry.address) == str(address):
                 return entry
-    except:
-        print("Exception in EntryForAddress:",str(sys.exc_info()[1]))
-        
     return None
 
 def PushDetail(address_or_entry : object, navController : ObjCInstance) -> ObjCInstance:

@@ -1,3 +1,11 @@
+from ctypes import *
+from ctypes import util
+from enum import Enum
+
+from rubicon.objc import *
+import typing
+
+
 # /System/Library/Frameworks/ApplicationServices.framework/Frameworks/CoreGraphics.framework/Headers/CGImage.h
 kCGImageAlphaNone = 0
 kCGImageAlphaPremultipliedLast = 1
@@ -19,3 +27,14 @@ kCGBitmapByteOrder16Little = 1 << 12
 kCGBitmapByteOrder32Little = 2 << 12
 kCGBitmapByteOrder16Big = 3 << 12
 kCGBitmapByteOrder32Big = 4 << 12
+
+# Coregraphics stuff?
+# UIKit
+coregraphics = cdll.LoadLibrary(util.find_library('CoreGraphics'))
+
+coregraphics.CGRectContainsPoint.restype = c_bool
+coregraphics.CGRectContainsPoint.argtypes = [CGRect, CGPoint]
+coregraphics.CGRectContainsRect.restype = c_bool
+coregraphics.CGRectContainsRect.argtypes = [CGRect, CGRect]
+
+CGRectContainsPoint = coregraphics.CGRectContainsPoint
