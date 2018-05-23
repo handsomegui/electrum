@@ -31,6 +31,8 @@ for i,k in enumerate(_STATUSES):
 class AddressDetail(UIViewController):
     
     defaultBG = objc_property()
+    blockRefresh = objc_property()
+    needsRefresh = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
@@ -50,6 +52,8 @@ class AddressDetail(UIViewController):
         self.title = None
         self.view = None
         self.defaultBG = None
+        self.blockRefresh = None
+        self.needsRefresh = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -113,6 +117,9 @@ class AddressDetail(UIViewController):
     def refresh(self) -> None:
         v = self.viewIfLoaded
         if v is None: return
+        if self.blockRefresh:
+            self.needsRefresh = True
+            return
         entry = utils.nspy_get_byname(self, 'entry')
  
         lbl = v.viewWithTag_(100)
@@ -163,6 +170,8 @@ class AddressDetail(UIViewController):
         self.refreshButs()
         tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
         
+        self.needsRefresh = False
+        
     @objc_method
     def onTapAddress(self) -> None:
         entry = utils.nspy_get_byname(self, 'entry')
@@ -204,6 +213,10 @@ class AddressDetail(UIViewController):
         but = v.viewWithTag_(150)
         but.setTitle_forState_(_("Options") + "...", UIControlStateNormal)
         
+    @objc_method
+    def doRefreshIfNeeded(self) -> None:
+        if self.needsRefresh: self.refresh()
+        
 
     @objc_method
     def textFieldShouldReturn_(self, tf) -> bool:
@@ -213,8 +226,8 @@ class AddressDetail(UIViewController):
     
     @objc_method
     def textFieldDidBeginEditing_(self, tf) -> None:
-        #self.blockRefresh = True # temporarily block refreshing since that kills out keyboard/textfield
-        pass
+        self.blockRefresh = True # temporarily block refreshing since that kills our keyboard/textfield
+
 
     @objc_method
     def textFieldDidEndEditing_(self, tf) -> None:
@@ -226,8 +239,7 @@ class AddressDetail(UIViewController):
         utils.nspy_put_byname(self, entry, 'entry')
         print ("new label for address %s = %s"%(entry.address.to_storage_string(), new_label))
         gui.ElectrumGui.gui.on_label_edited(entry.address, new_label)
-        #self.blockRefresh = False # unblock block refreshing
-        #utils.call_later(0.250, lambda: self.refresh())
+        self.blockRefresh = False # unblock block refreshing
         self.refresh()
         
 ModeNormal = 0
@@ -479,7 +491,7 @@ class AddressesVC(AddressesVCBase):
 
     # This method runs in the main thread as it's enqueue using our hacky "Heartbeat" mechanism/workaround for iOS
     @objc_method
-    def doRefreshIfNeeded(self):
+    def doRefreshIfNeeded(self) -> None:
         if self.needsRefresh:
             self.refresh()
             #print ("ADDRESSES REFRESHED")
