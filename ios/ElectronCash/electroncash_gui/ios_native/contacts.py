@@ -706,7 +706,7 @@ def get_contacts() -> list:
         
         ContactsEntry = namedtuple("ContactsEntry", "name address address_str hist_entries")
 
-        '''
+    '''
     t0 = time.time()
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
