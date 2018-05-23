@@ -133,10 +133,10 @@ class AddressDetail(AddressDetailBase):
         def numTXsAttrStr() -> ObjCInstance:
             ats = NSMutableAttributedString.alloc().initWithString_(str(entry.num_tx)).autorelease()
             hadUTXOs = entry.num_utxos
-            utxos = '   (' + str(hadUTXOs) + ' UTXOs)'
+            utxos = '   (' + str(hadUTXOs) + ' UTXOs)' if entry.num_tx else ''
             attrs = { NSFontAttributeName: UIFont.systemFontOfSize_weight_(14.0, UIFontWeightLight) }
             ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(utxos, attrs).autorelease())
-            if hadUTXOs:
+            if hadUTXOs and utxos:
                 attrs = dict()
                 l = len(str(hadUTXOs))
                 r = NSRange(ats.length()-(7+l),l+6)
