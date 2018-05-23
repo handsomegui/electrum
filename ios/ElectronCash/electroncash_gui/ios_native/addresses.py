@@ -74,6 +74,9 @@ class AddressDetail(AddressDetailBase):
         parent = gui.ElectrumGui.gui
         entry = _Get(self.domain)
         
+        self.txHistoryTopSaved = self.txHistoryTopCS.constant # save these for later
+        self.statusTopSaved = self.statusTopCS.constant     # save these for later
+        
         if isinstance(self.desc, UITextView):
             # set up the 'Done' button for the keyboard on the description textview
             spacer = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemFlexibleSpace, None, None).autorelease()
@@ -110,6 +113,13 @@ class AddressDetail(AddressDetailBase):
         
         self.balance.text = entry.balance_str.strip() + " " + entry.base_unit.strip()
         self.fiatBalance.text = entry.fiat_balance_str.strip()
+        
+        if self.fiatBalance.text:
+            self.fiatBalance.setHidden_(False)
+            self.statusTopCS.constant = self.statusTopSaved
+        else:
+            self.fiatBalance.setHidden_(True)
+            self.statusTopCS.constant = 0.0
         
         if entry.is_frozen:
             c = utils.uicolor_custom('frozentext')
@@ -217,6 +227,10 @@ class AddressDetail(AddressDetailBase):
 
         but = self.spendFromBut
         but.setHidden_(bool(watch_only or entry.is_frozen or not entry.balance))
+        if but.isHidden():
+            self.txHistoryTopCS.constant = -50.0
+        else:
+            self.txHistoryTopCS.constant = self.txHistoryTopSaved
 
         
     @objc_method

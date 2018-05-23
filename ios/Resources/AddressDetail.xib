@@ -24,7 +24,9 @@
                 <outlet property="spendFromBut" destination="R8A-SG-RzJ" id="kGu-0e-aTw"/>
                 <outlet property="status" destination="ad3-3I-Jt3" id="AGV-Tc-S1k"/>
                 <outlet property="statusTit" destination="qgC-Oh-6iZ" id="UrB-iU-HO5"/>
+                <outlet property="statusTopCS" destination="OZn-xB-q15" id="RUi-m0-fdT"/>
                 <outlet property="tv" destination="oEQ-oP-mbB" id="pP6-35-16L"/>
+                <outlet property="txHistoryTopCS" destination="sEf-fh-qFs" id="wQG-Al-wWV"/>
                 <outlet property="utxoGr" destination="vEL-M7-Q6f" id="tAN-W5-TUO"/>
                 <outlet property="view" destination="vc2-GA-rdq" id="bMW-eE-AKY"/>
             </connections>

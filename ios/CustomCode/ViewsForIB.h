@@ -339,6 +339,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UITableView *tv;
 @property (nonatomic, weak) IBOutlet UIButton *freezeBut, *spendFromBut; // set .selected=YES/NO for checked/unchecked
 @property (nonatomic, weak) IBOutlet UIGestureRecognizer *utxoGr; // enabled when they have nonzero utxos
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *txHistoryTopCS, *statusTopCS;
+@property (nonatomic) CGFloat txHistoryTopSaved, statusTopSaved;
 @end
 
 // stub for python -- implemented in addresses.py
