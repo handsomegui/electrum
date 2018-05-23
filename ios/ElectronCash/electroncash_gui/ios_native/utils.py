@@ -97,6 +97,7 @@ _ColorScheme = {
     'light'     : UIColor.colorInDeviceRGBWithHexString_("#CCCCCC").retain(),
     'ultralight': UIColor.colorInDeviceRGBWithHexString_("#F6F6F6").retain(),
     'nav'       : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
+    'link'      : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
     'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
     'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
     'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(),
@@ -116,6 +117,8 @@ def uicolor_custom(name : str) -> ObjCInstance:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,0.125)
     if name in ['frozentext', 'frozen text', 'frozenaddresstext', 'frozen address text']:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,1.0) 
+    if name in ['frozentextlight', 'frozen text light', 'frozenaddresstextlight', 'frozen address text light']:
+        return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,0.4) 
     NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
     return UIColor.grayColor
 
@@ -1075,7 +1078,7 @@ def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCIn
         r = NSRange(ix,l-ix)
         ats.addAttribute_value_range_(NSFontAttributeName,font,r)
     return ats
-def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None) -> ObjCInstance:
+def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None, amtColor = None) -> ObjCInstance:
     #print("str=",amtStr,"pad=",pad,"spacesize=",_s3.width)
     p = ''
     if fiatStr:
@@ -1086,7 +1089,9 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
     else:
         fiatStr = ''
     ats = NSMutableAttributedString.alloc().initWithString_(amtStr + fiatStr).autorelease()
-    ats.addAttribute_value_range_(NSFontAttributeName,_f1,NSRange(0,len(amtStr)))
+    rAmt = NSRange(0,len(amtStr))
+    ats.addAttribute_value_range_(NSFontAttributeName,_f1,rAmt)
+    if amtColor: ats.addAttribute_value_range_(NSForegroundColorAttributeName,amtColor,rAmt)
     if fiatStr:
         if callable(cb): cb()
         r0 = NSRange(len(amtStr),len(p))

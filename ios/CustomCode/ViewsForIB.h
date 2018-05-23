@@ -309,6 +309,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // stub for python -- implemented in contacts.py
 @interface ContactDetailVC : ContactDetailVCBase
 - (IBAction) onPayTo;
+- (IBAction) cpyAddressToClipboard;
+- (IBAction) cpyNameToClipboard;
 @end
 
 @interface AddressesVCBase : UIViewController
@@ -327,5 +329,24 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface AddressesCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UILabel *index, *address, *balanceTit, *balance, *flags, *desc;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS, *midCS;
+@end
+
+@interface AddressDetailBase : UIViewController
+@property (nonatomic, weak) UIBarButtonItem *optionsBarBut;
+@property (nonatomic, weak) IBOutlet UIImageView *qr;
+@property (nonatomic, weak) IBOutlet UILabel *address, *balanceTit, *balance, *fiatBalance, *statusTit, *status, *descTit, *numTxTit, *numTx;
+@property (nonatomic, weak) IBOutlet UITextView *desc;
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, weak) IBOutlet UIButton *freezeBut, *spendFromBut; // set .selected=YES/NO for checked/unchecked
+@property (nonatomic, weak) IBOutlet UIGestureRecognizer *utxoGr; // enabled when they have nonzero utxos
+@end
+
+// stub for python -- implemented in addresses.py
+@interface AddressDetail : AddressDetailBase
+- (IBAction) toggleFreezeAddress;
+- (IBAction) cpyAddress;
+- (void) onOptions;
+- (IBAction) onSpendFrom;
+- (IBAction) onUTXOs;
 @end
 #endif /* ViewsForIB_h */

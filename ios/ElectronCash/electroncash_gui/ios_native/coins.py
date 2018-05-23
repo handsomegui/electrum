@@ -1,7 +1,7 @@
 from . import utils
 from . import gui
 from . import txdetail
-from .addresses import AddressDetail
+from . import addresses
 from electroncash import WalletStorage, Wallet
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
@@ -165,7 +165,7 @@ class CoinsTableVC(UITableViewController):
    
     @objc_method
     def updateCoinsFromWallet(self):
-        coins = get_coins()
+        coins = get_coins(utils.nspy_get_byname(self, 'domain'))
         if coins is None:
             # probable backgroundeed and/or wallet is closed
             return
@@ -233,9 +233,7 @@ class CoinsTableVC(UITableViewController):
         #print ("On Copy But")
         try:
             entry = utils.nspy_get_byname(self, 'coins')[but.tag]
-            UIPasteboard.generalPasteboard.string = entry.address_str
-            #print ("address =", entry.address_str)
-            utils.show_notification(message=_("Text copied to clipboard"))
+            gui.ElectrumGui.gui.copy_to_clipboard(entry.address_str, 'Address')
         except:
             import sys
             utils.NSLog("Exception during coins.py 'onCpyBut': %s",str(sys.exc_info()[1]))
@@ -266,12 +264,8 @@ class CoinsTableVC(UITableViewController):
                 parent.view_on_block_explorer(entry.tx_hash, 'tx')
             def on_request_payment() -> None:
                 parent.jump_to_receive_with_address(entry.address)
-            def on_address_details() -> None:
-                aentry = parent.get_address_entry(entry.address)
-                if aentry:
-                    addrDetail = AddressDetail.alloc().init().autorelease()
-                    utils.nspy_put_byname(addrDetail, aentry, 'entry')
-                    self.navigationController.pushViewController_animated_(addrDetail, True)
+            def on_address_details() -> None:                
+                addrDetail = addresses.PushDetail(entry.address, self.navigationController)
             def spend_from2(utxos : list) -> None:
                 validSels = list(self.updateSelectionButtons())
                 coins = utils.nspy_get_byname(self, 'coins')
@@ -518,3 +512,10 @@ def get_circle_imageview() -> ObjCInstance:
     iv.frame = CGRectMake(0,0,24,24)
     iv.contentMode = UIViewContentModeScaleAspectFit
     return iv
+
+def PushCoinsVC(domain : list, navController : ObjCInstance) -> ObjCInstance:
+    vc = CoinsTableVC.alloc()
+    utils.nspy_put_byname(vc, domain, 'domain')
+    vc = vc.initWithStyle_(UITableViewStylePlain).autorelease()
+    navController.pushViewController_animated_(vc, True)
+    return vc

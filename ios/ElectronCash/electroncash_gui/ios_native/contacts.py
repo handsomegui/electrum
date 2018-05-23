@@ -492,11 +492,10 @@ class NewContactVC(NewContactBase):
     def onCpy_(self, sender) -> None:
         try:
             datum = str(self.name.text) if sender.ptr.value == self.cpyNameBut.ptr.value else str(self.address.text)
-            msg = _("Name copied to clipboard") if sender.ptr.value == self.cpyNameBut.ptr.value else _("Address copied to clipboard")
+            msgPfx = "Name" if sender.ptr.value == self.cpyNameBut.ptr.value else "Address"
             
-            UIPasteboard.generalPasteboard.string = datum
+            gui.ElectrumGui.gui.copy_to_clipboard(datum, msgPfx)
             print ("copied to clipboard =", datum)
-            utils.show_notification(message=msg)
         except:
             import sys
             utils.NSLog("Exception during NewContactVC 'onCpy_': %s",str(sys.exc_info()[1]))
@@ -647,6 +646,14 @@ class ContactDetailVC(ContactDetailVCBase):
                     self.helper = None 
             self.refresh()
         show_contact_options_actionsheet(_Contact(self), self, self.navigationItem.rightBarButtonItem, navBackOnDelete = True, onEdit = onEdit)
+
+    @objc_method
+    def cpyAddressToClipboard(self) -> None:
+        gui.ElectrumGui.gui.copy_to_clipboard(str(self.address.text).strip(),"Address")
+    @objc_method
+    def cpyNameToClipboard(self) -> None:
+        gui.ElectrumGui.gui.copy_to_clipboard(str(self.name.text).strip(),"Name")
+
         
 def _Contact(slf : ObjCInstance) -> ContactsEntry:
     return utils.nspy_get_byname(slf, 'contact_entry')
@@ -822,9 +829,8 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
         def on_pay_to() -> None:
             pay_to([contact.address_str])
         def on_cpy() -> None:
-            UIPasteboard.generalPasteboard.string = contact.address_str
+            parent.copy_to_clipboard(contact.address_str, 'Address')
             print ("copied to clipboard =", contact.address_str)
-            utils.show_notification(message=_("Address copied to clipboard"))
         def on_edit() -> None:
             show_new_edit_contact(contact, vc, onEdit = onEdit)
         def on_delete() -> None:

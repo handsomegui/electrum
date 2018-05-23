@@ -116,8 +116,7 @@ class PrivateKeyDialog(UIViewController):
         if sender.tag == 120: data = str(entry.address)
         elif sender.tag == 320: data = str(entry.privkey)
         elif sender.tag == 420: data = entry.address.to_script().hex()
-        UIPasteboard.generalPasteboard.string = data
-        utils.show_notification(message=_("Text copied to clipboard"))
+        parent().copy_to_clipboard(data)
 
     @objc_method
     def onQRBut_(self, sender) -> None:

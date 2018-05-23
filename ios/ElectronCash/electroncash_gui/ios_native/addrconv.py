@@ -63,11 +63,9 @@ class AddrConvVC(AddrConvBase):
     @objc_method
     def onBut_(self, but) -> None:
         if but.ptr == self.cpyCashBut.ptr:
-            UIPasteboard.generalPasteboard.string = self.cash.text
-            utils.show_notification(message=_("Text copied to clipboard"))
-        elif but.ptr == self.cpyLegBut.ptr:            
-            UIPasteboard.generalPasteboard.string = self.legacy.text
-            utils.show_notification(message=_("Text copied to clipboard"))
+            gui.ElectrumGui.gui.copy_to_clipboard(self.cash.text, 'Address')
+        elif but.ptr == self.cpyLegBut.ptr:
+            gui.ElectrumGui.gui.copy_to_clipboard(self.legacy.text, 'Address')
         elif but.ptr == self.qrBut.ptr:
             if not QRCodeReader.isAvailable:
                 utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))

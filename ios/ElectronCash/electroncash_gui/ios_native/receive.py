@@ -233,8 +233,7 @@ class ReceiveVC(UIViewController):
 
     @objc_method
     def onCopyBut(self) -> None:
-        UIPasteboard.generalPasteboard.string = self.addr
-        utils.show_notification(message=_("Text copied to clipboard"))
+        parent().copy_to_clipboard(self.addr, 'Address')
     
     @objc_method
     def setExpiresByIndex_(self, idx : int) -> None:

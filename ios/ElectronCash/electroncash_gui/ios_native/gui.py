@@ -1440,14 +1440,11 @@ class ElectrumGui(PrintError):
         ''' returns an addresses.AddrData.Entry namedtuple or None if not found. Accepts either a string or an Address instance'''
         if isinstance(address, str):
             address = Address.from_string(address)
-        addrData = utils.nspy_get_byname(self.addressesVC, 'addrData')
-        sdict = addrData.getSections() if addrData else dict()
-        for k in sdict.keys():
-            section = sdict[k]
-            for entry in section[1]: # first 'entry' in array is a section name, second element is the list of addresses
-                if address == entry.address:
-                    return entry
-        return None
+        return self.sigAddresses.get(address)
+
+    def copy_to_clipboard(self, text, messagePrefix = "Text") -> None:
+        UIPasteboard.generalPasteboard.string = text
+        utils.show_notification(message=_(messagePrefix.strip() + " copied to clipboard"))
             
     def open_ext_txn(self, data : str) -> None:
         if not self.wallet:

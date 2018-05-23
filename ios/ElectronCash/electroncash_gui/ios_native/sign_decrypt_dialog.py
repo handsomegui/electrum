@@ -151,8 +151,7 @@ class SignDecryptVC(UIViewController):
         if sender.tag in (220,320):
             data = self.view.viewWithTag_(sender.tag-10).text
             if data:
-                UIPasteboard.generalPasteboard.string = data
-                utils.show_notification(message=_("Text copied to clipboard"))
+                parent().copy_to_clipboard(data)
 
         
     @objc_method

@@ -247,3 +247,8 @@
 @implementation AddressesCell
 // auto synthesized properties
 @end
+
+@implementation AddressDetailBase
+// auto synthesized properties
+@end
+

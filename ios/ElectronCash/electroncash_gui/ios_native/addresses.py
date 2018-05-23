@@ -28,18 +28,29 @@ for i,k in enumerate(_TYPES):
 for i,k in enumerate(_STATUSES):
     _STATUSES_BY_NAME[k] = i
 
-class AddressDetail(UIViewController):
+class AddressDetail(AddressDetailBase):
     
     defaultBG = objc_property()
     blockRefresh = objc_property()
     needsRefresh = objc_property()
+    domain = objc_property() # string repr of adddress in question -- used to get the cached address entry from the datamgr
     
     @objc_method
     def init(self) -> ObjCInstance:
+        raise ValueError("INVALID USAGE: Cannot construct an AddressDetail with a simple 'init' call! Use 'initWithAddress:' instead ")
+        
+        
+    @objc_method
+    def initWithAddress_(self, address) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
-        self.title = "Address Details"
-        gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self)
-        gui.ElectrumGui.gui.sigHistory.connect(lambda:self.refresh(), self)
+        if self:
+            self.title = "Address Details"
+            self.domain = address
+            self.optionsBarBut = UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_options"), UIBarButtonItemStylePlain, self, SEL(b'onOptions')).autorelease()
+            self.navigationItem.rightBarButtonItem = self.optionsBarBut
+
+            gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self)
+            gui.ElectrumGui.gui.sigHistory.connect(lambda:self.refresh(), self)
 
         return self
     
@@ -50,6 +61,7 @@ class AddressDetail(UIViewController):
         gui.ElectrumGui.gui.sigHistory.disconnect(self)
         utils.nspy_pop(self)
         self.title = None
+        self.domain = None
         self.view = None
         self.defaultBG = None
         self.blockRefresh = None
@@ -58,56 +70,23 @@ class AddressDetail(UIViewController):
     
     @objc_method
     def loadView(self) -> None:
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("AddressDetail",None,None)
-        v = None
-        gr = None
-        
-        for o in objs:
-            if isinstance(o, UIView):
-                v = o
-            elif isinstance(o, UIGestureRecognizer):
-                gr = o
-        if v is None or gr is None:
-            raise ValueError('AddressDetail XIB is missing either the primary view or the expected gesture recognizer!')
-        
-        gr.addTarget_action_(self, SEL(b'onTapAddress'))
-
+        NSBundle.mainBundle.loadNibNamed_owner_options_("AddressDetail",self,None)
         parent = gui.ElectrumGui.gui
-   
-        entry = utils.nspy_get_byname(self, 'entry')        
-
-        tf = v.viewWithTag_(210)
-        tf.delegate = self
-
-        but = v.viewWithTag_(520)
-        def toggleFreeze(oid : objc_id) -> None:
-            _ToggleFreeze(entry)
-            self.onToggleFreeze()
-        but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, toggleFreeze)
+        entry = _Get(self.domain)
         
-        butMore = v.viewWithTag_(150)
-        def onButMore(oid : objc_id) -> None:
-            self.onTapAddress()
-        butMore.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onButMore)
+        if isinstance(self.desc, UITextView):
+            # set up the 'Done' button for the keyboard on the description textview
+            spacer = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemFlexibleSpace, None, None).autorelease()
+            item = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onCloseKeyboard:')).autorelease()
+            toolBar = UIToolbar.alloc().init().autorelease()
+            toolBar.sizeToFit()
+            toolBar.items = [spacer, item]
+            self.desc.inputAccessoryView = toolBar
 
-        butCpy = v.viewWithTag_(120)
-        butQR = v.viewWithTag_(130)
-        butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
-        butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None)  # clear existing action
-        def onCpy(oid : objc_id) -> None:
-            self.onCpyBut()
-        def onQR(oid : objc_id) -> None:
-            self.onQRBut()
-        butCpy.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onCpy) # bind actin to closure 
-        butQR.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, onQR)  # bind action to closure
-        
-        tv = v.viewWithTag_(1000)
         
         # Re-use of TxHistoryHelper below...
-        helper = history.NewTxHistoryHelper(tv = tv, vc = self, noRefreshControl = True, domain = [entry.address], cls=history.TxHistoryHelperWithHeader)
-
-        self.view = v
-                
+        helper = history.NewTxHistoryHelper(tv = self.tv, vc = self, noRefreshControl = True, domain = [entry.address], cls=history.TxHistoryHelperWithHeader)
+                      
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
@@ -120,98 +99,125 @@ class AddressDetail(UIViewController):
         if self.blockRefresh:
             self.needsRefresh = True
             return
-        entry = utils.nspy_get_byname(self, 'entry')
+        entry = _Get(self.domain)
  
-        lbl = v.viewWithTag_(100)
-        lbl.text = _("Address") + ":"        
-        lbl = v.viewWithTag_(110)
-        lbl.text = entry.addr_str
-        bgColor = None
-        if self.defaultBG is None:
-            self.defaultBG = lbl.backgroundColor
-        lbl.textColor = UIColor.blackColor 
-        if entry.is_change:
-            lbl.backgroundColor = utils.uicolor_custom('change address')
-            if entry.is_frozen:
-                lbl.textColor = utils.uicolor_custom('frozen address text')
-        elif entry.is_frozen:
-            lbl.backgroundColor = utils.uicolor_custom('frozen address')
+         # kern the tits! ;)
+        tits = [self.balanceTit, self.numTxTit, self.statusTit, self.descTit]
+        for tit in tits:
+            tit.setText_withKerning_(tit.text, utils._kern)
+ 
+        self.address.text = entry.address.to_ui_string()
+        
+        self.balance.text = entry.balance_str.strip() + " " + entry.base_unit.strip()
+        self.fiatBalance.text = entry.fiat_balance_str.strip()
+        
+        if entry.is_frozen:
+            c = utils.uicolor_custom('frozentext')
         else:
-            lbl.backgroundColor = self.defaultBG
-        bgColor = lbl.backgroundColor
-        lbl = v.viewWithTag_(200)
-        lbl.text = _("Description") + ":"
-        tf = v.viewWithTag_(210)
-        tf.placeholder = _("Tap to add a description")
-        tf.text = entry.label
+            c = utils.uicolor_custom('dark')
+        
+        self.address.textColor = c
+        self.balance.textColor = c
+        self.fiatBalance.textColor = c
 
-        lbl = v.viewWithTag_(300)
-        lbl.text = _("NumTx") + ":"
-        lbl = v.viewWithTag_(310)
-        lbl.text = str(entry.num_tx)
+        def numTXsAttrStr() -> ObjCInstance:
+            ats = NSMutableAttributedString.alloc().initWithString_(str(entry.num_tx)).autorelease()
+            hadUTXOs = entry.num_utxos
+            utxos = '   (' + str(hadUTXOs) + ' UTXOs)'
+            attrs = { NSFontAttributeName: UIFont.systemFontOfSize_weight_(14.0, UIFontWeightLight) }
+            ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(utxos, attrs).autorelease())
+            if hadUTXOs:
+                attrs = dict()
+                l = len(str(hadUTXOs))
+                r = NSRange(ats.length()-(7+l),l+6)
+                attrs[NSForegroundColorAttributeName] = utils.uicolor_custom('link')
+                attrs[NSUnderlineStyleAttributeName] = NSUnderlineStyleSingle
+                ats.addAttributes_range_(attrs, r)
+                self.utxoGr.setEnabled_(True)
+            else:
+                self.utxoGr.setEnabled_(False)
+            return ats
+        self.numTx.attributedText = numTXsAttrStr()
+
         
-        lbl = v.viewWithTag_(400)
-        lbl.text = _("Balance") + ":"
-        lbl = v.viewWithTag_(410)
-        lbl.text = entry.balance_str + ((' (' + entry.fiat_balance_str + ')') if entry.fiat_balance_str else '')
+        self.desc.text = entry.label.strip()
         
-        lbl = v.viewWithTag_(500)
-        lbl.text = _("Flags") + ":"
-        lbl = v.viewWithTag_(510)
-        flags = []
-        if entry.is_change: flags.append(_("Change"))
-        if entry.is_frozen: flags.append(_("Frozen"))
-        lbl.text = ', '.join(flags)
+        xtra = []
         
-        tv = v.viewWithTag_(1000)
-        # This was here for old UI style.. removed for now as we transition to new
-        #tv.backgroundColor = bgColor
+        if entry.is_watch_only:
+            xtra.append(_('watching only'))
+        if not entry.is_used:
+            xtra.append(_('Unused'))
+        if entry.is_change:
+            xtra.append(_('Change'))
+        if entry.is_frozen:
+            xtra.append(_('Frozen'))
+        if xtra:
+            self.status.text = ', '.join(xtra)
+        else:
+            self.status.text = ''
+            
+        if not self.status.text:
+            self.status.text = _('Used Receiving Address')
+        elif self.status.text == _('Change'):
+            self.status.text = _('Used Change Address')
+            
+        froz = _('Frozen')
+        lfroz = len(froz)
+        stext = self.status.text
+        if stext[-lfroz:] == froz:
+            ats = NSMutableAttributedString.alloc().initWithString_(stext).autorelease()
+            r = NSRange(len(stext)-lfroz, lfroz)
+            ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('frozentext'), r)
+            self.status.attributedText = ats
+
+        size = CGSizeMake(200.0,200.0) # the returned image has a 10 pix margin -- this compensates for it
+        self.qr.contentMode = UIViewContentModeCenter # if the image pix margin changes -- FIX THIS
+        self.qr.image = utils.get_qrcode_image_for_data(self.address.text, size = size)
+
         
         self.refreshButs()
-        tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
+        self.tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
         
         self.needsRefresh = False
         
     @objc_method
-    def onTapAddress(self) -> None:
-        entry = utils.nspy_get_byname(self, 'entry')
-        _ShowAddressContextMenu(entry, self, ipadAnchor = self.view.viewWithTag_(150).frame, toggleFreezeCallback = lambda:self.onToggleFreeze())
+    def onOptions(self) -> None:
+        entry = _Get(self.domain)
+        _ShowAddressContextMenu(entry, self, ipadAnchor = self.optionsBarBut)
         
     @objc_method
-    def onCpyBut(self) -> None:
-        entry = utils.nspy_get_byname(self, 'entry')
-        UIPasteboard.generalPasteboard.string = entry.addr_str
-        utils.show_notification(message=_("Text copied to clipboard"))
+    def onSpendFrom(self) -> None:
+        entry = _Get(self.domain)
+        _SpendFrom(entry, self)
+    
     @objc_method
-    def onQRBut(self) -> None:
-        entry = utils.nspy_get_byname(self, 'entry')
-        qrvc = utils.present_qrcode_vc_for_data(vc=self,
-                                                data=entry.addr_str,
-                                                title = _('QR code'))
-        gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
-
+    def onUTXOs(self) -> None:
+        from .coins import PushCoinsVC
+        coinsvc = PushCoinsVC([_Get(self.domain).address], self.navigationController)
+        
     @objc_method
-    def onToggleFreeze(self) -> None:
-        parent = gui.ElectrumGui.gui
-        if parent.wallet:
-            entry = utils.nspy_get_byname(self, 'entry')
-            entry = utils.set_namedtuple_field(entry, 'is_frozen', not entry.is_frozen)
-            utils.nspy_put_byname(self, entry, 'entry')
-            self.refresh()
+    def toggleFreezeAddress(self) -> None:
+        _ToggleFreeze(_Get(self.domain)) # will implicitly refresh us due to signal being emitte
+        
+    @objc_method
+    def cpyAddress(self) -> None:
+        entry = _Get(self.domain)
+        gui.ElectrumGui.gui.copy_to_clipboard(entry.addr_str, "Address")
         
     @objc_method
     def refreshButs(self) -> None:
         v = self.viewIfLoaded
         if v is None: return
-        parent = gui.ElectrumGui.gui
-        watch_only = False if parent.wallet and not parent.wallet.is_watching_only() else True
-        but = v.viewWithTag_(520)
-        entry = utils.nspy_get_byname(self, 'entry')
-        but.setTitle_forState_(_("Freeze") if not entry.is_frozen else _("Unfreeze"), UIControlStateNormal)
+        entry = _Get(self.domain)
+        watch_only = entry.is_watch_only
+        but = self.freezeBut
+        but.setSelected_(bool(entry.is_frozen))
         but.setHidden_(watch_only)
 
-        but = v.viewWithTag_(150)
-        but.setTitle_forState_(_("Options") + "...", UIControlStateNormal)
+        but = self.spendFromBut
+        but.setHidden_(bool(watch_only or entry.is_frozen or not entry.balance))
+
         
     @objc_method
     def doRefreshIfNeeded(self) -> None:
@@ -219,28 +225,33 @@ class AddressDetail(UIViewController):
         
 
     @objc_method
-    def textFieldShouldReturn_(self, tf) -> bool:
-        #print("hit return, value is {}".format(tf.text))
-        tf.resignFirstResponder()
-        return True
+    def onCloseKeyboard_(self, sender : ObjCInstance) -> None:
+        self.view.endEditing_(True) 
+
     
     @objc_method
-    def textFieldDidBeginEditing_(self, tf) -> None:
+    def textViewDidBeginEditing_(self, tv) -> None:
         self.blockRefresh = True # temporarily block refreshing since that kills our keyboard/textfield
+        sv = self.view
+        if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
+            # try and center the text fields on the screen.. this is an ugly HACK.
+            # todo: fixme!
+            frame = tv.superview().frame
+            frame.origin.y += 150 + 64 + 64
+            sv.scrollRectToVisible_animated_(frame, True)
 
 
     @objc_method
-    def textFieldDidEndEditing_(self, tf) -> None:
-        entry = utils.nspy_get_byname(self, 'entry')
+    def textViewDidEndEditing_(self, textView) -> None:
+        self.blockRefresh = False # unblock block refreshing
+        entry = _Get(self.domain)
         
-        tf.text = tf.text.strip()
-        new_label = tf.text
-        entry = utils.set_namedtuple_field(entry, 'label', new_label)
-        utils.nspy_put_byname(self, entry, 'entry')
+        textView.text = textView.text.strip()
+        new_label = textView.text
         print ("new label for address %s = %s"%(entry.address.to_storage_string(), new_label))
         gui.ElectrumGui.gui.on_label_edited(entry.address, new_label)
-        self.blockRefresh = False # unblock block refreshing
-        self.refresh()
+        # Note that above should implicitly refresh us due to sigAddresses signal
+        self.doRefreshIfNeeded() # just in case we had a blocked refresh and electrumgui didn't signal.
         
 ModeNormal = 0
 ModePicker = 1
@@ -385,8 +396,9 @@ class AddressesVC(AddressesVCBase):
             cell.address.attributedText = NSAttributedString.alloc().initWithString_attributes_(entry.addr_str, {
                 NSFontAttributeName : UIFont.systemFontOfSize_(16.0),
                 NSUnderlineStyleAttributeName : NSUnderlineStyleSingle,
-                NSForegroundColorAttributeName : utils.uicolor_custom('nav')
+                NSForegroundColorAttributeName : utils.uicolor_custom('link')
             }).autorelease()
+                
             if entry.label:
                 cell.desc.setText_withKerning_(entry.label, utils._kern)
                 cell.topCS.constant = 7
@@ -397,7 +409,13 @@ class AddressesVC(AddressesVCBase):
                 cell.midCS.constant = 10
             cell.balanceTit.setText_withKerning_(_('Balance'), utils._kern)
             baltxt = entry.balance_str.strip() + " " + entry.base_unit
-            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(baltxt, entry.fiat_balance_str, '', 0.0, utils.uicolor_custom('light'), None, -0.5)
+            if entry.is_frozen:
+                amtColor = utils.uicolor_custom('frozentext')
+                fiatColor = utils.uicolor_custom('frozentextlight')
+            else:
+                amtColor = utils.uicolor_custom('dark')
+                fiatColor = utils.uicolor_custom('light')
+            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(baltxt, entry.fiat_balance_str, '', 0.0, fiatColor, None, -0.5, amtColor = amtColor)
             xtra = []
             if entry.is_frozen:
                 if entry.is_change:
@@ -620,7 +638,7 @@ class AddressesVC(AddressesVCBase):
 
 class AddressData:
     
-    Entry = namedtuple("Entry", "address addr_str addr_idx label balance_str fiat_balance_str num_tx is_frozen balance is_change is_used base_unit")
+    Entry = namedtuple("Entry", "address addr_str addr_idx label balance_str fiat_balance_str num_tx is_frozen balance is_change is_used base_unit is_watch_only num_utxos")
     
     def __init__(self, gui_parent):
         self.parent = gui_parent
@@ -644,6 +662,7 @@ class AddressData:
 
         numAddresses = 0
         base_unit = self.parent.base_unit()
+        is_watch_only = wallet.is_watching_only()
 
         if daemon and daemon.fx and daemon.fx.get_fiat_address_config():
             fx = daemon.fx
@@ -652,6 +671,7 @@ class AddressData:
             self.show_fx = False
             fx = None
         sequences = [0,1] if change_addresses else [0]
+        from .coins import get_coins
         for is_change in sequences:
             addr_list = change_addresses if is_change else receiving_addresses
             for n, address in enumerate(addr_list):
@@ -664,9 +684,10 @@ class AddressData:
                 balance_text = self.parent.format_amount(balance, whitespaces=False)
                 is_frozen = wallet.is_frozen(address)
                 fiat_balance = (fx.value_str(balance, fx.exchange_rate()) + " " + fx.get_currency()) if fx else ""
-                #Entry = "address addr_str addr_idx, label, balance_str, fiat_balance_str, num_tx, is_frozen, balance, is_change, is_used, base_unit"
+                num_utxos = len(get_coins([address]))
+                #Entry = "address addr_str addr_idx, label, balance_str, fiat_balance_str, num_tx, is_frozen, balance, is_change, is_used, base_unit is_watch_only"
                 item = AddressData.Entry(address, address_text, n, label, balance_text, fiat_balance, num,
-                                         bool(is_frozen), balance, bool(is_change), bool(is_used), base_unit)
+                                         bool(is_frozen), balance, bool(is_change), bool(is_used), base_unit, is_watch_only, num_utxos)
                 
                 #_TYPES = ("Any","Receiving","Change")
                 #_STATUSES = ("All", "Funded", "Unused", "Used")           
@@ -705,42 +726,41 @@ def present_modal_address_picker(callback, vc = None) -> None:
     vc.presentViewController_animated_completion_(nav, True, None)
 
 def EntryForAddress(address : str) -> object:
-    address = str(address)
-    address = Address.from_string(address)
-    addrData = _Get()
-    if not addrData: return
-    try:
-        l = addrData.master[0][0]
-        for entry in l:
-            if str(entry.address) == str(address):
-                return entry
-    except:
-        print("Exception in EntryForAddress:",str(sys.exc_info()[1]))
-        
-    return None
+    return gui.ElectrumGui.gui.get_address_entry(address)
 
 def PushDetail(address_or_entry : object, navController : ObjCInstance) -> ObjCInstance:
     entry = None
-    if isinstance(address_or_entry, (str,Address)): entry = EntryForAddress(str(address_or_entry))
+    if isinstance(address_or_entry, (str,Address)): entry = EntryForAddress(address_or_entry)
     elif isinstance(address_or_entry, AddressData.Entry):
         entry = address_or_entry
     if not entry:
         raise ValueError('PushDetailForAddress -- missing entry for address!')
-    addrDetail = AddressDetail.alloc().init().autorelease()
-    utils.nspy_put_byname(addrDetail, entry, 'entry')
+    addrDetail = AddressDetail.alloc().initWithAddress_(entry.address.to_storage_string()).autorelease()
     navController.pushViewController_animated_(addrDetail, True)
     return addrDetail
 
 from typing import Any
 class AddressesMgr(utils.DataMgr):
     def doReloadForKey(self, key : Any) -> Any:
-        a = AddressData(gui.ElectrumGui.gui)
-        a.refresh()
-        utils.NSLog("AddressMgr refresh")
-        return a
+        if key is None:
+            a = AddressData(gui.ElectrumGui.gui)
+            a.refresh()
+            utils.NSLog("AddressMgr refresh (full)")
+            return a
+        elif key and isinstance(key, (str, Address)):
+            if isinstance(key, str):
+                key = Address.from_string(key)
+            a = self.get(None) # recursive call to self to get cached 'all' or rebuild 'all' if not cached
+            if a:
+                entries = a.master[0][0]
+                for entry in entries:
+                    if entry.address == key:
+                        return entry
+        return None
 
-def _Get() -> AddressData:
-    return gui.ElectrumGui.gui.sigAddresses.get(None)
+def _Get(domain = None) -> AddressData:
+    if isinstance(domain, ObjCInstance): domain = py_from_ns(domain)
+    return gui.ElectrumGui.gui.sigAddresses.get(domain)
 
 def _GetBBTitle(x = None) -> Any:
     if x is not None:
@@ -792,8 +812,7 @@ def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = 
         parentvc.navigationController.pushViewController_animated_(vc, True)
     
     def on_copy() -> None:
-        UIPasteboard.generalPasteboard.string = entry.addr_str
-        utils.show_notification(message=_("Address copied to clipboard"))
+        parent.copy_to_clipboard(entry.addr_str, 'Address')
 
     actions = [
             [ _('Cancel') ],
@@ -803,7 +822,11 @@ def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = 
             [ _("Request payment"), on_request_payment ],
         ]
     
-    watch_only = False if parent.wallet and not parent.wallet.is_watching_only() else True
+    watch_only = entry.is_watch_only
+    
+    if entry.num_utxos and parentvc.navigationController:
+        from .coins import PushCoinsVC
+        actions.insert(2, [_('Show Coins (UTXOs)'), PushCoinsVC, [entry.address], parentvc.navigationController])
 
     if not watch_only:
         def onToggleFreeze() -> None:

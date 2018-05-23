@@ -204,8 +204,7 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
         
         def onCpy(isAddr : bool) -> None:
             print ("onCpy %s"%str(isAddr))
-            UIPasteboard.generalPasteboard.string = getData(x,isAddr,isInput)
-            utils.show_notification(message=_("Text copied to clipboard"))
+            parent.copy_to_clipboard(getData(x,isAddr,isInput))
         def onQR(isAddr : bool) -> None:
             print ("onQR %s"%str(isAddr))
             data = getData(x, isAddr, isInput)
@@ -513,8 +512,7 @@ class TxDetail(TxDetailBase):
     @objc_method
     def onCpyBut_(self, but) -> None:
         entry = utils.nspy_get_byname(self, 'tx_entry')
-        UIPasteboard.generalPasteboard.string = entry.tx_hash
-        utils.show_notification(message=_("Text copied to clipboard"))
+        gui.ElectrumGui.gui.copy_to_clipboard(entry.tx_hash)
 
     @objc_method
     def onQRBut_(self, but) -> None:
