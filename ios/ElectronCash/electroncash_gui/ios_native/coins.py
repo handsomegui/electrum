@@ -435,6 +435,15 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
     cell.accessoryView = get_circle_imageview()
        
+def get_coin_counts(domain : list, exclude_frozen : bool = False, mature : bool = False, confirmed_only : bool = False) -> int:
+    ''' Like the below but just returns the counts.. a slight optimization for addresses.py which just cares about counts. '''
+    parent = gui.ElectrumGui.gui
+    wallet = parent.wallet
+    if wallet is None:
+        utils.NSLog("get_coin_counts: wallet was None, returning early")
+        return 0
+    c = wallet.get_utxos(domain, exclude_frozen, mature, confirmed_only)
+    return len(c) if c else 0
 
 def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool = False, confirmed_only : bool = False) -> list:
     ''' For a given set of addresses (or None for all addresses), builds a list of
@@ -445,11 +454,11 @@ def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool
         '''
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
-    if wallet is None:
-        utils.NSLog("get_coins: wallent was None, returning early")
-        return None
-    c = wallet.get_utxos(domain, exclude_frozen, mature, confirmed_only)
     coins = list()
+    if wallet is None:
+        utils.NSLog("get_coins: wallet was None, returning early")
+        return coins
+    c = wallet.get_utxos(domain, exclude_frozen, mature, confirmed_only)
     def get_name(x):
         return x.get('prevout_hash') + ":%d"%x.get('prevout_n')
     for x in c:

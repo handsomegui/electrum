@@ -685,7 +685,7 @@ class AddressData:
             self.show_fx = False
             fx = None
         sequences = [0,1] if change_addresses else [0]
-        from .coins import get_coins
+        from .coins import get_coin_counts
         for is_change in sequences:
             addr_list = change_addresses if is_change else receiving_addresses
             for n, address in enumerate(addr_list):
@@ -698,7 +698,7 @@ class AddressData:
                 balance_text = self.parent.format_amount(balance, whitespaces=False)
                 is_frozen = wallet.is_frozen(address)
                 fiat_balance = (fx.value_str(balance, fx.exchange_rate()) + " " + fx.get_currency()) if fx else ""
-                num_utxos = len(get_coins([address]))
+                num_utxos = get_coin_counts([address])
                 #Entry = "address addr_str addr_idx, label, balance_str, fiat_balance_str, num_tx, is_frozen, balance, is_change, is_used, base_unit is_watch_only"
                 item = AddressData.Entry(address, address_text, n, label, balance_text, fiat_balance, num,
                                          bool(is_frozen), balance, bool(is_change), bool(is_used), base_unit, is_watch_only, num_utxos)
