@@ -34,7 +34,7 @@
                             <constraint firstAttribute="width" constant="37" id="eoq-eW-qnU"/>
                         </constraints>
                     </imageView>
-                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1bO-yB-ZOS">
+                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" usesAttributedText="YES" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1bO-yB-ZOS">
                         <rect key="frame" x="15" y="43" width="323" height="26"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -63,18 +63,25 @@
                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                         <nil key="highlightedColor"/>
                     </label>
+                    <view contentMode="scaleToFill" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="eeJ-SN-Cob" userLabel="Spacer">
+                        <rect key="frame" x="338" y="0.0" width="0.0" height="109"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    </view>
                 </subviews>
                 <constraints>
+                    <constraint firstItem="eeJ-SN-Cob" firstAttribute="leading" secondItem="1bO-yB-ZOS" secondAttribute="trailing" id="41p-Ow-1Sh"/>
                     <constraint firstItem="1bO-yB-ZOS" firstAttribute="trailing" secondItem="pQB-Ct-vlJ" secondAttribute="trailing" id="5uW-86-KHk"/>
-                    <constraint firstItem="A0b-jg-bSf" firstAttribute="leading" secondItem="1bO-yB-ZOS" secondAttribute="trailing" id="6Iy-7C-zfC"/>
                     <constraint firstItem="pQB-Ct-vlJ" firstAttribute="leading" secondItem="yj4-w9-iXs" secondAttribute="leading" constant="15" id="8kr-VS-QV6"/>
+                    <constraint firstItem="A0b-jg-bSf" firstAttribute="leading" secondItem="eeJ-SN-Cob" secondAttribute="trailing" id="DAW-7n-AYH"/>
                     <constraint firstItem="pQB-Ct-vlJ" firstAttribute="top" secondItem="yj4-w9-iXs" secondAttribute="top" constant="20" id="DHj-RS-gz6"/>
                     <constraint firstItem="1bO-yB-ZOS" firstAttribute="top" secondItem="pQB-Ct-vlJ" secondAttribute="bottom" constant="5" id="FQn-tC-xfH"/>
                     <constraint firstItem="Iti-tb-ndr" firstAttribute="leading" secondItem="pQB-Ct-vlJ" secondAttribute="leading" id="Gay-vI-zlx"/>
                     <constraint firstItem="Iti-tb-ndr" firstAttribute="trailing" secondItem="pQB-Ct-vlJ" secondAttribute="trailing" id="ISY-Fu-drH"/>
                     <constraint firstItem="A0b-jg-bSf" firstAttribute="centerY" secondItem="yj4-w9-iXs" secondAttribute="centerY" id="Qod-6u-KFv"/>
+                    <constraint firstItem="eeJ-SN-Cob" firstAttribute="top" secondItem="yj4-w9-iXs" secondAttribute="top" id="Sqz-Wm-2rU"/>
                     <constraint firstItem="Iti-tb-ndr" firstAttribute="top" secondItem="1bO-yB-ZOS" secondAttribute="bottom" constant="5" id="jbL-uF-2vO"/>
                     <constraint firstItem="1bO-yB-ZOS" firstAttribute="leading" secondItem="pQB-Ct-vlJ" secondAttribute="leading" id="ms8-bf-Jpi"/>
+                    <constraint firstAttribute="bottom" secondItem="eeJ-SN-Cob" secondAttribute="bottom" id="vj5-vF-cAM"/>
                     <constraint firstAttribute="trailing" secondItem="A0b-jg-bSf" secondAttribute="trailing" id="xhh-wI-Xix"/>
                 </constraints>
             </tableViewCellContentView>

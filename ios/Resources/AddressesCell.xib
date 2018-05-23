@@ -19,7 +19,7 @@
                 <rect key="frame" x="0.0" y="0.0" width="375" height="90.5"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <label opaque="NO" contentMode="left" verticalHuggingPriority="251" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT">
+                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT">
                         <rect key="frame" x="15" y="7" width="318" height="26"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -83,11 +83,11 @@
                     <constraint firstItem="Flv-j1-wVQ" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" constant="51" id="6MF-uI-o5b"/>
                     <constraint firstItem="TCr-T7-dkT" firstAttribute="leading" secondItem="xMZ-bB-sX3" secondAttribute="leading" constant="15" id="6rh-Ai-u0x"/>
                     <constraint firstAttribute="bottom" secondItem="g6P-Q6-ynd" secondAttribute="bottom" constant="7" id="B6d-oL-Zr9"/>
-                    <constraint firstAttribute="trailingMargin" secondItem="TCr-T7-dkT" secondAttribute="trailing" constant="26" id="GcU-0I-ViG"/>
+                    <constraint firstAttribute="trailingMargin" relation="greaterThanOrEqual" secondItem="TCr-T7-dkT" secondAttribute="trailing" constant="26" id="GcU-0I-ViG"/>
                     <constraint firstItem="TCr-T7-dkT" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" constant="7" id="VU3-uN-Gnb"/>
                     <constraint firstItem="n0K-ks-GaN" firstAttribute="leading" secondItem="TCr-T7-dkT" secondAttribute="leading" id="aJ8-IL-laI"/>
                     <constraint firstItem="5Q8-hR-hEs" firstAttribute="bottom" secondItem="n0K-ks-GaN" secondAttribute="bottom" constant="-2" id="l9q-Qo-9br"/>
-                    <constraint firstItem="eaf-U5-Tzm" firstAttribute="trailing" secondItem="TCr-T7-dkT" secondAttribute="trailing" id="lrK-Ba-Q5X"/>
+                    <constraint firstItem="Flv-j1-wVQ" firstAttribute="leading" secondItem="eaf-U5-Tzm" secondAttribute="trailing" constant="19" id="law-L6-HLh"/>
                     <constraint firstAttribute="trailing" secondItem="Flv-j1-wVQ" secondAttribute="trailing" constant="15" id="n8i-6k-GeT"/>
                     <constraint firstItem="g6P-Q6-ynd" firstAttribute="leading" secondItem="n0K-ks-GaN" secondAttribute="leading" id="olI-6f-hdM"/>
                     <constraint firstItem="5Q8-hR-hEs" firstAttribute="top" secondItem="TCr-T7-dkT" secondAttribute="bottom" constant="5" id="py2-JL-93b"/>
