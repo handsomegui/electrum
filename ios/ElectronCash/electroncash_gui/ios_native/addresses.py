@@ -543,7 +543,7 @@ class AddressesVC(AddressesVCBase):
         except:
             print("onTapAddress exception:",str(sys.exc_info()[1]))
             return
-        _ShowAddressContextMenu(entry, self, ipadAnchor = gr.view.frame)
+        _ShowAddressContextMenu(entry, self, ipadAnchor = gr.view.convertRect_toView_(gr.view.bounds, self.view))
  
     # -----------------------------------
     # COMBO DRAWER RELATED STUFF BELOW...
