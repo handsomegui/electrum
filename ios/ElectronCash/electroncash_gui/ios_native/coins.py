@@ -44,7 +44,7 @@ class CoinsTableVC(UITableViewController):
         
         self.refreshControl = UIRefreshControl.alloc().init().autorelease()
 
-        gui.ElectrumGui.gui.sigCoins.connect(lambda: self.needUpdate(), self)
+        gui.ElectrumGui.gui.sigCoins.connect(lambda: self.refresh(), self)
 
         return self
 
@@ -74,7 +74,7 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         try:
-            coins = utils.nspy_get_byname(self, 'coins')
+            coins = _Get(self)
             return len(coins) if coins else 1
         except:
             print("Error, exception retrieving coins from nspy cache")
@@ -83,7 +83,7 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         try:
-            coins = utils.nspy_get_byname(self, 'coins')
+            coins = _Get(self)
             identifier = CellIdentifiers[0 if coins else -1]
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
             parent = gui.ElectrumGui.gui
@@ -128,7 +128,7 @@ class CoinsTableVC(UITableViewController):
         if parent.wallet is None:
             return
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[index]
+            entry = _Get(self)[index]
             hentry = parent.get_history_entry(entry.tx_hash)
             if hentry is None: raise Exception("NoHEntry")
         except:
@@ -148,7 +148,7 @@ class CoinsTableVC(UITableViewController):
         tv.deselectRowAtIndexPath_animated_(indexPath,False)
         cell = tv.cellForRowAtIndexPath_(indexPath)
 
-        coins = utils.nspy_get_byname(self, 'coins')
+        coins = _Get(self)
         if not coins or not len(coins): return
 
         self.setIndex_selected_(indexPath.row, not self.isIndexSelected_(indexPath.row))
@@ -164,35 +164,16 @@ class CoinsTableVC(UITableViewController):
         #return 44.0
    
     @objc_method
-    def updateCoinsFromWallet(self):
-        coins = get_coins(utils.nspy_get_byname(self, 'domain'))
-        if coins is None:
-            # probable backgroundeed and/or wallet is closed
-            return
-        utils.nspy_put_byname(self, coins, 'coins')
-        utils.NSLog("fetched %d utxo entries from wallet (coins)",len(coins))
-
-    @objc_method
     def refresh(self):
         self.needsRefresh = True # mark that a refresh was called in case refresh is blocked
         if self.blockRefresh:
             return
-        self.updateCoinsFromWallet()
         if self.refreshControl: self.refreshControl.endRefreshing()
         self.selected = self.updateSelectionButtons()
         if self.tableView:
             self.tableView.reloadData()
         self.needsRefresh = False
 
-    @objc_method
-    def needUpdate(self):
-        if self.needsRefresh: return
-        self.needsRefresh = True
-        self.retain()
-        def inMain() -> None:
-            self.doRefreshIfNeeded()
-            self.autorelease()
-        utils.do_in_main_thread(inMain)
 
     @objc_method
     def doRefreshIfNeeded(self):
@@ -212,7 +193,7 @@ class CoinsTableVC(UITableViewController):
     
     @objc_method
     def textFieldDidEndEditing_(self, tf) -> None:
-        coins = utils.nspy_get_byname(self, 'coins')
+        coins = _Get(self)
         if not coins or tf.tag < 0 or tf.tag >= len(coins):
             utils.NSLog("ERROR -- Coins label text field unknown tag: %d",int(tf.tag))
         else:
@@ -225,14 +206,18 @@ class CoinsTableVC(UITableViewController):
         # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
         # note we wait until here to unblock refresh because it's possible used tapped another textfield in the same view and we want to continue to block if that is the case
         self.blockRefresh = False # unblock block refreshing
-        utils.call_later(0.250, lambda: self.doRefreshIfNeeded())
+        self.retain()
+        def forLater() -> None:
+            self.doRefreshIfNeeded()
+            self.autorelease()
+        utils.call_later(0.250, forLater)
 
             
     @objc_method
     def onCpyBut_(self, but : ObjCInstance) -> None:
         #print ("On Copy But")
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[but.tag]
+            entry = _Get(self)[but.tag]
             gui.ElectrumGui.gui.copy_to_clipboard(entry.address_str, 'Address')
         except:
             import sys
@@ -242,7 +227,7 @@ class CoinsTableVC(UITableViewController):
     def onQRBut_(self, but : ObjCInstance) -> None:
         #print ("On QR But")
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[but.tag]
+            entry = _Get(self)[but.tag]
             qrvc = utils.present_qrcode_vc_for_data(vc=self,
                                                     data=entry.address_str,
                                                     title = _('QR code'))
@@ -258,7 +243,7 @@ class CoinsTableVC(UITableViewController):
         try:
             if isinstance(obj, UIGestureRecognizer):
                 obj = obj.view
-            entry = utils.nspy_get_byname(self, 'coins')[obj.tag]
+            entry = _Get(self)[obj.tag]
             parent = gui.ElectrumGui.gui
             def on_block_explorer() -> None:
                 parent.view_on_block_explorer(entry.tx_hash, 'tx')
@@ -268,7 +253,7 @@ class CoinsTableVC(UITableViewController):
                 addrDetail = addresses.PushDetail(entry.address, self.navigationController)
             def spend_from2(utxos : list) -> None:
                 validSels = list(self.updateSelectionButtons())
-                coins = utils.nspy_get_byname(self, 'coins')
+                coins = _Get(self)
                 for entry in coins:
                     if entry.name in validSels and entry.utxo not in utxos:
                         utxos.append(entry.utxo)
@@ -311,7 +296,7 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def isIndexSelected_(self, index : int) -> bool:
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[index]
+            entry = _Get(self)[index]
             sels = set(list(self.selected))
             return bool(entry.name in sels)
         except:
@@ -322,7 +307,7 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def setIndex_selected_(self, index : int, b : bool) -> None:
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[index]
+            entry = _Get(self)[index]
             sels = set(list(self.selected))
             if not b: sels.discard(entry.name)
             else: sels.add(entry.name)
@@ -341,7 +326,7 @@ class CoinsTableVC(UITableViewController):
         #print ("spend selected...")
         validSels = list(self.updateSelectionButtons())
         #print("valid selections:",*validSels)
-        coins = utils.nspy_get_byname(self, 'coins')
+        coins = _Get(self)
         utxos = []
         for entry in coins:
             if entry.name in validSels:
@@ -357,7 +342,7 @@ class CoinsTableVC(UITableViewController):
         self.spendBut.enabled = False
         if parent.wallet and not parent.wallet.is_watching_only():
             sels = set(list(self.selected))
-            coins = utils.nspy_get_byname(self, 'coins')
+            coins = _Get(self)
             for coin in coins:
                 if not coin.is_frozen and coin.name in sels:
                     newSels.add(coin.name)
@@ -372,7 +357,7 @@ class CoinsTableVC(UITableViewController):
         parent = gui.ElectrumGui.gui
         no_good = parent.wallet is None or parent.wallet.is_watching_only()
         try:
-            entry = utils.nspy_get_byname(self, 'coins')[index]
+            entry = _Get(self)[index]
             if entry.is_frozen:
                 no_good = True
         except:
@@ -434,7 +419,18 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
     cell.accessoryView = get_circle_imageview()
-       
+
+def _Get(coinsvc : CoinsTableVC) -> list:
+    return gui.ElectrumGui.gui.sigCoins.get(utils.nspy_get_byname(coinsvc, 'domain'))
+
+from typing import Any
+class CoinsMgr(utils.DataMgr):
+    def doReloadForKey(self, key : Any) -> Any:
+        t0 = time.time()    
+        c = get_coins(key)
+        utils.NSLog("CoinsMgr: Fetched %d utxo entries [domain=%s] in %f ms", len(c), str(key)[:16], (time.time()-t0)*1e3)
+        return c
+
 def get_coin_counts(domain : list, exclude_frozen : bool = False, mature : bool = False, confirmed_only : bool = False) -> int:
     ''' Like the below but just returns the counts.. a slight optimization for addresses.py which just cares about counts. '''
     parent = gui.ElectrumGui.gui
@@ -451,7 +447,7 @@ def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool
         
         CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change")
 
-        '''
+    '''
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
     coins = list()

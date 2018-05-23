@@ -10,7 +10,7 @@ from electroncash.address import Address, ScriptOutput
 from electroncash.paymentrequest import PR_UNPAID, PR_EXPIRED, PR_UNKNOWN, PR_PAID
 from electroncash import bitcoin
 import electroncash.web as web
-import sys, traceback
+import sys, traceback, time
 from .uikit_bindings import *
 from .custom_objc import *
 
@@ -431,6 +431,7 @@ def _DelReqAtIndex(index : int, refreshDelay : float = 0.45, showErrorBox : bool
     
 class RequestsMgr(utils.DataMgr):
     def doReloadForKey(self, ignored):
+        t0 = time.time()
         wallet = parent().wallet
         daemon = parent().daemon
         if not wallet: return list() # wallet not open for whatever reason (can happen due to app backgrounding)
@@ -477,7 +478,7 @@ class RequestsMgr(utils.DataMgr):
             reqs.append(item)
             #print(item)
         reqs = sorted(reqs, key=lambda x: -x.timestamp)
-        utils.NSLog("ReqMgr: fetched %d extant payment requests",len(reqs))
+        utils.NSLog("ReqMgr: fetched %d extant payment requests in %f ms",len(reqs),(time.time()-t0)*1e3)
         return reqs
 
 class ReqTVD(ReqTVDBase):

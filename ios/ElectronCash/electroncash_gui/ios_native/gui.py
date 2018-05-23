@@ -154,7 +154,7 @@ class ElectrumGui(PrintError):
         self.sigRequests = receive.RequestsMgr()
         self.sigNetwork = utils.PySig()
         self.sigContacts = contacts.ContactsMgr()
-        self.sigCoins = utils.PySig()
+        self.sigCoins = coins.CoinsMgr()
         
         #todo: support multiple wallets in 1 UI?
         self.config = config

@@ -40,7 +40,6 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
     
     ''' For a given set of addresses (or None for all addresses), builds a list of
         HistoryEntry '''
-    t0 = time.time()
     sImages = StatusImages if not statusImagesOverride or len(statusImagesOverride) < len(StatusImages) else statusImagesOverride
     parent = gui.ElectrumGui.gui
     wallet = parent.wallet
@@ -92,16 +91,16 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
         entry = HistoryEntry(tx, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img)
         history.append(entry) # appending is O(1)
     history.reverse() # finally, reverse the order to keep most recent first
-    utils.NSLog("history: retrieved %d entries in %f ms",len(history),(time.time()-t0)*1000.0)
     return history
 
 from typing import Any
 
 class HistoryMgr(utils.DataMgr):
     def doReloadForKey(self, key : Any) -> Any:
+        t0 = time.time()
         hist = get_history(domain = key)
         dstr = str(key) if not isinstance(key, contacts.ContactsEntry) else '[ContactsEntry: ' + key.address_str + ']'
-        utils.NSLog("HistoryMgr refresh for domain: %s", dstr[:80])
+        utils.NSLog("HistoryMgr: refresh %d entries for domain=%s in %f ms", len(hist), dstr[:80],(time.time()-t0)*1e3)
         return hist
 
 _tx_cell_height = 76.0 # TxHistoryCell height in points
