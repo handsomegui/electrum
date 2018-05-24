@@ -1,6 +1,7 @@
 from . import utils
 from . import gui
 from electroncash import WalletStorage, Wallet
+from electroncash.address import Address
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 
@@ -32,12 +33,7 @@ StatusImages = [  # Indexed by 'status' from tx info and/or HistoryEntry
 from . import txdetail
 from . import contacts
 
-def get_history(domain : list = None, statusImagesOverride : list = None, forceNoFX : bool = False) -> list:
-    # contacts entires store history entries within themselves.. so just return that
-    if isinstance(domain, contacts.ContactsEntry):
-        return contacts.build_contact_tx_list(domain.address) # force refresh of tx's from wallet
-        #return domain.hist_entries
-    
+def get_history(domain : list = None, statusImagesOverride : list = None, forceNoFX : bool = False) -> list:    
     ''' For a given set of addresses (or None for all addresses), builds a list of
         HistoryEntry '''
     sImages = StatusImages if not statusImagesOverride or len(statusImagesOverride) < len(StatusImages) else statusImagesOverride
@@ -45,7 +41,7 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
     wallet = parent.wallet
     daemon = parent.daemon
     if wallet is None or daemon is None:
-        utils.NSLog("get_history: wallent and/or daemon was None, returning early")
+        utils.NSLog("get_history: wallet and/or daemon was None, returning early")
         return list()
     h = wallet.get_history(domain)
     fx = daemon.fx if daemon.fx and daemon.fx.show_history() else None
@@ -98,9 +94,39 @@ from typing import Any
 class HistoryMgr(utils.DataMgr):
     def doReloadForKey(self, key : Any) -> Any:
         t0 = time.time()
-        hist = get_history(domain = key)
+        hist = list()
+        unk = False
+        duped = ''
+        if isinstance(key, (type(None), list)):
+            # the common case, 'None' or [Address]
+            hist = get_history(domain = key)
+        # contacts entires store history entries within themselves.. so just return that
+        elif isinstance(key, contacts.ContactsEntry):
+            hist = contacts.build_contact_tx_list(key.address) # force refresh of tx's from wallet -- this will call us again with 'None'
+        elif isinstance(key, Address):
+            # support for list-less single Address.. call self again with the proper format
+            hist = self.get([key])
+            duped = ' (duped) '
+        elif isinstance(key, str):
+            # support for string addresses or tx_hashes.. detect which and act accordingly
+            if Address.is_valid(key):
+                hist = self.get([Address.from_string(key)]) # recursively call self with propery list data type, which will end up calling get_history (it's ok -- this is to cache results uniformly!)
+                duped = ' (duped) '
+            elif gui.ElectrumGui.gui.wallet and gui.ElectrumGui.gui.wallet.transactions.get(key, None):
+                fullHist = self.get(None) # recursively call self to get a full history (will be cached so it's ok!)
+                for hentry in fullHist:
+                    if hentry.tx_hash == key:
+                        hist.append(hentry)
+                        break
+            else:
+                unk = True
+        else:
+            unk = True
         dstr = str(key) if not isinstance(key, contacts.ContactsEntry) else '[ContactsEntry: ' + key.address_str + ']'
-        utils.NSLog("HistoryMgr: refresh %d entries for domain=%s in %f ms", len(hist), dstr[:80],(time.time()-t0)*1e3)
+        if unk:
+            utils.NSLog("HistoryMgr: failed to retrieve any data for unknown domain=%s, returning empty list",dstr[:80])
+        else:
+            utils.NSLog("HistoryMgr: refresh %d entries for domain=%s in %f ms%s", len(hist), dstr[:80],(time.time()-t0)*1e3,duped)
         return hist
 
 _tx_cell_height = 76.0 # TxHistoryCell height in points

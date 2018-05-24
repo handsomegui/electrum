@@ -154,10 +154,11 @@
                             <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                             <nil key="highlightedColor"/>
                         </label>
-                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="750" verticalHuggingPriority="251" horizontalCompressionResistancePriority="250" text="Unused, Change, Frozen" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="ad3-3I-Jt3">
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="750" verticalHuggingPriority="251" horizontalCompressionResistancePriority="250" text="Unused, Change, Frozen" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="ad3-3I-Jt3">
                             <rect key="frame" x="15" y="395" width="172.5" height="18"/>
                             <constraints>
-                                <constraint firstAttribute="height" constant="18" id="i5E-sY-Sd5"/>
+                                <constraint firstAttribute="height" relation="lessThanOrEqual" constant="54" id="Sxg-oh-sVT"/>
+                                <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="18" id="i5E-sY-Sd5"/>
                             </constraints>
                             <fontDescription key="fontDescription" type="system" pointSize="14"/>
                             <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>

@@ -173,6 +173,7 @@ class AddressDetail(AddressDetailBase):
         elif self.status.text == _('Change'):
             self.status.text = _('Used Change Address')
             
+            
         froz = _('Frozen')
         lfroz = len(froz)
         stext = self.status.text
@@ -721,7 +722,7 @@ class AddressData:
             addr_list = change_addresses if is_change else receiving_addresses
             for n, address in enumerate(addr_list):
                 numAddresses += 1
-                num = len(wallet.get_address_history(address))
+                num = wallet.get_num_tx(address)
                 is_used = wallet.is_used(address)
                 balance = sum(wallet.get_addr_balance(address))
                 address_text = address.to_ui_string()

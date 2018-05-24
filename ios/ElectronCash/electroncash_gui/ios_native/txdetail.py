@@ -281,7 +281,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet.get_tx_info(tx)
     size = tx.estimated_size()
     can_sign = not tx.is_complete() and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
-
+    
     #print("conf2",conf,"status_",status_,"label_",label,"amount",amount,"timestamp",timestamp,"exp_n",exp_n)
 
     wasNew = False

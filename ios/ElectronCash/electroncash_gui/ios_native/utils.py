@@ -597,6 +597,7 @@ class NSObjCache:
                 self._cache[k].release()
                 ct += 1
             self._cache = dict()
+            self._last = None
             if ct: NSLog("Low Memory: Flushed %d objects from '%s' NSObjCache."%(ct,self._name))
      
         self._token = NSNotificationCenter.defaultCenter.addObserverForName_object_queue_usingBlock_(
@@ -658,12 +659,13 @@ def get_qrcode_image_for_data(data : str, size : CGSize = None) -> ObjCInstance:
     global _qr_cache
     if not isinstance(data, (str, bytes)):
         raise TypeError('argument to get_qrcode_for_data should be of type str or bytes!')
-    if type(data) is bytes: data = data.decode('utf-8')
-    defaultSize = CGSizeMake(256.0,256.0)
+    if isinstance(data, bytes): data = data.decode('utf-8')
     uiimage = None
-    if not size: size = defaultSize
-    uiimage = _qr_cache.get(data) if size == defaultSize else None
+    if not size: size = CGSizeMake(256.0,256.0)
+    key = "(%0.2f,%0.2f)[%s]"%(size.width,size.height,data)
+    uiimage = _qr_cache.get(key) 
     if uiimage is None:
+        #print("**** CACHE MISS for",key)
         qr = qrcode.QRCode(image_factory=qrcode.image.svg.SvgPathFillImage)
         qr.add_data(data)
         img = qr.make_image()
@@ -680,8 +682,9 @@ def get_qrcode_image_for_data(data : str, size : CGSize = None) -> ObjCInstance:
             UIColor.blackColor,
             None
         )
-        if size == defaultSize:
-            _qr_cache.put(data, uiimage)
+        _qr_cache.put(key, uiimage)
+    #else:
+    #    print("**** CACHE HIT for",key)
     return uiimage
 
 #########################################################################################

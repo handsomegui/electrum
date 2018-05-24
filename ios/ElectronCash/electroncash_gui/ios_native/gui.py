@@ -1429,7 +1429,7 @@ class ElectrumGui(PrintError):
             
     def get_history_entry(self, tx_hash) -> tuple:
         ''' returns a history.HistoryEntry namedtuple instance if tx_hash exists in history, or None if not found '''
-        history = self.sigHistory.get(None)
+        history = self.sigHistory.get(tx_hash) # NEW! Can get history by tx_hash
         if history:
             for entry in history:
                 if entry.tx_hash == tx_hash:
