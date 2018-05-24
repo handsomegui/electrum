@@ -24,7 +24,7 @@ static const CGFloat epsilon = 0.00001;
 }
 
 - (void) dealloc {
-    if (_animating) self.animating = NO;
+    if (self.animating) self.animating = NO;
 }
 
 - (void)ccCommonInit {
@@ -41,10 +41,12 @@ static const CGFloat epsilon = 0.00001;
         d.index = i;
         d.parent = self;
         l.drawsAsynchronously = YES;
+        l.needsDisplayOnBoundsChange = YES;
         l.delegate = _drawers[i];
         [self.layer addSublayer:l];
         [l setNeedsDisplay];
     }
+    self.layer.needsDisplayOnBoundsChange = YES;
     [self.layer setNeedsDisplay];
 }
 - (instancetype)init { if ((self=[super init])) [self ccCommonInit]; return self;}
@@ -53,11 +55,12 @@ static const CGFloat epsilon = 0.00001;
 
 - (void)layoutSubviews {
     CGRect f = self.bounds;
+    //self.layer.frame = self.frame;
     for (int i = 0; i < kNumCircles+1; ++i) {
         _layers[i].frame = f;
-        [_layers[i] setNeedsDisplay];
+//        [_layers[i] setNeedsDisplay];
     }
-    [self.layer setNeedsDisplay];
+//    [self.layer setNeedsDisplay];
 }
 
 - (void) animateLayer:(int)index {
@@ -90,10 +93,13 @@ static const CGFloat epsilon = 0.00001;
     [self layoutSubviews];
 }
 
+- (BOOL) animating {
+    return _layers[1].animationKeys.count;
+}
+
 - (void) setAnimating:(BOOL)b {
-    if (!!_animating == !!b) return;
-    _animating = b;
-    if (!_animating) {
+    if (!!self.animating == !!b) return;
+    if (!b) {
         [self.layer removeAllAnimations];
         for (int i = 1; i < kNumCircles+1; ++i)
             [_layers[i] removeAllAnimations];

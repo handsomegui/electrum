@@ -129,7 +129,7 @@ def startup_bg_task_stuff(application : ObjCInstance) -> None:
         else:
             utils.NSLog("Background: Our expiry timer fired, but bgTask was already stopped.")
     
-    timerTime = min(175.0,application.backgroundTimeRemaining-2.0)
+    timerTime = max(min(175.0,application.backgroundTimeRemaining-2.0), 0.010)
     utils.NSLog("Background: Time remaining is %f secs, our timer will fire in %f secs.",float(application.backgroundTimeRemaining),float(timerTime))
     bgTimer = utils.call_later(timerTime,onTimer) # if we don't do this we get problems because iOS freezes our task and that crashes stuff in the daemon
 

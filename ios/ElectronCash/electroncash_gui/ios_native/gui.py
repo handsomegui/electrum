@@ -273,7 +273,7 @@ class ElectrumGui(PrintError):
         
         # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
         utils.call_later(1.0, lambda: self.refresh_all())
-        
+                
         return True
 
     
@@ -448,6 +448,7 @@ class ElectrumGui(PrintError):
             if lbl is not None: lbl.text = txt
 
         activityIndicator = self.downloadingNotif_view.viewWithTag_(1)
+        
         if not activityIndicator.animating:
             activityIndicator.animating = True
 
