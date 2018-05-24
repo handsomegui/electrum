@@ -554,7 +554,7 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
-        parent().show_error('Coming soon!', 'Unimplemented')
+        parent().show_error('Request Detail Screen Coming soon!', 'Unimplemented')
     
     @objc_method
     def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv : ObjCInstance, es : int, indexPath : ObjCInstance) -> None:

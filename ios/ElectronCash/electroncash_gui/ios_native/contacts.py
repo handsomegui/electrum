@@ -192,11 +192,11 @@ class ContactsVC(ContactsVCBase):
                 addrgrs = py_from_ns(cell.address.gestureRecognizers)
                 if addrgrs:
                     addrgrs[0].setEnabled_(enabledLink)
-                self.setupAccessoryForCell_atIndex_(cell, indexPath.row)                    
-        except Exception as e:
-            utils.NSLog("exception in Contacts tableView_cellForRowAtIndexPath_: %s",str(e))
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
-            empty_cell(cell)
+                self.setupAccessoryForCell_atIndex_(cell, indexPath.row)
+        except:
+            utils.NSLog("exception in Contacts tableView_cellForRowAtIndexPath_: %s",str(sys.exc_info()[1]))
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, _CellIdentifier[-1]).autorelease()
+            empty_cell(cell, txt = "")
         return cell
     
     # Below 2 methods conform to UITableViewDelegate protocol
@@ -229,10 +229,7 @@ class ContactsVC(ContactsVCBase):
                 self.tv.reloadData() # force redraw of all checkmarks
         else:
             if self.navigationController:
-                # push new detail view controller on nav stack here...
-                vc = ContactDetailVC.new().autorelease()
-                _SetContact(vc, contacts[indexPath.row])
-                self.navigationController.pushViewController_animated_(vc, True)
+                PushNewContactDetailVC(contacts[indexPath.row], self.navigationController)
 
     @objc_method
     def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
@@ -413,7 +410,7 @@ class ContactsVC(ContactsVCBase):
             contacts = _Get()
             if contacts and index < len(contacts):
                 contact = contacts[index]
-        show_new_edit_contact(contact, self)
+        show_new_edit_contact(contact, self, onEdit = lambda x: utils.show_notification(_("Contact saved")))
         
             
     @objc_method
@@ -541,7 +538,11 @@ class NewContactVC(NewContactBase):
     @objc_method
     def translateUI(self) -> None:
         if not self.viewIfLoaded: return
-        self.title = _("New Contact") if not self.editMode else _("Edit Contact")
+        titleOverride = utils.nspy_get_byname(self, 'title_override')
+        if not titleOverride:
+            self.title = _("New Contact") if not self.editMode else _("Edit Contact")
+        else:
+            self.title = titleOverride
         #self.blurb.text = _("Contacts are a convenient feature to associate addresses with user-friendly names. "
         #                    "Contacts can be accessed when sending a payment via the 'Send' tab.") if not self.editMode else self.title
         self.addressTit.text = _("Address") 
@@ -671,6 +672,14 @@ def _Get() -> list:
 
 def _Updated() -> None:
     gui.ElectrumGui.gui.refresh_components('contacts')
+    
+def Find(addy) -> ContactsEntry:
+    contacts = _Get()
+    if isinstance(addy, (Address, str)) and contacts:
+        for c in contacts:
+            if (isinstance(addy, Address) and c.address == addy) or (isinstance(addy, str) and c.address_str == addy):
+                return c
+    return None
 
 def build_contact_tx_list(address : Address) -> list:
     parent = gui.ElectrumGui.gui
@@ -800,11 +809,21 @@ def pay_to(addys : list) -> bool:
     gui.ElectrumGui.gui.jump_to_send_with_pay_to(addys[0])
     return True
 
-def show_new_edit_contact(contact, parentvc, onEdit = None) -> ObjCInstance:
+def show_new_edit_contact(contact, parentvc, onEdit = None, title = None) -> ObjCInstance:
     nav = NSBundle.mainBundle.loadNibNamed_owner_options_("NewContact", None, None)[0]
     vc = nav.viewControllers[0]
     if contact:
+        if isinstance(contact, ContactsEntry):
+            pass
+        if isinstance(contact, (tuple,list)) and len(contact) >= 2 and isinstance(contact[1], Address) and isinstance(contact[0], str):
+            contact = ContactsEntry(contact[0], contact[1], contact[1].to_ui_string(), list())
+        elif isinstance(contact, Address):
+            contact = ContactsEntry('', contact, contact.to_ui_string(), list())
+        else:
+            raise ValueError('First parameter to show_new_edit_contact must be either a ContactsEntry, a tuple, or an Address!')
         utils.nspy_put_byname(vc, contact, 'edit_contact')
+    if title:
+        utils.nspy_put_byname(vc, title, 'title_override')
 
     def onOk(entry : ContactsEntry) -> None:
         #print ("parent onOK called...")
@@ -819,6 +838,11 @@ def show_new_edit_contact(contact, parentvc, onEdit = None) -> ObjCInstance:
     utils.add_callback(vc, 'on_ok', onOk)
     parentvc.presentViewController_animated_completion_(nav, True, None)
 
+def PushNewContactDetailVC(contact : ContactsEntry, navController : ObjCInstance) -> ObjCInstance:
+    vc = ContactDetailVC.new().autorelease()
+    _SetContact(vc, contact)
+    navController.pushViewController_animated_(vc, True)
+    return vc
 
 def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance, view : ObjCInstance, navBackOnDelete = False, onEdit = None) -> None:
     #print ("On Options But")

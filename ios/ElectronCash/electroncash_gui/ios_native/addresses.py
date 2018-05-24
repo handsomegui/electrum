@@ -30,7 +30,6 @@ for i,k in enumerate(_STATUSES):
 
 class AddressDetail(AddressDetailBase):
     
-    defaultBG = objc_property()
     blockRefresh = objc_property()
     needsRefresh = objc_property()
     domain = objc_property() # string repr of adddress in question -- used to get the cached address entry from the datamgr
@@ -64,7 +63,6 @@ class AddressDetail(AddressDetailBase):
         self.title = None
         self.domain = None
         self.view = None
-        self.defaultBG = None
         self.blockRefresh = None
         self.needsRefresh = None
         self.descIsPlaceholder = None

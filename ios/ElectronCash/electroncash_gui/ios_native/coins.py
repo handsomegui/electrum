@@ -102,7 +102,7 @@ class CoinsTableVC(UITableViewController):
                     self.selectDeselectCell_(cell)
                 def doDetail(acell : ObjCInstance) -> None:
                     # TODO: detail view push here
-                    gui.ElectrumGui.gui.show_error('Coming soon!', 'Unimplemented')
+                    gui.ElectrumGui.gui.show_error('Coins Detail Screen Coming soon!', 'Unimplemented')
                 cell.onAddress = Block(linkTapped)
                 cell.onButton = Block(butTapped)
                 cell.onAccessory = Block(doDetail)
@@ -140,15 +140,18 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
         #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
-        tv.deselectRowAtIndexPath_animated_(indexPath,True)
+        animated = True
 
         cell = tv.cellForRowAtIndexPath_(indexPath)
-        if cell: self.selectDeselectCell_(cell)
+        if cell:
+            animated = self.selectDeselectCell_(cell)
+
+        tv.deselectRowAtIndexPath_animated_(indexPath, animated)
         
     @objc_method
-    def selectDeselectCell_(self, cell : ObjCInstance) -> None:
+    def selectDeselectCell_(self, cell : ObjCInstance) -> bool: # returns False IFF it was a frozen address and select/deselect failed
         coins = _Get(self)
-        if not coins or not len(coins): return
+        if not coins or not len(coins): return True
 
         index = cell.tag
         self.setIndex_selected_(index, not self.isIndexSelected_(index))
@@ -169,6 +172,8 @@ class CoinsTableVC(UITableViewController):
                 utils.uicolor_custom('frozentextbright'),
                 0.4, True, None
             )
+            return False
+        return True
         
  
     @objc_method
@@ -226,6 +231,7 @@ class CoinsTableVC(UITableViewController):
     
             actions = [
                     [ _('Copy Address'), parent.copy_to_clipboard, entry.address_str, _('Address') ],
+                    [ _('Copy UTXO'), parent.copy_to_clipboard, entry.name, _('UTXO') ],
                     [ _('Cancel') ],
                     [ _("Address Details"), on_address_details ],
                     [ _("Transaction Details"), lambda: self.showTxDetailForIndex_(obj.tag)],

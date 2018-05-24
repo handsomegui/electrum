@@ -222,10 +222,10 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
             parent.view_on_block_explorer(data, "tx" if isInput else "addr")
         
         actions = [
-            [ _("Copy address to clipboard"), onCpy, True ],
-            [ _("Show address as QR code"), onQR, True ],
-            [ _("Copy input hash to clipboard"), onCpy, False ],
-            [ _("Show input hash as QR code"), onQR, False ],
+            [ _("Copy Address"), onCpy, True ],
+            [ _("Show Address QR"), onQR, True ],
+            [ _("Copy input hash"), onCpy, False ],
+            [ _("Show input hash QR"), onQR, False ],
             [ _("View on block explorer"), onBlkXplo ],
             [ _("Cancel") ],
         ]
@@ -239,12 +239,25 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                 addy = Address.from_string(addy)
             except:
                 addy = None
-        if addy and parent.wallet and parent.wallet.is_mine(addy):
-            def onShowAddy(addy):
-                addresses.PushDetail(addy,self.txDetailVC.navigationController)
+        if addy and parent.wallet:
+            if parent.wallet.is_mine(addy):
+                def onShowAddy(addy):
+                    addresses.PushDetail(addy,self.txDetailVC.navigationController)
                 
-            actions.insert(0, [ _("Address Details"), onShowAddy, addy ] )
-            
+                actions.insert(0, [ _("Address Details"), onShowAddy, addy ] )
+            elif addy.to_ui_string() not in parent.wallet.contacts.keys(): # is not mine, isn't in contacts, offer user the option of adding
+                def doAddNewContact(addy):
+                    from .contacts import show_new_edit_contact
+                    show_new_edit_contact(addy, self.txDetailVC, onEdit=lambda x:utils.show_notification(_("Contact added")), title = _("New Contact"))
+                actions.insert(1, [ _("Add to Contacts"), doAddNewContact, addy ] )
+            elif self.txDetailVC.navigationController: # is not mine but is in contacts, so offer them a chance to view the contact
+                def doShowContact(addy):
+                    from .contacts import Find, PushNewContactDetailVC
+                    entry = Find(addy)
+                    if entry:
+                        PushNewContactDetailVC(entry, self.txDetailVC.navigationController)
+                actions.insert(1, [ _("Show Contact"), doShowContact, addy ] )
+
         
         utils.show_alert(vc = vc,
                          title = title,
