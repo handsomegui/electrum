@@ -1465,17 +1465,19 @@ class ElectrumGui(PrintError):
         from electroncash.transaction import tx_from_str, Transaction
         from . import txdetail
         try:
+            if not self.wallet:
+                self.show_error(_("Cannot display the requested transaction as you don't have a wallet open."))
+                return
             txt_tx = tx_from_str(txn)
             tx = Transaction(txt_tx)
             tx.deserialize()
-            if self.wallet:
-                my_coins = self.wallet.get_spendable_coins(None, self.config)
-                my_outpoints = [vin['prevout_hash'] + ':' + str(vin['prevout_n']) for vin in my_coins]
-                for i, txin in enumerate(tx.inputs()):
-                    outpoint = txin['prevout_hash'] + ':' + str(txin['prevout_n'])
-                    if outpoint in my_outpoints:
-                        my_index = my_outpoints.index(outpoint)
-                        tx._inputs[i]['value'] = my_coins[my_index]['value']
+            my_coins = self.wallet.get_spendable_coins(None, self.config)
+            my_outpoints = [vin['prevout_hash'] + ':' + str(vin['prevout_n']) for vin in my_coins]
+            for i, txin in enumerate(tx.inputs()):
+                outpoint = txin['prevout_hash'] + ':' + str(txin['prevout_n'])
+                if outpoint in my_outpoints:
+                    my_index = my_outpoints.index(outpoint)
+                    tx._inputs[i]['value'] = my_coins[my_index]['value']
             print("ext txn read ok")
             if self.has_modal():
                 self.show_error(_("Cannot display the requested transaction since you already have a modal dialog open."))

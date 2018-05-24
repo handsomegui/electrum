@@ -34,6 +34,7 @@ class AddressDetail(AddressDetailBase):
     blockRefresh = objc_property()
     needsRefresh = objc_property()
     domain = objc_property() # string repr of adddress in question -- used to get the cached address entry from the datamgr
+    descIsPlaceholder = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
@@ -66,6 +67,7 @@ class AddressDetail(AddressDetailBase):
         self.defaultBG = None
         self.blockRefresh = None
         self.needsRefresh = None
+        self.descIsPlaceholder = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -97,9 +99,7 @@ class AddressDetail(AddressDetailBase):
         
     @objc_method
     def refresh(self) -> None:
-        v = self.viewIfLoaded
-        if v is None: return
-        if self.blockRefresh:
+        if self.viewIfLoaded is None or self.blockRefresh:
             self.needsRefresh = True
             return
         entry = _Get(self.domain)
@@ -151,6 +151,7 @@ class AddressDetail(AddressDetailBase):
 
         
         self.desc.text = entry.label.strip()
+        self.chkDesc()
         
         xtra = []
         
@@ -190,6 +191,33 @@ class AddressDetail(AddressDetailBase):
         self.tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
         
         self.needsRefresh = False
+        
+    @objc_method
+    def chkDesc(self) -> None:
+        if not self.desc or not str(self.desc.text).strip():
+            self.descIsPlaceholder = True
+            ps = NSMutableParagraphStyle.new().autorelease()
+            ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
+            ps.alignment = NSCenterTextAlignment
+            ps.lineBreakMode = NSLineBreakByWordWrapping
+            self.desc.attributedText = NSAttributedString.alloc().initWithString_attributes_(
+                ("\n" + _("Tap to add a description...")),
+                {
+                    NSFontAttributeName : UIFont.italicSystemFontOfSize_(14.0),
+                    NSForegroundColorAttributeName : utils.uicolor_custom('light'),
+                    NSParagraphStyleAttributeName : ps
+                }
+            ).autorelease()
+        elif self.descIsPlaceholder:
+            self.undoPlaceholder()
+            
+    @objc_method
+    def undoPlaceholder(self) -> None:
+        self.desc.textColor = utils.uicolor_custom('dark')
+        self.desc.font = UIFont.systemFontOfSize_(14.0)
+        self.desc.textAlignment = 0
+        self.descIsPlaceholder = False
+        
         
     @objc_method
     def onOptions(self) -> None:
@@ -246,6 +274,9 @@ class AddressDetail(AddressDetailBase):
     @objc_method
     def textViewDidBeginEditing_(self, tv) -> None:
         self.blockRefresh = True # temporarily block refreshing since that kills our keyboard/textfield
+        if self.descIsPlaceholder:
+            self.desc.text = ""
+            self.undoPlaceholder()
         sv = self.view
         if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
             # try and center the text fields on the screen.. this is an ugly HACK.

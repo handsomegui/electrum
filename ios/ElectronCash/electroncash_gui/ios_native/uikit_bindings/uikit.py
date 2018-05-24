@@ -91,21 +91,11 @@ class NSLayoutPriority(Enum):
 
 # NSText.h
 NSLeftTextAlignment = 0
-NSRightTextAlignment = 1
-NSCenterTextAlignment = 2
+NSRightTextAlignment = 2
+NSCenterTextAlignment = 1
 NSJustifiedTextAlignment = 3
 NSNaturalTextAlignment = 4
 
-'''
-def NSTextAlignment(alignment):
-    return {
-        LEFT_ALIGNED: NSLeftTextAlignment,
-        RIGHT_ALIGNED: NSRightTextAlignment,
-        CENTER_ALIGNED: NSCenterTextAlignment,
-        JUSTIFIED_ALIGNED: NSJustifiedTextAlignment,
-        NATURAL_ALIGNED: NSNaturalTextAlignment,
-    }[alignment]
-'''
 
 # UIControl.h
 
