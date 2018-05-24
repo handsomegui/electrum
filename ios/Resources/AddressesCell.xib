@@ -81,13 +81,13 @@
                     <constraint firstItem="eaf-U5-Tzm" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="5Q8-hR-hEs" secondAttribute="trailing" constant="4" id="2kV-4e-BOL"/>
                     <constraint firstAttribute="bottom" secondItem="Flv-j1-wVQ" secondAttribute="bottom" constant="25.5" id="3sD-vD-Ecl"/>
                     <constraint firstItem="Flv-j1-wVQ" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" constant="51" id="6MF-uI-o5b"/>
-                    <constraint firstItem="TCr-T7-dkT" firstAttribute="leading" secondItem="xMZ-bB-sX3" secondAttribute="leading" constant="15" id="6rh-Ai-u0x"/>
+                    <constraint firstItem="TCr-T7-dkT" firstAttribute="left" secondItem="xMZ-bB-sX3" secondAttribute="left" constant="15" id="6rh-Ai-u0x"/>
                     <constraint firstAttribute="bottom" secondItem="g6P-Q6-ynd" secondAttribute="bottom" constant="7" id="B6d-oL-Zr9"/>
                     <constraint firstAttribute="trailingMargin" relation="greaterThanOrEqual" secondItem="TCr-T7-dkT" secondAttribute="trailing" constant="26" id="GcU-0I-ViG"/>
                     <constraint firstItem="TCr-T7-dkT" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" constant="7" id="VU3-uN-Gnb"/>
                     <constraint firstItem="n0K-ks-GaN" firstAttribute="leading" secondItem="TCr-T7-dkT" secondAttribute="leading" id="aJ8-IL-laI"/>
                     <constraint firstItem="5Q8-hR-hEs" firstAttribute="bottom" secondItem="n0K-ks-GaN" secondAttribute="bottom" constant="-2" id="l9q-Qo-9br"/>
-                    <constraint firstItem="Flv-j1-wVQ" firstAttribute="leading" secondItem="eaf-U5-Tzm" secondAttribute="trailing" constant="19" id="law-L6-HLh"/>
+                    <constraint firstItem="Flv-j1-wVQ" firstAttribute="left" secondItem="eaf-U5-Tzm" secondAttribute="right" constant="19" id="law-L6-HLh"/>
                     <constraint firstAttribute="trailing" secondItem="Flv-j1-wVQ" secondAttribute="trailing" constant="15" id="n8i-6k-GeT"/>
                     <constraint firstItem="g6P-Q6-ynd" firstAttribute="leading" secondItem="n0K-ks-GaN" secondAttribute="leading" id="olI-6f-hdM"/>
                     <constraint firstItem="5Q8-hR-hEs" firstAttribute="top" secondItem="TCr-T7-dkT" secondAttribute="bottom" constant="5" id="py2-JL-93b"/>

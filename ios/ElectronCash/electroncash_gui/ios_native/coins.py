@@ -10,9 +10,9 @@ from .uikit_bindings import *
 from .custom_objc import *
 from collections import namedtuple
 
-CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount_str amount is_frozen is_change")
+CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change base_unit")
 
-CellIdentifiers = ( "CoinsCellLarge", "EmptyCell")
+CellIdentifiers = ( "CoinsCell", "EmptyCell")
 
 class CoinsTableVC(UITableViewController):
     ''' Coins Tab -- shows utxos
@@ -30,7 +30,7 @@ class CoinsTableVC(UITableViewController):
         self.blockRefresh = False
         self.title = _("Coins")
         self.selected = []
-        self.tabBarItem.image = UIImage.imageNamed_("tab_coins.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
+        self.tabBarItem.image = UIImage.imageNamed_("tab_coins_new")
       
         buts = [
             UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Spend"), UIBarButtonItemStyleDone, self, SEL(b'spendFromSelection')).autorelease(),
@@ -63,7 +63,7 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
-        nib = UINib.nibWithNibName_bundle_("CoinsCellLarge", None)
+        nib = UINib.nibWithNibName_bundle_(CellIdentifiers[0], None)
         self.tableView.registerNib_forCellReuseIdentifier_(nib, CellIdentifiers[0])
         self.refresh()
         
@@ -87,26 +87,22 @@ class CoinsTableVC(UITableViewController):
             identifier = CellIdentifiers[0 if coins else -1]
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
             parent = gui.ElectrumGui.gui
+            isGood = True
             if cell is None:
                 cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
-            if coins:
+                isGood = False
+            if coins and isGood:
                 entry = coins[indexPath.row]
+                idx = indexPath.row
                 setup_cell_for_coins_entry(cell, entry)
-                cell.descTf.delegate = self
-                cell.descTf.tag = indexPath.row
-                cell.cpyBut.tag = indexPath.row
-                cell.qrBut.tag = indexPath.row
-                cell.addressGr.view.tag = indexPath.row
-                cell.optionsBut.tag = indexPath.row
-                if not cell.cpyBut.actionsForTarget_forControlEvent_(self,UIControlEventPrimaryActionTriggered):
-                    cell.cpyBut.addTarget_action_forControlEvents_(self, SEL(b'onCpyBut:'), UIControlEventPrimaryActionTriggered)
-                if not cell.qrBut.actionsForTarget_forControlEvent_(self,UIControlEventPrimaryActionTriggered):
-                    cell.qrBut.addTarget_action_forControlEvents_(self, SEL(b'onQRBut:'), UIControlEventPrimaryActionTriggered)
-                # According to UIGestureRecognizer docs, can call this multiple times and subsequent calls do nothing
-                cell.addressGr.addTarget_action_(self,SEL(b'onOptions:'))
-                if not cell.optionsBut.actionsForTarget_forControlEvent_(self,UIControlEventPrimaryActionTriggered):
-                    cell.optionsBut.addTarget_action_forControlEvents_(self, SEL(b'onOptions:'), UIControlEventPrimaryActionTriggered)
-                self.setupAccessoryForCell_atIndex_(cell, indexPath.row)
+                cell.tag = idx
+                def linkTapped(acell : ObjCInstance) -> None:
+                    self.onOptions_(cell)
+                def butTapped(acell : ObjCInstance) -> None:
+                    self.selectDeselectCell_(cell)
+                cell.onAddress = Block(linkTapped)
+                cell.onButton = Block(butTapped)
+                self.setupSelectionButtonCell_atIndex_(cell, idx)
                     
             else:
                 empty_cell(cell,_("No coins"),True)
@@ -116,11 +112,6 @@ class CoinsTableVC(UITableViewController):
             empty_cell(cell)
         return cell
     
-    # Below 2 methods conform to UITableViewDelegate protocol
-    @objc_method
-    def tableView_accessoryButtonTappedForRowWithIndexPath_(self, tv, indexPath):
-        #print("ACCESSORY TAPPED CALLED")
-        pass
     
     @objc_method
     def showTxDetailForIndex_(self, index : int) -> None:
@@ -145,23 +136,33 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
         #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
-        tv.deselectRowAtIndexPath_animated_(indexPath,False)
-        cell = tv.cellForRowAtIndexPath_(indexPath)
+        tv.deselectRowAtIndexPath_animated_(indexPath,True)
 
+        # TODO: detail view push here
+        gui.ElectrumGui.gui.show_error('Coming soon!', 'Unimplemented')
+
+        
+    @objc_method
+    def selectDeselectCell_(self, cell : ObjCInstance) -> None:
         coins = _Get(self)
         if not coins or not len(coins): return
 
-        self.setIndex_selected_(indexPath.row, not self.isIndexSelected_(indexPath.row))
-        wasSel = self.setupAccessoryForCell_atIndex_(cell, indexPath.row) # this sometimes fails if address is frozen and/or we are watching only
-        self.setIndex_selected_(indexPath.row, wasSel)
+        index = cell.tag
+        self.setIndex_selected_(index, not self.isIndexSelected_(index))
+        wasSel = self.setupSelectionButtonCell_atIndex_(cell, index) # this sometimes fails if address is frozen and/or we are watching only
+        self.setIndex_selected_(index, wasSel)
 
         self.selected = self.updateSelectionButtons()
         
  
     @objc_method
     def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
-        return 150.0
-        #return 44.0
+        coins = _Get(self)
+        if coins and indexPath.row < len(coins):
+            # NEW layout: 113 for no desc, 136 for desc
+            lbl = coins[indexPath.row].label
+            return 136.0 if lbl and lbl.strip() else 113.0
+        return 44.0
    
     @objc_method
     def refresh(self):
@@ -181,61 +182,6 @@ class CoinsTableVC(UITableViewController):
             self.refresh()
             #print ("COINS REFRESHED")
 
-                    
-    @objc_method
-    def textFieldShouldReturn_(self, tf) -> bool:
-        tf.resignFirstResponder()
-        return True
-
-    @objc_method
-    def textFieldDidBeginEditing_(self, tf) -> None:
-        self.blockRefresh = True # temporarily block refreshing since that kills out keyboard/textfield
-    
-    @objc_method
-    def textFieldDidEndEditing_(self, tf) -> None:
-        coins = _Get(self)
-        if not coins or tf.tag < 0 or tf.tag >= len(coins):
-            utils.NSLog("ERROR -- Coins label text field unknown tag: %d",int(tf.tag))
-        else:
-            entry = coins[tf.tag]
-            newLabel = tf.text
-            if newLabel != entry.label:
-                # implicitly refreshes us
-                gui.ElectrumGui.gui.on_label_edited(entry.tx_hash, newLabel)
-        # need to enqueue a call to "doRefreshIfNeeded" because it's possible the user tapped another text field in which case we
-        # don't want to refresh from underneath the user as that closes the keyboard, unfortunately
-        # note we wait until here to unblock refresh because it's possible used tapped another textfield in the same view and we want to continue to block if that is the case
-        self.blockRefresh = False # unblock block refreshing
-        self.retain()
-        def forLater() -> None:
-            self.doRefreshIfNeeded()
-            self.autorelease()
-        utils.call_later(0.250, forLater)
-
-            
-    @objc_method
-    def onCpyBut_(self, but : ObjCInstance) -> None:
-        #print ("On Copy But")
-        try:
-            entry = _Get(self)[but.tag]
-            gui.ElectrumGui.gui.copy_to_clipboard(entry.address_str, 'Address')
-        except:
-            import sys
-            utils.NSLog("Exception during coins.py 'onCpyBut': %s",str(sys.exc_info()[1]))
-
-    @objc_method
-    def onQRBut_(self, but : ObjCInstance) -> None:
-        #print ("On QR But")
-        try:
-            entry = _Get(self)[but.tag]
-            qrvc = utils.present_qrcode_vc_for_data(vc=self,
-                                                    data=entry.address_str,
-                                                    title = _('QR code'))
-            gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
-            #print ("address =", entry.address_str)
-        except:
-            import sys
-            utils.NSLog("Exception during coins.py 'onQRBut': %s",str(sys.exc_info()[1]))
             
     @objc_method
     def onOptions_(self, obj : ObjCInstance) -> None:
@@ -243,6 +189,8 @@ class CoinsTableVC(UITableViewController):
         try:
             if isinstance(obj, UIGestureRecognizer):
                 obj = obj.view
+            elif isinstance(obj, UITableViewCell):
+                pass
             entry = _Get(self)[obj.tag]
             parent = gui.ElectrumGui.gui
             def on_block_explorer() -> None:
@@ -261,10 +209,10 @@ class CoinsTableVC(UITableViewController):
                     spend_from(utxos)
     
             actions = [
+                    [ _('Copy Address'), parent.copy_to_clipboard, entry.address_str, _('Address') ],
                     [ _('Cancel') ],
                     [ _("Address Details"), on_address_details ],
                     [ _("Transaction Details"), lambda: self.showTxDetailForIndex_(obj.tag)],
-                    [ _("View on block explorer"), on_block_explorer ],
                     [ _("Request payment"), on_request_payment ],
                 ]
             
@@ -277,7 +225,9 @@ class CoinsTableVC(UITableViewController):
                 actions.append([ _('Spend from this UTXO'), lambda: spend_from([entry.utxo]) ] )
                 if len(list(self.updateSelectionButtons())):
                     actions.append([ _('Spend from this UTXO + Selected'), lambda: spend_from2([entry.utxo]) ] )
-                    
+
+            # make sure this is last
+            actions.append([ _("View on block explorer"), on_block_explorer ] )           
                     
             utils.show_alert(
                 vc = self,
@@ -353,7 +303,10 @@ class CoinsTableVC(UITableViewController):
         return ns_from_py(list(newSels))
     
     @objc_method
-    def setupAccessoryForCell_atIndex_(self, cell, index : int) -> bool:
+    def setupSelectionButtonCell_atIndex_(self, cell, index : int) -> bool:
+        if not isinstance(cell, CoinsCell):
+            utils.NSLog("*** WARNING: setupSelectionButtonCell_atIndex_ called with an unknown cell type! Returning early...")
+            return False
         parent = gui.ElectrumGui.gui
         no_good = parent.wallet is None or parent.wallet.is_watching_only()
         try:
@@ -366,59 +319,59 @@ class CoinsTableVC(UITableViewController):
         ret = False
         
         if no_good or not self.isIndexSelected_(index):
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
-            cell.accessoryView = get_circle_imageview()
+            cell.buttonSelected = False
         else:
-            cell.accessoryType = UITableViewCellAccessoryCheckmark
-            cell.accessoryView = None
+            cell.buttonSelected = True
             ret = True
+            
+        cell.selectionButton.setEnabled_(not no_good)
         
         return ret
 
 
 def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
-    if not isinstance(cell, CoinsCellLarge):
+    if not isinstance(cell, CoinsCell):
         empty_cell(cell)
         return
-    #CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change")
-    utxo, tx_hash, address, address_str, height, name, label, amount, amount_str, is_frozen, is_change, *dummy = entry
 
-    if label is None:
-        label = ''
-        
-    lblColor = UIColor.blackColor if not is_frozen else utils.uicolor_custom('frozen text')
-    bgColor = UIColor.clearColor
-    flags = list()
-    if is_frozen:
-        bgColor = utils.uicolor_custom('frozen')
-        flags += [ _("Frozen") ]
-    if is_change:
-        bgColor = utils.uicolor_custom('change')
-        flags += [ _("Change") ]
+    #CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change base_unit")
 
-    cell.backgroundColor = bgColor
 
-    cell.address.text = address_str
-    cell.address.textColor = lblColor
-    cell.descTf.placeholder = _("Description")
-    cell.descTf.text = label
-    cell.amt.font = utils.font_monospace_17_bold
-    cell.amt.text = amount_str
-    cell.utxo.text = name[0:10] + "\n... " + name[-2:]
-    cell.utxo.font = utils.font_monospace_17_semibold
-    cell.height.text = str(height)
-    cell.flags.text = ", ".join(flags)
+    cell.onAddress = None # clear objc blocks.. caller sets these
+    cell.onButton = None
+    # initialize it to base values
+    cell.buttonSelected = False
+    cell.chevronHidden = False
     
-    if not cell.addressGr:
-        cell.addressGr = UITapGestureRecognizer.new().autorelease()
-        cell.address.addGestureRecognizer_(cell.addressGr)
-
-
-    #cell.amt.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
-    #cell.utxo.font = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular)
     
-    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
-    cell.accessoryView = get_circle_imageview()
+    cell.address.attributedText = NSAttributedString.alloc().initWithString_attributes_(
+        entry.address_str,
+        {
+            NSUnderlineStyleAttributeName : NSUnderlineStyleSingle
+        }    
+    ).autorelease()
+    
+    kern = utils._kern
+    
+    cell.amountTit.setText_withKerning_(_("Amount"), kern)
+    cell.utxoTit.setText_withKerning_(_("UTXO"), kern)
+    cell.heightTit.setText_withKerning_(_("Height"), kern)
+
+    cell.desc.setText_withKerning_(entry.label.strip() if entry.label else '', kern)
+
+    cell.utxo.setText_withKerning_(str(entry.name), kern)
+    specialColor = utils.uicolor_custom('dark')
+    if entry.is_frozen:
+        cell.flags.text = _("Frozen")
+        specialColor = utils.uicolor_custom('frozentext')
+    else:
+        cell.flags.text = _("Change") if entry.is_change else _("Receiving")
+    cell.amount.text = entry.amount_str + ' ' + entry.base_unit
+    cell.height.text = str(entry.height)
+
+    cell.amount.textColor = specialColor
+    cell.flags.textColor = specialColor
+
 
 def _Get(coinsvc : CoinsTableVC) -> list:
     return gui.ElectrumGui.gui.sigCoins.get(utils.nspy_get_byname(coinsvc, 'domain'))
@@ -445,7 +398,7 @@ def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool
     ''' For a given set of addresses (or None for all addresses), builds a list of
         CoinsEntry tuples:
         
-        CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change")
+        CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change base_unit"))
 
     '''
     parent = gui.ElectrumGui.gui
@@ -457,6 +410,7 @@ def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool
     c = wallet.get_utxos(domain, exclude_frozen, mature, confirmed_only)
     def get_name(x):
         return x.get('prevout_hash') + ":%d"%x.get('prevout_n')
+    base_unit = parent.base_unit()
     for x in c:
         address = x['address']
         address_str = address.to_ui_string()
@@ -468,7 +422,7 @@ def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool
         amount_str = parent.format_amount(amount)
         is_frozen = wallet.is_frozen(address)
         is_change = wallet.is_change(address)
-        entry = CoinsEntry(x, tx_hash, address, address_str, height, name, label, amount, amount_str, is_frozen, is_change)
+        entry = CoinsEntry(x, tx_hash, address, address_str, height, name, label, amount, amount_str, is_frozen, is_change, base_unit)
         coins.append(entry)
     
     coins.sort(key=lambda x: [x.address_str, x.amount, x.height], reverse=True)
@@ -476,14 +430,17 @@ def get_coins(domain : list = None, exclude_frozen : bool = False, mature : bool
     return coins
 
 def empty_cell(cell : ObjCInstance, txt : str = "*Error*", italic : bool = False) -> ObjCInstance:
-    if isinstance(cell, CoinsCellLarge):
-        cell.amt.text = ''
+    if isinstance(cell, CoinsCell):
+        cell.amount.text = ''
         cell.utxo.text = ''
         cell.flags.text = ''
-        cell.descTf.text = txt
-        cell.address.text = txt
+        cell.desc.text = txt
+        cell.address.text = ''
         cell.height.text = ''
         cell.tag = -1
+        cell.onButton = None
+        cell.chevronHidden = True
+        cell.buttonSelected = False
     else:        
         cell.textLabel.attributedText = None
         cell.textLabel.text = txt
@@ -511,12 +468,6 @@ def spend_from(coins: list) -> None:
     parent = gui.ElectrumGui.gui
     if parent.wallet:
         parent.jump_to_send_with_spend_from(coins)
-
-def get_circle_imageview() -> ObjCInstance:
-    iv = UIImageView.alloc().initWithImage_(UIImage.imageNamed_("circle.png")).autorelease()
-    iv.frame = CGRectMake(0,0,24,24)
-    iv.contentMode = UIViewContentModeScaleAspectFit
-    return iv
 
 def PushCoinsVC(domain : list, navController : ObjCInstance) -> ObjCInstance:
     vc = CoinsTableVC.alloc()

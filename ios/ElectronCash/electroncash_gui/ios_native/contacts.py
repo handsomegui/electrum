@@ -846,10 +846,10 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
             
         actions = [
                 [ _('Cancel') ],
-                [ _("View on block explorer"), on_block_explorer ],
                 [ _("Copy Address"), on_cpy ],
                 [ _("Edit Contact"), on_edit],
                 [ _("Pay to"), on_pay_to ],
+                [ _("View on block explorer"), on_block_explorer ],
                 [ _("Delete"), on_delete ],
             ]
                         

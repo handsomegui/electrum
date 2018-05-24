@@ -12,34 +12,6 @@
 #import <UIKit/UIKit.h>
 #import "DZNSegmentedControl/DZNSegmentedControl.h"
 
-@interface HistoryCellLarge : UITableViewCell
-@property (nonatomic, weak) IBOutlet UIImageView *icon;
-@property (nonatomic, weak) IBOutlet UILabel *status1;
-@property (nonatomic, weak) IBOutlet UILabel *status2;
-@property (nonatomic, weak) IBOutlet UILabel *amtTit;
-@property (nonatomic, weak) IBOutlet UILabel *amt;
-@property (nonatomic, weak) IBOutlet UILabel *balTit;
-@property (nonatomic, weak) IBOutlet UILabel *bal;
-@property (nonatomic, weak) IBOutlet UITextField *descTf;
-@end
-
-
-@interface CoinsCellLarge : UITableViewCell
-@property (nonatomic, weak) IBOutlet UILabel *addressTit;
-@property (nonatomic, weak) IBOutlet UILabel *address;
-@property (nonatomic, weak) IBOutlet UILabel *flags;
-@property (nonatomic, weak) IBOutlet UILabel *heightTit;
-@property (nonatomic, weak) IBOutlet UILabel *height;
-@property (nonatomic, weak) IBOutlet UILabel *amtTit;
-@property (nonatomic, weak) IBOutlet UILabel *amt;
-@property (nonatomic, weak) IBOutlet UILabel *utxoTit;
-@property (nonatomic, weak) IBOutlet UILabel *utxo;
-@property (nonatomic, weak) IBOutlet UITextField *descTf;
-@property (nonatomic, weak) IBOutlet UIButton *cpyBut;
-@property (nonatomic, weak) IBOutlet UIButton *qrBut;
-@property (nonatomic, weak) IBOutlet UIButton *optionsBut;
-@property (nonatomic, weak) IBOutlet UITapGestureRecognizer *addressGr;
-@end
 
 @interface AddrConvBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *blurb;
@@ -351,4 +323,15 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onSpendFrom;
 - (IBAction) onUTXOs;
 @end
+
+@interface CoinsCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UILabel *address, *utxo, *amount, *height, *desc, *flags;
+@property (nonatomic, weak) IBOutlet UILabel *amountTit, *utxoTit, *heightTit;
+@property (nonatomic, weak) IBOutlet UIButton *selectionButton;
+@property (nonatomic) BOOL chevronHidden; // defaults to NO. If YES cell will re-layout itself
+@property (nonatomic) BOOL buttonSelected; // defaults to NO. If YES, button will have a checkmark and will be in the 'selected' state
+@property (nonatomic, copy) void(^onButton)(CoinsCell *cell); // set this block to define a callback for when the button is tapped due to user interaction. Not called if buttonSelected = YES is set programmatically!
+@property (nonatomic, copy) void(^onAddress)(CoinsCell *cell); // set this block to define a callback for when the address 'link' is tapped due to user interaction.
+@end
+
 #endif /* ViewsForIB_h */

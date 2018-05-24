@@ -10,14 +10,6 @@
 
 #define DEGREES_TO_RADIANS(x) (M_PI * (x) / 180.0)
 
-@implementation HistoryCellLarge
-// properties get autosynthesized since Xcode 4.4
-@end
-
-@implementation CoinsCellLarge
-// properties get autosynthesized since Xcode 4.4
-@end
-
 @implementation AddrConvBase
 // properties get autosynthesized since Xcode 4.4
 - (IBAction) onBut:(id)sender { /* implement in subclass.. */ }
@@ -252,3 +244,37 @@
 // auto synthesized properties
 @end
 
+@implementation CoinsCell {
+    __weak IBOutlet UIImageView *_chevron;
+    __weak IBOutlet NSLayoutConstraint *_rightCS;
+}
+- (BOOL) chevronHidden { return _chevron.highlighted; }
+- (void) setChevronHidden:(BOOL)b {
+    _chevron.highlighted = b;
+    if (b) {
+        _rightCS.constant = -8.0;
+    } else {
+        _rightCS.constant = 19.0;
+    }
+}
+
+- (BOOL) buttonSelected { return _selectionButton.selected; }
+- (void) setButtonSelected:(BOOL)b {
+    _selectionButton.selected = b;
+}
+
+- (IBAction) onSelBut {
+    self.buttonSelected = !self.buttonSelected;
+    if (_onButton) _onButton(self);
+}
+- (IBAction) onAddressTap {
+    if (_onAddress) _onAddress(self);
+}
+- (void) awakeFromNib {
+    [super awakeFromNib];
+    // set up the gesture recognizer for the 'address'
+    UIGestureRecognizer *gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onAddressTap)];
+    [_address addGestureRecognizer:gr];
+}
+// auto synthesized properties
+@end

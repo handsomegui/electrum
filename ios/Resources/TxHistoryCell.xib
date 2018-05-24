@@ -154,6 +154,7 @@
                 </constraints>
             </tableViewCellContentView>
             <color key="backgroundColor" white="1" alpha="0.74659700920245398" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
             <connections>
                 <outlet property="amount" destination="F5k-7z-KJd" id="XKb-vR-PGe"/>
                 <outlet property="amountTit" destination="gAF-Dw-KNw" id="phy-NP-NJ9"/>

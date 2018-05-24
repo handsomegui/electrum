@@ -139,7 +139,7 @@
                         <viewLayoutGuide key="safeArea" id="FBv-m5-Km7"/>
                     </view>
                     <navigationItem key="navigationItem" title="New Contact" id="YUj-cK-KLb">
-                        <barButtonItem key="leftBarButtonItem" style="plain" systemItem="cancel" id="NPD-pa-a6j">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="NPD-pa-a6j">
                             <connections>
                                 <action selector="onCancel" destination="D4K-cs-S0R" id="fvZ-re-Q5j"/>
                             </connections>

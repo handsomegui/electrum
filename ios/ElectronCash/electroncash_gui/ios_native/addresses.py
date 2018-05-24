@@ -864,7 +864,6 @@ def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = 
             [ _('Cancel') ],
             [ _('Copy Address'), on_copy ],
             #[ _('Show as QR code'), lambda: parentvc.onQRBut() ],
-            [ _("View on block explorer"), on_block_explorer ],
             [ _("Request payment"), on_request_payment ],
         ]
     
@@ -883,6 +882,9 @@ def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = 
 
     if not watch_only and not entry.is_frozen and entry.balance > 0:
         actions.append([ _('Spend from this Address'), lambda: _SpendFrom(entry, vc = parentvc) ] )
+
+
+    actions.append([ _("View on block explorer"), on_block_explorer ])
 
     if not watch_only:
         actions.append([ _('Private key'), on_private_key ] )

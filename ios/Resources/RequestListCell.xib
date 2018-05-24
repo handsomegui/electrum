@@ -126,6 +126,7 @@
                     <constraint firstItem="cxn-In-68e" firstAttribute="leading" secondItem="Tnx-Hm-nPu" secondAttribute="leading" id="wHf-dx-U0X"/>
                 </constraints>
             </tableViewCellContentView>
+            <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
             <connections>
                 <outlet property="address" destination="Tnx-Hm-nPu" id="sIY-6J-jvK"/>
                 <outlet property="addressTit" destination="PJA-wW-y4J" id="YRS-ep-SdA"/>
