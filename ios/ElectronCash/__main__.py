@@ -3,9 +3,19 @@
 # 'applicationDidFinishLaunchingWithOptions' call, which is really where we start the app.
 import electroncash_gui.ios_native.appdelegate
 from electroncash_gui.ios_native.uikit_bindings import *
-import sys
+import sys, os, ssl
 
 if __name__ == '__main__':
+    #
+    # The below is very important to allow OpenSSL to do SSL connections on iOS without verifying certs.
+    # If you take this out, blockchain_headers from http://bitcoincash.com will fail, and the
+    # "downloading headers" thing will take ages.  So I left this in.
+    # TODO: figure out how else to get the certs file into the libOpenSSl.a archive.
+    #   - Calin May 24, 2018
+    #
+    if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)): 
+        ssl._create_default_https_context = ssl._create_unverified_context
+        print("*** SSL *** Allow Unverfied Context: ENABLED! ;)")
     
     argc = c_int(len(sys.argv))
     argv = (c_char_p * (argc.value + 1))()
