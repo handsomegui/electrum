@@ -100,8 +100,12 @@ class CoinsTableVC(UITableViewController):
                     self.onOptions_(cell)
                 def butTapped(acell : ObjCInstance) -> None:
                     self.selectDeselectCell_(cell)
+                def doDetail(acell : ObjCInstance) -> None:
+                    # TODO: detail view push here
+                    gui.ElectrumGui.gui.show_error('Coming soon!', 'Unimplemented')
                 cell.onAddress = Block(linkTapped)
                 cell.onButton = Block(butTapped)
+                cell.onAccessory = Block(doDetail)
                 self.setupSelectionButtonCell_atIndex_(cell, idx)
                     
             else:
@@ -138,9 +142,8 @@ class CoinsTableVC(UITableViewController):
         #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
 
-        # TODO: detail view push here
-        gui.ElectrumGui.gui.show_error('Coming soon!', 'Unimplemented')
-
+        cell = tv.cellForRowAtIndexPath_(indexPath)
+        if cell: self.selectDeselectCell_(cell)
         
     @objc_method
     def selectDeselectCell_(self, cell : ObjCInstance) -> None:
@@ -153,6 +156,19 @@ class CoinsTableVC(UITableViewController):
         self.setIndex_selected_(index, wasSel)
 
         self.selected = self.updateSelectionButtons()
+        
+        # animate to indicate to user why they were DENIED
+        if not wasSel and index < len(coins) and coins[index].is_frozen:
+            cell.amount.textColorAnimationFromColor_toColor_duration_reverses_completion_(
+                utils.uicolor_custom('frozentext'),
+                utils.uicolor_custom('frozentextbright'),
+                0.4, True, None
+            )
+            cell.flags.textColorAnimationFromColor_toColor_duration_reverses_completion_(
+                utils.uicolor_custom('frozentext'),
+                utils.uicolor_custom('frozentextbright'),
+                0.4, True, None
+            )
         
  
     @objc_method
@@ -324,7 +340,7 @@ class CoinsTableVC(UITableViewController):
             cell.buttonSelected = True
             ret = True
             
-        cell.selectionButton.setEnabled_(not no_good)
+        cell.buttonEnabled = not no_good
         
         return ret
 

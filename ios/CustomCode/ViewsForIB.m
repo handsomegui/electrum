@@ -247,6 +247,8 @@
 @implementation CoinsCell {
     __weak IBOutlet UIImageView *_chevron;
     __weak IBOutlet NSLayoutConstraint *_rightCS;
+    __weak IBOutlet UIButton *_selectionButton;
+    __weak IBOutlet UIView *_butTapArea, *_accTapArea;
 }
 - (BOOL) chevronHidden { return _chevron.highlighted; }
 - (void) setChevronHidden:(BOOL)b {
@@ -256,13 +258,18 @@
     } else {
         _rightCS.constant = 19.0;
     }
+    _accTapArea.userInteractionEnabled = !b;
 }
 
 - (BOOL) buttonSelected { return _selectionButton.selected; }
 - (void) setButtonSelected:(BOOL)b {
     _selectionButton.selected = b;
 }
-
+- (BOOL) buttonEnabled { return _selectionButton.enabled; }
+- (void) setButtonEnabled:(BOOL)b {
+    _selectionButton.enabled = b;
+    _butTapArea.userInteractionEnabled = b;
+}
 - (IBAction) onSelBut {
     self.buttonSelected = !self.buttonSelected;
     if (_onButton) _onButton(self);
@@ -270,11 +277,20 @@
 - (IBAction) onAddressTap {
     if (_onAddress) _onAddress(self);
 }
+- (IBAction) onAccessoryTap {
+    if (_onAccessory) _onAccessory(self);
+}
 - (void) awakeFromNib {
     [super awakeFromNib];
     // set up the gesture recognizer for the 'address'
     UIGestureRecognizer *gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onAddressTap)];
     [_address addGestureRecognizer:gr];
+
+    gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onAccessoryTap)];
+    [_accTapArea addGestureRecognizer:gr];
+
+    gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onSelBut)];
+    [_butTapArea addGestureRecognizer:gr];
 }
 // auto synthesized properties
 @end

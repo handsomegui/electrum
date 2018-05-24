@@ -117,6 +117,8 @@ def uicolor_custom(name : str) -> ObjCInstance:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,0.125)
     if name in ['frozentext', 'frozen text', 'frozenaddresstext', 'frozen address text']:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,1.0) 
+    if name in ['frozentextbright', 'frozen text bright', 'frozenaddresstextbright', 'frozen address text bright']:
+        return UIColor.colorWithRed_green_blue_alpha_(0.0,0.8,0.8,1.0) 
     if name in ['frozentextlight', 'frozen text light', 'frozenaddresstextlight', 'frozen address text light']:
         return UIColor.colorWithRed_green_blue_alpha_(0.0,0.5,0.5,0.4) 
     NSLog("uicolor_custom: UNKNOWN custom color '%s' -- returning GRAY -- FIXME"%(str(name)))
