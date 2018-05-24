@@ -1507,6 +1507,6 @@ class ElectrumGui(PrintError):
             return
         
         self.open_last_wallet()
-        
+
         self.createAndShowUI()
         self.ext_txn_check()
