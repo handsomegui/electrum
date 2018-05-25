@@ -303,7 +303,10 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS, *midCS;
 @end
 
+@class ECTextViewDelegate;
+
 @interface AddressDetailBase : UIViewController
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
 @property (nonatomic, weak) UIBarButtonItem *optionsBarBut;
 @property (nonatomic, weak) IBOutlet UIImageView *qr;
 @property (nonatomic, weak) IBOutlet UILabel *address, *balanceTit, *balance, *fiatBalance, *statusTit, *status, *descTit, *numTxTit, *numTx;
@@ -337,6 +340,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 
 @interface CoinsDetailBase : UIViewController
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
 @property (nonatomic, weak) UIBarButtonItem *optionsBarBut;
 @property (nonatomic, weak) IBOutlet UIImageView *qr;
 @property (nonatomic, weak) IBOutlet UILabel *address, *balanceTit, *balance, *fiatBalance, *utxoTit, *utxo, *descTit, *heightTit, *height;

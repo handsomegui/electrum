@@ -33,7 +33,6 @@ class AddressDetail(AddressDetailBase):
     blockRefresh = objc_property()
     needsRefresh = objc_property()
     domain = objc_property() # string repr of adddress in question -- used to get the cached address entry from the datamgr
-    descIsPlaceholder = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
@@ -65,7 +64,6 @@ class AddressDetail(AddressDetailBase):
         self.view = None
         self.blockRefresh = None
         self.needsRefresh = None
-        self.descIsPlaceholder = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -76,19 +74,41 @@ class AddressDetail(AddressDetailBase):
         
         self.statusTopSaved = self.statusTopCS.constant
         self.txHistoryTopSaved = self.txHistoryTopCS.constant
-                
-        if isinstance(self.desc, UITextView):
-            # set up the 'Done' button for the keyboard on the description textview
-            spacer = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemFlexibleSpace, None, None).autorelease()
-            item = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onCloseKeyboard:')).autorelease()
-            toolBar = UIToolbar.alloc().init().autorelease()
-            toolBar.sizeToFit()
-            toolBar.items = [spacer, item]
-            self.desc.inputAccessoryView = toolBar
 
-        
+        self.descDel.placeholderFont = UIFont.italicSystemFontOfSize_(14.0)
+        self.descDel.placeholderText = '\n' + _(str(self.descDel.placeholderText).strip())
+
         # Re-use of TxHistoryHelper below...
         helper = history.NewTxHistoryHelper(tv = self.tv, vc = self, noRefreshControl = True, domain = [entry.address], cls=history.TxHistoryHelperWithHeader)
+        
+    @objc_method
+    def viewDidLoad(self) -> None:
+        # setup callbacks
+        def didBeginEditing() -> None:
+            self.blockRefresh = True # temporarily block refreshing since that kills our keyboard/textfield
+            sv = self.view
+            if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
+                # try and center the text fields on the screen.. this is an ugly HACK.
+                # todo: fixme!
+                frame = self.desc.superview().frame
+                frame.origin.y += 150 + 64 + 64
+                sv.scrollRectToVisible_animated_(frame, True)
+    
+        self.descDel.didBeginEditing = Block(didBeginEditing)
+
+        def didEndEditing(text : ObjCInstance) -> None:
+            text = py_from_ns(text)
+            self.blockRefresh = False # unblock block refreshing
+            entry = _Get(self.domain)
+        
+            text = str(text).strip()
+            new_label = text
+            print ("new label for address %s = %s"%(entry.address.to_storage_string(), new_label))
+            gui.ElectrumGui.gui.on_label_edited(entry.address, new_label)
+            # Note that above should implicitly refresh us due to sigAddresses signal
+            self.doRefreshIfNeeded() # just in case we had a blocked refresh and electrumgui didn't signal.
+        
+        self.descDel.didEndEditing = Block(didEndEditing)
                       
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -148,8 +168,7 @@ class AddressDetail(AddressDetailBase):
         self.numTx.attributedText = numTXsAttrStr()
 
         
-        self.desc.text = entry.label.strip()
-        self.chkDesc()
+        self.descDel.text = entry.label.strip()
         
         xtra = []
         
@@ -190,34 +209,7 @@ class AddressDetail(AddressDetailBase):
         self.tv.reloadData() # might be a sometimes-redundant call since WalletsTxHelper also calls reload data..
         
         self.needsRefresh = False
-        
-    @objc_method
-    def chkDesc(self) -> None:
-        if not self.desc or not str(self.desc.text).strip():
-            self.descIsPlaceholder = True
-            ps = NSMutableParagraphStyle.new().autorelease()
-            ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
-            ps.alignment = NSCenterTextAlignment
-            ps.lineBreakMode = NSLineBreakByWordWrapping
-            self.desc.attributedText = NSAttributedString.alloc().initWithString_attributes_(
-                ("\n" + _("Tap to add a description...")),
-                {
-                    NSFontAttributeName : UIFont.italicSystemFontOfSize_(14.0),
-                    NSForegroundColorAttributeName : utils.uicolor_custom('light'),
-                    NSParagraphStyleAttributeName : ps
-                }
-            ).autorelease()
-        elif self.descIsPlaceholder:
-            self.undoPlaceholder()
             
-    @objc_method
-    def undoPlaceholder(self) -> None:
-        self.desc.textColor = utils.uicolor_custom('dark')
-        self.desc.font = UIFont.systemFontOfSize_(14.0)
-        self.desc.textAlignment = 0
-        self.descIsPlaceholder = False
-        
-        
     @objc_method
     def onOptions(self) -> None:
         entry = _Get(self.domain)
@@ -269,33 +261,6 @@ class AddressDetail(AddressDetailBase):
     def onCloseKeyboard_(self, sender : ObjCInstance) -> None:
         self.view.endEditing_(True) 
 
-    
-    @objc_method
-    def textViewDidBeginEditing_(self, tv) -> None:
-        self.blockRefresh = True # temporarily block refreshing since that kills our keyboard/textfield
-        if self.descIsPlaceholder:
-            self.desc.text = ""
-            self.undoPlaceholder()
-        sv = self.view
-        if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
-            # try and center the text fields on the screen.. this is an ugly HACK.
-            # todo: fixme!
-            frame = tv.superview().frame
-            frame.origin.y += 150 + 64 + 64
-            sv.scrollRectToVisible_animated_(frame, True)
-
-
-    @objc_method
-    def textViewDidEndEditing_(self, textView) -> None:
-        self.blockRefresh = False # unblock block refreshing
-        entry = _Get(self.domain)
-        
-        textView.text = textView.text.strip()
-        new_label = textView.text
-        print ("new label for address %s = %s"%(entry.address.to_storage_string(), new_label))
-        gui.ElectrumGui.gui.on_label_edited(entry.address, new_label)
-        # Note that above should implicitly refresh us due to sigAddresses signal
-        self.doRefreshIfNeeded() # just in case we had a blocked refresh and electrumgui didn't signal.
         
 ModeNormal = 0
 ModePicker = 1

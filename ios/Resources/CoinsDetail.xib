@@ -15,6 +15,7 @@
                 <outlet property="balance" destination="7I8-RE-Aqg" id="bBv-Hr-VR5"/>
                 <outlet property="balanceTit" destination="uBv-fh-gAf" id="1T8-P8-EI9"/>
                 <outlet property="desc" destination="tiG-l2-mAN" id="EVt-Wz-Drc"/>
+                <outlet property="descDel" destination="SUL-WU-zog" id="FUL-tR-ozC"/>
                 <outlet property="descTit" destination="MEF-4M-7L4" id="8Ft-c4-btM"/>
                 <outlet property="fiatBalance" destination="Fm4-kj-15W" id="lkG-fS-8yM"/>
                 <outlet property="freezeBut" destination="1Pt-AW-hwQ" id="lvT-UC-aXc"/>
@@ -84,7 +85,7 @@
                                         </userDefinedRuntimeAttribute>
                                     </userDefinedRuntimeAttributes>
                                     <connections>
-                                        <outlet property="delegate" destination="-1" id="y0k-lh-WfX"/>
+                                        <outlet property="delegate" destination="SUL-WU-zog" id="d09-j8-wVs"/>
                                     </connections>
                                 </textView>
                             </subviews>
@@ -256,6 +257,18 @@
                 <action selector="cpyUTXO" destination="-1" id="U68-l2-bZw"/>
             </connections>
         </tapGestureRecognizer>
+        <customObject id="SUL-WU-zog" customClass="ECTextViewDelegate">
+            <userDefinedRuntimeAttributes>
+                <userDefinedRuntimeAttribute type="color" keyPath="placeholderColor">
+                    <color key="value" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                </userDefinedRuntimeAttribute>
+                <userDefinedRuntimeAttribute type="boolean" keyPath="centerPlaceholder" value="YES"/>
+                <userDefinedRuntimeAttribute type="string" keyPath="placeholderText" value="Tap to add a description..."/>
+            </userDefinedRuntimeAttributes>
+            <connections>
+                <outlet property="tv" destination="tiG-l2-mAN" id="YUe-uR-bno"/>
+            </connections>
+        </customObject>
     </objects>
     <resources>
         <image name="Rect_For_Chk.png" width="24" height="24"/>

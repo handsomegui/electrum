@@ -298,4 +298,3 @@
 @implementation CoinsDetailBase
 // auto synthesized properties
 @end
-

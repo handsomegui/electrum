@@ -90,4 +90,4 @@ ComboDrawerPicker = ObjCClass('ComboDrawerPicker')
 AddressDetailBase = ObjCClass('AddressDetailBase')
 CoinsCell = ObjCClass('CoinsCell')
 CoinsDetailBase = ObjCClass('CoinsDetailBase')
-
+ECTextViewDelegate = ObjCClass('ECTextViewDelegate')
