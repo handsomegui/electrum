@@ -8,7 +8,8 @@ from . import addresses
 from electroncash.transaction import Transaction
 from electroncash.address import Address, PublicKey
 from electroncash.util import timestamp_to_datetime
-import json
+import json, sys
+from . import coins
 
 # ViewController used for the TxDetail view's "Inputs" and "Outputs" tables.. not exposed.. managed internally
 class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
@@ -232,6 +233,17 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
         if not isInput:
             actions.pop(2)
             actions.pop(2)
+            # see if we have this output as a "Coin" in our wallet (UTXO)
+            try:
+                def get_name():
+                    return str(tx.txid()) + (":%d"%indexPath.row)
+                coin = coins.Find(get_name())
+                if coin and self.txDetailVC.navigationController:
+                    def onShowCoin(coin):
+                        coins.PushCoinsDetailVC(coin, self.txDetailVC.navigationController)
+                    actions.insert(0, [_("Show Coin Info"), onShowCoin, coin])
+            except:
+                print("Failed to get_name:",str(sys.exc_info()[1]))
             
         addy = getData(x, True, isInput)
         if addy and not isinstance(addy, Address):

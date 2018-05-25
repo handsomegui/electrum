@@ -14,7 +14,112 @@ CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height n
 
 
 class CoinsDetail(CoinsDetailBase):
-    pass
+    
+    @objc_method
+    def init(self) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'init'))
+        if self:
+            self.title = _("Coin Info")
+            self.optionsBarBut = UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_options"), UIBarButtonItemStylePlain, self, SEL(b'onOptions')).autorelease()
+            self.navigationItem.rightBarButtonItem = self.optionsBarBut
+            gui.ElectrumGui.gui.sigCoins.connect(lambda: self.refresh(), self)
+            gui.ElectrumGui.gui.cash_addr_sig.connect(lambda: self.refresh(), self)
+        return self
+    
+    @objc_method
+    def dealloc(self) -> None:
+        utils.nspy_pop(self)
+        utils.remove_all_callbacks(self)
+        gui.ElectrumGui.gui.sigCoins.disconnect(self)
+        gui.ElectrumGui.gui.cash_addr_sig.disconnect(self)
+        send_super(__class__, self, 'dealloc')
+
+    
+    @objc_method
+    def loadView(self) -> None:
+        NSBundle.mainBundle.loadNibNamed_owner_options_("CoinsDetail", self, None)        
+        self.addressTopSaved = self.addressTopCS.constant
+        self.descDel.placeholderFont = UIFont.italicSystemFontOfSize_(14.0)
+        self.descDel.placeholderText = '\n' + _(str(self.descDel.placeholderText).strip())
+        
+        # kern the tits
+        tits = [ self.addressTit, self.utxoTit, self.heightTit, self.descTit, self.amountTit ]
+        for tit in tits:
+            tit.setText_withKerning_(_(tit.text), utils._kern)
+        
+        
+    @objc_method
+    def viewDidLoad(self) -> None:
+        #setup callbacks..
+        def didBeginEditing() -> None:
+            sv = self.view
+            if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
+                # try and center the text fields on the screen.. this is an ugly HACK.
+                # todo: fixme!
+                frame = self.desc.superview().frame
+                frame.origin.y += 150 + 64 + 64
+                sv.scrollRectToVisible_animated_(frame, True)
+        def didEndEditing(text : ObjCInstance) -> None:
+            text = py_from_ns(text).strip()
+            print("Did end editing:",text)
+        self.descDel.didBeginEditing = Block(didBeginEditing)
+        self.descDel.didEndEditing = Block(didEndEditing)
+        
+ 
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.refresh()
+
+    @objc_method
+    def refresh(self) -> None:
+        parent = gui.ElectrumGui.gui
+        if not self.viewIfLoaded or not parent or not parent.wallet:
+            return
+        coin = _Get(self)
+        
+        self.address.text = coin.address.to_ui_string()
+        self.utxo.text = str(coin.name)
+        self.height.text = str(coin.height)
+        self.descDel.text = coin.label if coin.label else ''
+        self.amount.text = str(coin.amount_str).strip() + " " + coin.base_unit
+        fx = parent.daemon.fx if parent.daemon else None
+        if fx and fx.is_enabled() and fx.get_fiat_address_config():
+            self.fiatAmount.text = fx.format_amount_and_units(coin.amount).strip()
+        else:
+            self.fiatAmount.text = ''        
+        if not self.fiatAmount.text:
+            self.addressTopCS.constant = 0.0
+        else:
+            self.addressTopCS.constant = self.addressTopSaved
+        
+        self.freezeBut.selected = coin.is_frozen
+        
+        size = CGSizeMake(174.0,174.0) # the returned image has a 10 pix margin -- this compensates for it
+        self.qr.contentMode = UIViewContentModeCenter # if the image pix margin changes -- FIX THIS
+        self.qr.image = utils.get_qrcode_image_for_data(coin.tx_hash or '', size = size)
+                
+   
+    @objc_method
+    def onOptions(self) -> None:
+        print("OPTIONS...")
+
+    @objc_method
+    def toggleFreezeAddress(self) -> None:
+        print("TOGGLE FREEZE ADDRESS")
+
+    @objc_method
+    def cpyAddress(self) -> None:
+        print("COPY ADDRESS")
+
+    @objc_method
+    def cpyUTXO(self) -> None:
+        print("COPY UTXO")
+        
+    @objc_method
+    def onSpendFrom(self) -> None:
+        print("ON SPEND FROM")
+        
 
 _CellIdentifier = ( "CoinsCell", "EmptyCell")
 
@@ -105,8 +210,7 @@ class CoinsTableVC(UITableViewController):
                 def butTapped(acell : ObjCInstance) -> None:
                     self.selectDeselectCell_(cell)
                 def doDetail(acell : ObjCInstance) -> None:
-                    # TODO: detail view push here
-                    gui.ElectrumGui.gui.show_error('Coins Detail Screen Coming soon!', 'Unimplemented')
+                    PushCoinsDetailVC(entry, self.navigationController)
                 cell.onAddress = Block(linkTapped)
                 cell.onButton = Block(butTapped)
                 cell.onAccessory = Block(doDetail)
@@ -399,8 +503,20 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     cell.flags.textColor = specialColor
 
 
-def _Get(coinsvc : CoinsTableVC) -> list:
-    return gui.ElectrumGui.gui.sigCoins.get(utils.nspy_get_byname(coinsvc, 'domain'))
+def _Get(vc : ObjCInstance) -> list:
+    if isinstance(vc, CoinsTableVC):
+        return gui.ElectrumGui.gui.sigCoins.get(utils.nspy_get_byname(vc, 'domain'))
+    elif isinstance(vc, CoinsDetail):
+        return utils.nspy_get_byname(vc, 'coin') # this case returns a bare CoinsEntry (not wrapped in a list)
+    utils.NSLog("WARNGING: coins._Get() received an unknown type as argument. Returning an empty list!")
+    return list()
+
+def Find(utxo_name : str) -> CoinsEntry:
+    coins = gui.ElectrumGui.gui.sigCoins.get(None)
+    for c in coins:
+        if c.name == utxo_name:
+            return c
+    return None
 
 from typing import Any
 class CoinsMgr(utils.DataMgr):
@@ -501,3 +617,9 @@ def PushCoinsVC(domain : list, navController : ObjCInstance) -> ObjCInstance:
     vc = vc.initWithStyle_(UITableViewStylePlain).autorelease()
     navController.pushViewController_animated_(vc, True)
     return vc
+
+def PushCoinsDetailVC(entry : CoinsEntry, navController : ObjCInstance) -> ObjCInstance:
+    vc = CoinsDetail.alloc()
+    utils.nspy_put_byname(vc, entry, 'coin')
+    vc = vc.init().autorelease()
+    navController.pushViewController_animated_(vc, True)

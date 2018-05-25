@@ -343,12 +343,12 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
 @property (nonatomic, weak) UIBarButtonItem *optionsBarBut;
 @property (nonatomic, weak) IBOutlet UIImageView *qr;
-@property (nonatomic, weak) IBOutlet UILabel *address, *balanceTit, *balance, *fiatBalance, *utxoTit, *utxo, *descTit, *heightTit, *height;
+@property (nonatomic, weak) IBOutlet UILabel *address, *addressTit, *amountTit, *amount, *fiatAmount, *utxoTit, *utxo, *descTit, *heightTit, *height;
 @property (nonatomic, weak) IBOutlet UITextView *desc;
 @property (nonatomic, weak) IBOutlet UIButton *freezeBut; // set .selected=YES/NO for checked/unchecked
 @property (nonatomic, weak) IBOutlet UIButton *spendFromBut;
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *utxoTopCS;
-@property (nonatomic) CGFloat utxoTopSaved;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *addressTopCS;
+@property (nonatomic) CGFloat addressTopSaved;
 @end
 
 // stub for python -- implemented in coins.py

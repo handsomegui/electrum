@@ -673,7 +673,7 @@ class AddressData:
         base_unit = self.parent.base_unit()
         is_watch_only = wallet.is_watching_only()
 
-        if daemon and daemon.fx and daemon.fx.get_fiat_address_config():
+        if daemon and daemon.fx and daemon.fx.is_enabled() and daemon.fx.get_fiat_address_config():
             fx = daemon.fx
             self.show_fx = True
         else:
