@@ -705,7 +705,7 @@ class AddressData:
                 if item.balance:
                     self.master[0][1].append(item) # item belongs in 'Any,Funded' regardless
                     self.master[2 if item.is_change else 1][1].append(item) # append to either change or receiving of 'Funded' list
-                if item.num_tx:
+                if item.is_used:
                     self.master[0][3].append(item) # item belongs in the 'Any,Used' always, if used
                     self.master[2 if item.is_change else 1][3].append(item) # append to either change or receiving of 'All' list
                 else: # Unused list

@@ -367,7 +367,7 @@ class ContactsVC(ContactsVCBase):
     def onTapEdit_(self, gr : ObjCInstance) -> None:
         view = gr.view if isinstance(gr, UIGestureRecognizer) else self.view
         contact = _Get()[gr.view.tag]
-        show_contact_options_actionsheet(contact, self, view)
+        show_contact_options_actionsheet(contact, self, view, onEdit = lambda x: utils.show_notification(_("Contact saved")))
 
     @objc_method
     def updateSelectionButtons(self) -> ObjCInstance:
@@ -646,6 +646,7 @@ class ContactDetailVC(ContactDetailVCBase):
                 if self.helper:
                     self.helper = None 
             self.refresh()
+            utils.show_notification(_("Contact saved"))
         show_contact_options_actionsheet(_Contact(self), self, self.navigationItem.rightBarButtonItem, navBackOnDelete = True, onEdit = onEdit)
 
     @objc_method
