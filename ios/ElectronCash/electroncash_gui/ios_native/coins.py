@@ -139,12 +139,23 @@ class CoinsDetail(CoinsDetailBase):
         self.qr.contentMode = UIViewContentModeCenter # if the image pix margin changes -- FIX THIS
         self.qr.image = utils.get_qrcode_image_for_data(coin.tx_hash or '', size = size)
         
-        if gui.ElectrumGui.gui.prefs_get_use_cashaddr():
+        if gui.ElectrumGui.gui.prefs_get_use_cashaddr() and not utils.is_landscape() and not utils.is_ipad():
             self.statusTopCS.constant = self.statusTopSaved
         else:
             self.statusTopCS.constant = self.statusTopSaved + 8
                 
         self.needsRefresh = False
+    
+    @objc_method
+    def viewWillTransitionToSize_withTransitionCoordinator_(self, size : CGSize, coordinator : ObjCInstance) -> None:
+        send_super(__class__, self, 'viewWillTransitionToSize:withTransitionCoordinator:', size, coordinator.ptr, argtypes=[CGSize,objc_id])
+        # this method gets called on rotation of the device.. this forces us to re-lay out our custom stuff (mainly the status label)
+        # will call self.refresh() in 0.4 seconds.. it's a hack but it works.
+        def later() -> None:
+            self.refresh()
+            self.autorelease()
+        self.retain()
+        utils.call_later(0.4, later)
    
     @objc_method
     def onOptions(self) -> None:
