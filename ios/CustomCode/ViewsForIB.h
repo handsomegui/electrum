@@ -335,4 +335,25 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, copy) void(^onAccessory)(CoinsCell *cell); // set this block to define a callback for when the accessory (chevron on right) is tapped.  If chevronHidden = true, no events will come.
 @end
 
+
+@interface CoinsDetailBase : UIViewController
+@property (nonatomic, weak) UIBarButtonItem *optionsBarBut;
+@property (nonatomic, weak) IBOutlet UIImageView *qr;
+@property (nonatomic, weak) IBOutlet UILabel *address, *balanceTit, *balance, *fiatBalance, *utxoTit, *utxo, *descTit, *heightTit, *height;
+@property (nonatomic, weak) IBOutlet UITextView *desc;
+@property (nonatomic, weak) IBOutlet UIButton *freezeBut; // set .selected=YES/NO for checked/unchecked
+@property (nonatomic, weak) IBOutlet UIButton *spendFromBut;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *utxoTopCS;
+@property (nonatomic) CGFloat utxoTopSaved;
+@end
+
+// stub for python -- implemented in coins.py
+@interface CoinsDetail : CoinsDetailBase
+- (IBAction) toggleFreezeAddress;
+- (IBAction) cpyAddress;
+- (IBAction) cpyUTXO;
+- (void) onOptions;
+- (IBAction) onSpendFrom;
+@end
+
 #endif /* ViewsForIB_h */

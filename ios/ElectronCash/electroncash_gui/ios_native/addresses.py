@@ -74,9 +74,9 @@ class AddressDetail(AddressDetailBase):
         parent = gui.ElectrumGui.gui
         entry = _Get(self.domain)
         
-        self.txHistoryTopSaved = self.txHistoryTopCS.constant # save these for later
-        self.statusTopSaved = self.statusTopCS.constant     # save these for later
-        
+        self.statusTopSaved = self.statusTopCS.constant
+        self.txHistoryTopSaved = self.txHistoryTopCS.constant
+                
         if isinstance(self.desc, UITextView):
             # set up the 'Done' button for the keyboard on the description textview
             spacer = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemFlexibleSpace, None, None).autorelease()
@@ -118,7 +118,7 @@ class AddressDetail(AddressDetailBase):
         else:
             self.fiatBalance.setHidden_(True)
             self.statusTopCS.constant = 0.0
-        
+                    
         if entry.is_frozen:
             c = utils.uicolor_custom('frozentext')
         else:

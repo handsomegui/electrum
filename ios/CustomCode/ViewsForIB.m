@@ -294,3 +294,8 @@
 }
 // auto synthesized properties
 @end
+
+@implementation CoinsDetailBase
+// auto synthesized properties
+@end
+

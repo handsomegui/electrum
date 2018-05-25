@@ -12,7 +12,11 @@ from collections import namedtuple
 
 CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change base_unit")
 
-CellIdentifiers = ( "CoinsCell", "EmptyCell")
+
+class CoinsDetail(CoinsDetailBase):
+    pass
+
+_CellIdentifier = ( "CoinsCell", "EmptyCell")
 
 class CoinsTableVC(UITableViewController):
     ''' Coins Tab -- shows utxos
@@ -63,8 +67,8 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
-        nib = UINib.nibWithNibName_bundle_(CellIdentifiers[0], None)
-        self.tableView.registerNib_forCellReuseIdentifier_(nib, CellIdentifiers[0])
+        nib = UINib.nibWithNibName_bundle_(_CellIdentifier[0], None)
+        self.tableView.registerNib_forCellReuseIdentifier_(nib, _CellIdentifier[0])
         self.refresh()
         
     @objc_method
@@ -84,7 +88,7 @@ class CoinsTableVC(UITableViewController):
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         try:
             coins = _Get(self)
-            identifier = CellIdentifiers[0 if coins else -1]
+            identifier = _CellIdentifier[0 if coins else -1]
             cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
             parent = gui.ElectrumGui.gui
             isGood = True
@@ -112,7 +116,7 @@ class CoinsTableVC(UITableViewController):
                 empty_cell(cell,_("No coins"),True)
         except Exception as e:
             utils.NSLog("exception in Coins tableView_cellForRowAtIndexPath_: %s",str(e))
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, CellIdentifiers[-1]).autorelease()
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, _CellIdentifier[-1]).autorelease()
             empty_cell(cell)
         return cell
     
