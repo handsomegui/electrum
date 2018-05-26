@@ -69,7 +69,7 @@ class CoinsDetail(CoinsDetailBase):
                 sv.scrollRectToVisible_animated_(frame, True)
         def didEndEditing(text : ObjCInstance) -> None:
             self.blockRefresh = False
-            text = py_from_ns(text).strip()
+            text = str(py_from_ns(text)).strip()
             coin = _Get(self)
             if coin:
                 new_label = text
@@ -107,7 +107,7 @@ class CoinsDetail(CoinsDetailBase):
         self.address.text = coin.address.to_ui_string()
         self.utxo.text = str(coin.name)
         self.height.text = str(coin.height)
-        self.descDel.text = coin.label if coin.label else ''
+        self.descDel.text = coin.label.strip() if coin.label else ''
         self.amount.text = str(coin.amount_str).strip() + " " + coin.base_unit
         fx = parent.daemon.fx if parent.daemon else None
         if fx and fx.is_enabled() and fx.get_fiat_address_config():

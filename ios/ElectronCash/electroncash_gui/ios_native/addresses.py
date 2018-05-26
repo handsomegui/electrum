@@ -174,10 +174,10 @@ class AddressDetail(AddressDetailBase):
         
         if entry.is_watch_only:
             xtra.append(_('watching only'))
-        if not entry.is_used:
-            xtra.append(_('Unused'))
         if entry.is_change:
             xtra.append(_('Change'))
+        if entry.is_used:
+            xtra.append(_('Used'))
         if entry.is_frozen:
             xtra.append(_('Frozen'))
         if xtra:
@@ -186,9 +186,9 @@ class AddressDetail(AddressDetailBase):
             self.status.text = ''
             
         if not self.status.text:
-            self.status.text = _('Used Receiving Address')
+            self.status.text = _('Receiving Address')
         elif self.status.text == _('Change'):
-            self.status.text = _('Used Change Address')
+            self.status.text = _('Change Address')
             
             
         froz = _('Frozen')
@@ -435,9 +435,9 @@ class AddressesVC(AddressesVCBase):
                 cell.flags.textColor = utils.uicolor_custom('dark')
                 if entry.is_change:
                     xtra += [_('Change')]
-                if not entry.is_used:
-                    xtra += [_('Unused')]
-                xtra += [ str(entry.num_tx) + ' Txs']
+                if entry.is_used:
+                    xtra += [_('Used')]
+                xtra += [ str(entry.num_tx) + ' Tx' + ('s' if entry.num_tx != 1 else '')]
             cell.flags.setText_withKerning_(', '.join(xtra) if xtra else '', utils._kern)
             
             

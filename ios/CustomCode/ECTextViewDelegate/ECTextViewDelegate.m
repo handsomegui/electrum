@@ -90,6 +90,7 @@
 
 - (void) setText:(NSString *)text {
     _text = [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (!_isPlaceholder) _tv.text = _text;
     [self doPlaceholdifyIfNeeded:NO];
 }
 
