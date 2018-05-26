@@ -147,6 +147,11 @@ class ContactsVC(ContactsVCBase):
             self.selected = self.updateSelectionButtons()
             self.tv.reloadData()
 
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
+
     #### UITableView delegate/dataSource methods...
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -365,9 +370,28 @@ class ContactsVC(ContactsVCBase):
 
     @objc_method
     def onTapEdit_(self, gr : ObjCInstance) -> None:
-        view = gr.view if isinstance(gr, UIGestureRecognizer) else self.view
-        contact = _Get()[gr.view.tag]
-        show_contact_options_actionsheet(contact, self, view, onEdit = lambda x: utils.show_notification(_("Contact saved")))
+        view = gr.view if isinstance(gr, UIGestureRecognizer) else None
+        if not isinstance(view, UILabel):
+            return
+        try:
+            contact = _Get()[gr.view.tag]
+        except:
+            return
+        cellAnim = view.ptr.value 
+        animDur = 0.3
+        def ShowMenu() -> None:
+            if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
+                # 'poor man's weak ref':
+                # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
+                return
+            utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
+            show_contact_options_actionsheet(contact, self, view, onEdit = lambda x: utils.show_notification(_("Contact saved")))
+        utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
+        view.textColorAnimationFromColor_toColor_duration_reverses_completion_(
+            utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), animDur, True, None
+        )
+        utils.call_later(animDur/2.0, ShowMenu)
+
 
     @objc_method
     def updateSelectionButtons(self) -> ObjCInstance:
