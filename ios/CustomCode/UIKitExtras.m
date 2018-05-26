@@ -256,23 +256,34 @@ static double Rand(double lo, double hi)
 -(void) textColorAnimationFromColor:(UIColor *)startColor toColor:(UIColor *)destColor duration:(CGFloat)duration reverses:(BOOL)reverses completion:(void(^)(void))completion {
     [self.layer removeAllAnimations];
     if (reverses) duration /= 2.0;
-    self.textColor = startColor;
-    [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
-        self.textColor = destColor;
+    __weak UILabel *weakSelf = self;
+    void (^doApplyColor)(UIColor *) = ^(UIColor *color){
+        if (weakSelf.attributedText) {
+            NSMutableAttributedString *ats = [[NSMutableAttributedString alloc] initWithAttributedString:weakSelf.attributedText];
+            NSRange r = NSMakeRange(0, ats.length);
+            [ats removeAttribute:NSForegroundColorAttributeName range:r];
+            [ats addAttribute:NSForegroundColorAttributeName value:color range:r];
+            weakSelf.attributedText = ats;
+        } else
+            weakSelf.textColor = color;
+    };
+    doApplyColor(startColor);
+    [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve|UIViewAnimationOptionPreferredFramesPerSecond60 animations:^{
+        doApplyColor(destColor);
     } completion:^(BOOL finished) {
         if (!finished) return;
         if (reverses) {
             [self.layer removeAllAnimations];
-            self.textColor = destColor;
-            [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
-                self.textColor = startColor;
+            doApplyColor(destColor);
+            [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve|UIViewAnimationOptionPreferredFramesPerSecond60 animations:^{
+                doApplyColor(startColor);
             } completion:^(BOOL finished2) {
                 if (!finished2) return;
-                self.textColor = startColor;
+                doApplyColor(startColor);
                 if (completion) completion();
             }];
         } else {
-            self.textColor = destColor;
+            doApplyColor(destColor);
             if (completion) completion();
         }
     }];

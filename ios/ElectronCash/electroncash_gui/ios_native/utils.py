@@ -98,6 +98,7 @@ _ColorScheme = {
     'ultralight': UIColor.colorInDeviceRGBWithHexString_("#F6F6F6").retain(),
     'nav'       : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
     'link'      : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
+    'linktapped': UIColor.colorInDeviceRGBWithHexString_("#FF8BFF").retain(), 
     'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
     'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
     'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(),

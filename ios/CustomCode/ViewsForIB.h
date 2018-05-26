@@ -330,6 +330,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface CoinsCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UILabel *address, *utxo, *amount, *height, *desc, *flags;
 @property (nonatomic, weak) IBOutlet UILabel *amountTit, *utxoTit, *heightTit;
+@property (nonatomic, weak) IBOutlet UIView *accessoryFlashView;
 @property (nonatomic) BOOL chevronHidden; // defaults to NO. If YES cell will re-layout itself
 @property (nonatomic) BOOL buttonSelected; // defaults to NO. If YES, button will have a checkmark and will be in the 'selected' state
 @property (nonatomic) BOOL buttonEnabled; // defaults to YES. If YES, button will send events and select itself on tap. If NO, it will be grayed out

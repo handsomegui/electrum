@@ -248,6 +248,11 @@ class CoinsTableVC(UITableViewController):
         self.refresh()
         
     @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM') # remove any extant cell anims
+        
+    @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
         return 1
 
@@ -276,12 +281,40 @@ class CoinsTableVC(UITableViewController):
                 idx = indexPath.row
                 setup_cell_for_coins_entry(cell, entry)
                 cell.tag = idx
-                def linkTapped(acell : ObjCInstance) -> None:
-                    self.onOptions_(cell)
-                def butTapped(acell : ObjCInstance) -> None:
-                    self.selectDeselectCell_(cell)
-                def doDetail(acell : ObjCInstance) -> None:
-                    PushCoinsDetailVC(entry, self.navigationController)
+                def linkTapped(acell : objc_id) -> None:
+                    cellAnim = acell.value + 1
+                    acell = ObjCInstance(acell)
+                    animDur = 0.3
+                    def doOptions() -> None:
+                        if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
+                            # 'poor man's weak ref':
+                            # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
+                            return
+                        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
+                        self.onOptions_(ObjCInstance(acell))
+                    utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
+                    acell.address.textColorAnimationFromColor_toColor_duration_reverses_completion_(
+                        utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), animDur, True, None
+                    )
+                    utils.call_later(animDur/2.0, doOptions)
+                def butTapped(acell : objc_id) -> None:
+                    self.selectDeselectCell_(ObjCInstance(acell))
+                def doDetail(acell : objc_id) -> None:
+                    cellAnim = acell
+                    acell = ObjCInstance(acell)
+                    animDur = 0.3
+                    def doPush() -> None:
+                        if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
+                            # 'poor man's weak ref':
+                            # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
+                            return
+                        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
+                        PushCoinsDetailVC(entry, self.navigationController)
+                    utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
+                    acell.accessoryFlashView.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(
+                        UIColor.colorWithRed_green_blue_alpha_(0.5,0.5,0.5,0.4), UIColor.clearColor, animDur, False, None
+                    )
+                    utils.call_later(animDur/2.0, doPush)
                 cell.onAddress = Block(linkTapped)
                 cell.onButton = Block(butTapped)
                 cell.onAccessory = Block(doDetail)

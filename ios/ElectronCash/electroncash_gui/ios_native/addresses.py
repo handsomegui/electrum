@@ -224,6 +224,7 @@ class AddressDetail(AddressDetailBase):
     def onUTXOs(self) -> None:
         from .coins import PushCoinsVC
         coinsvc = PushCoinsVC([_Get(self.domain).address], self.navigationController)
+
         
     @objc_method
     def toggleFreezeAddress(self) -> None:
@@ -355,7 +356,11 @@ class AddressesVC(AddressesVCBase):
         self.topLblL.attributedText = self.comboL.attributedStringForTopTitle
         self.topLblR.attributedText = self.comboR.attributedStringForTopTitle
         
-   
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtype=[c_bool])
+        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
 
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
@@ -538,7 +543,23 @@ class AddressesVC(AddressesVCBase):
         except:
             print("onTapAddress exception:",str(sys.exc_info()[1]))
             return
-        _ShowAddressContextMenu(entry, self, ipadAnchor = gr.view.convertRect_toView_(gr.view.bounds, self.view))
+
+        linkView = gr.view
+        cellAnim = linkView.ptr.value
+        animDur = 0.3
+        def ShowMenu() -> None:
+            if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
+                # 'poor man's weak ref':
+                # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
+                return
+            utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
+            _ShowAddressContextMenu(entry, self, ipadAnchor = linkView.convertRect_toView_(linkView.bounds, self.view))
+        utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
+        linkView.textColorAnimationFromColor_toColor_duration_reverses_completion_(
+            utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), animDur, True, None
+        )
+        utils.call_later(animDur/2.0, ShowMenu)
+
  
     # -----------------------------------
     # COMBO DRAWER RELATED STUFF BELOW...

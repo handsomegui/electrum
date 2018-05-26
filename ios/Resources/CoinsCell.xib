@@ -57,6 +57,10 @@
                         <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                         <nil key="highlightedColor"/>
                     </label>
+                    <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qt3-tN-Jpc" userLabel="AccFlashArea">
+                        <rect key="frame" x="342" y="0.0" width="33" height="136"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    </view>
                     <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="chevron_gray_right.png" highlightedImage="empty.png" translatesAutoresizingMaskIntoConstraints="NO" id="Flv-j1-wVQ">
                         <rect key="frame" x="352" y="61" width="8" height="14"/>
                         <constraints>
@@ -65,7 +69,7 @@
                         </constraints>
                     </imageView>
                     <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="0rK-Pz-u4L" userLabel="AccessoryTouchArea">
-                        <rect key="frame" x="342" y="0.0" width="33" height="136"/>
+                        <rect key="frame" x="302" y="0.0" width="73" height="136"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
                     <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT">
@@ -136,6 +140,7 @@
                 </subviews>
                 <constraints>
                     <constraint firstItem="eaf-U5-Tzm" firstAttribute="width" secondItem="eYe-3v-zle" secondAttribute="width" id="00n-eD-1mC"/>
+                    <constraint firstItem="qt3-tN-Jpc" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" id="0ut-H8-ge0"/>
                     <constraint firstItem="5Q8-hR-hEs" firstAttribute="leading" secondItem="n0K-ks-GaN" secondAttribute="trailing" constant="5" id="2RY-Kq-YhB"/>
                     <constraint firstItem="eaf-U5-Tzm" firstAttribute="bottom" secondItem="n0K-ks-GaN" secondAttribute="bottom" constant="-2" id="2cC-Jf-aeN"/>
                     <constraint firstItem="eYe-3v-zle" firstAttribute="centerY" secondItem="c3D-pS-eNG" secondAttribute="centerY" id="8cM-vX-44n"/>
@@ -153,11 +158,14 @@
                     <constraint firstItem="xJ8-nv-JM7" firstAttribute="leading" secondItem="n0K-ks-GaN" secondAttribute="leading" id="Tot-dh-SgN"/>
                     <constraint firstItem="TCr-T7-dkT" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" constant="20" id="VU3-uN-Gnb"/>
                     <constraint firstAttribute="bottom" secondItem="0rK-Pz-u4L" secondAttribute="bottom" id="WIH-bX-Dd3"/>
-                    <constraint firstItem="Flv-j1-wVQ" firstAttribute="leading" secondItem="0rK-Pz-u4L" secondAttribute="leading" constant="10" id="ZjG-Hn-XpS"/>
+                    <constraint firstItem="Flv-j1-wVQ" firstAttribute="leading" secondItem="0rK-Pz-u4L" secondAttribute="leading" constant="50" id="ZjG-Hn-XpS"/>
                     <constraint firstItem="n0K-ks-GaN" firstAttribute="leading" secondItem="TCr-T7-dkT" secondAttribute="leading" id="aJ8-IL-laI"/>
+                    <constraint firstAttribute="bottom" secondItem="qt3-tN-Jpc" secondAttribute="bottom" id="eiD-hZ-OOJ"/>
+                    <constraint firstItem="Flv-j1-wVQ" firstAttribute="leading" secondItem="qt3-tN-Jpc" secondAttribute="leading" constant="10" id="fpX-Ho-0Zf"/>
                     <constraint firstItem="c3D-pS-eNG" firstAttribute="leading" secondItem="xJ8-nv-JM7" secondAttribute="trailing" constant="5" id="gjc-l4-ao2"/>
                     <constraint firstItem="0rK-Pz-u4L" firstAttribute="top" secondItem="xMZ-bB-sX3" secondAttribute="top" id="hX3-yp-UEm"/>
                     <constraint firstItem="c3D-pS-eNG" firstAttribute="top" secondItem="5Q8-hR-hEs" secondAttribute="bottom" constant="5" id="jxB-WT-yac"/>
+                    <constraint firstAttribute="trailing" secondItem="qt3-tN-Jpc" secondAttribute="trailing" id="kmy-A6-os4"/>
                     <constraint firstItem="5Q8-hR-hEs" firstAttribute="bottom" secondItem="n0K-ks-GaN" secondAttribute="bottom" constant="-2" id="l9q-Qo-9br"/>
                     <constraint firstItem="Flv-j1-wVQ" firstAttribute="left" secondItem="eaf-U5-Tzm" secondAttribute="right" constant="19" id="law-L6-HLh"/>
                     <constraint firstItem="eaf-U5-Tzm" firstAttribute="leading" secondItem="eYe-3v-zle" secondAttribute="leading" id="luk-sb-9kk"/>
@@ -178,6 +186,7 @@
                 <outlet property="_chevron" destination="Flv-j1-wVQ" id="ohF-yP-Jt3"/>
                 <outlet property="_rightCS" destination="law-L6-HLh" id="cae-hB-A9u"/>
                 <outlet property="_selectionButton" destination="G9o-Gc-Mt4" id="t3P-RH-ogu"/>
+                <outlet property="accessoryFlashView" destination="qt3-tN-Jpc" id="YF3-t0-3x4"/>
                 <outlet property="address" destination="TCr-T7-dkT" id="cHu-4L-n8E"/>
                 <outlet property="amount" destination="5Q8-hR-hEs" id="oBV-kp-6UV"/>
                 <outlet property="amountTit" destination="n0K-ks-GaN" id="m3L-Bj-Zva"/>
@@ -185,7 +194,6 @@
                 <outlet property="flags" destination="eaf-U5-Tzm" id="Pwg-VK-7Zx"/>
                 <outlet property="height" destination="c3D-pS-eNG" id="RGM-83-Y6J"/>
                 <outlet property="heightTit" destination="xJ8-nv-JM7" id="zI3-wz-b6v"/>
-                <outlet property="selectionButton" destination="G9o-Gc-Mt4" id="PmR-on-SJ5"/>
                 <outlet property="utxo" destination="eYe-3v-zle" id="Xh4-RY-jhV"/>
                 <outlet property="utxoTit" destination="zwI-9n-fth" id="uAM-ni-L76"/>
             </connections>
