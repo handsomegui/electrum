@@ -216,15 +216,11 @@ class ElectrumGui(PrintError):
         self.tabController.tabBar.setTranslucent_(False)
     
         self.addressesVC = adr = addresses.AddressesVC.alloc().initWithMode_(UITableViewStylePlain, addresses.ModeNormal).autorelease()
-        self.helper.bindRefreshControl_(self.addressesVC.refreshControl)
         
         self.coinsVC = cns = coins.CoinsTableVC.alloc().initWithStyle_(UITableViewStylePlain).autorelease()
-        self.helper.bindRefreshControl_(self.coinsVC.refreshControl)
                 
         self.contactsVC = cntcts = contacts.ContactsVC.new().autorelease()
         self.prefsVC = prefs.PrefsVC.new().autorelease()
-
-        self.helper.bindRefreshControl_(self.contactsVC.refreshControl)
   
         # Wallets tab
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsTab",None,None)

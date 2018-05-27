@@ -294,8 +294,6 @@ class AddressesVC(AddressesVCBase):
                 d[NSFontAttributeName] = UIFont.systemFontOfSize_weight_(14.0, UIFontWeightRegular)
                 bb.setTitleTextAttributes_forState_(d, UIControlStateHighlighted)
                 self.navigationItem.rightBarButtonItem = bb
-
-            self.refreshControl = UIRefreshControl.alloc().init().autorelease() 
             
             if self.mode == ModePicker:
                 def onRefreshCtl() -> None:
@@ -322,7 +320,6 @@ class AddressesVC(AddressesVCBase):
     @objc_method
     def loadView(self) -> None:
         NSBundle.mainBundle.loadNibNamed_owner_options_("Addresses", self, None) # auto-attaches view
-        self.tableView.refreshControl = self.refreshControl
 
         if self.mode == ModeNormal:
             uinib = UINib.nibWithNibName_bundle_("AddressesCell", None)
@@ -345,6 +342,8 @@ class AddressesVC(AddressesVCBase):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
+        self.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
+        self.tableView.refreshControl = self.refreshControl
         self.setupComboCallbacks()
         self.setupComboItems()   
         

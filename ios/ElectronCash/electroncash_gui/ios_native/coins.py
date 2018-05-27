@@ -222,8 +222,6 @@ class CoinsTableVC(UITableViewController):
         self.clearBut.enabled = False
         self.navigationItem.rightBarButtonItems = buts
         
-        self.refreshControl = UIRefreshControl.alloc().init().autorelease()
-
         gui.ElectrumGui.gui.sigCoins.connect(lambda: self.refresh(), self)
 
         return self
@@ -245,6 +243,7 @@ class CoinsTableVC(UITableViewController):
         send_super(__class__, self, 'viewDidLoad')
         nib = UINib.nibWithNibName_bundle_(_CellIdentifier[0], None)
         self.tableView.registerNib_forCellReuseIdentifier_(nib, _CellIdentifier[0])
+        self.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
         self.refresh()
         
     @objc_method

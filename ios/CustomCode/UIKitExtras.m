@@ -475,7 +475,7 @@ static long UIButtonBlockKey = 0xb10cb10c;
 - (void) linkLabelTapped {
     static const CGFloat defaultDuration = 0.3;
     static __weak id lastLink = nil;
-
+    
     if (_duration <= 0.01) _duration = defaultDuration;
     lastLink = self;
     if (!_highlightedColor) _highlightedColor = UIColor.whiteColor;
