@@ -80,7 +80,7 @@
     self.session            = [[AVCaptureSession alloc] init];
     self.previewLayer       = [AVCaptureVideoPreviewLayer layerWithSession:self.session];
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
       // before iOS 10.0, this was the way
     for (AVCaptureDevice *device in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
       if (device.position == AVCaptureDevicePositionFront) {
