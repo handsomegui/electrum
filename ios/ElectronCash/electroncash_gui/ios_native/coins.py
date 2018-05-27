@@ -314,9 +314,9 @@ class CoinsTableVC(UITableViewController):
             empty_cell(cell)
         return cell
         
-    
+        
     @objc_method
-    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
         animated = True
 
@@ -524,8 +524,7 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     # initialize it to base values
     cell.buttonSelected = False
     cell.chevronHidden = False
-    
-    
+
     cell.address.linkText = entry.address_str
     
     kern = utils._kern

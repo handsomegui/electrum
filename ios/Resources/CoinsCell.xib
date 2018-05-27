@@ -7,6 +7,7 @@
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14088"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -19,6 +20,24 @@
                 <rect key="frame" x="0.0" y="0.0" width="375" height="135.5"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
+                    <view autoresizesSubviews="NO" opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" tag="1234" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="nOc-HX-HxW" userLabel="selectedBackgroundView">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="135"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vew-vT-LnV">
+                                <rect key="frame" x="17" y="24" width="20" height="20"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <color key="backgroundColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                        <integer key="value" value="10"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <viewLayoutGuide key="safeArea" id="MJW-ns-y9O"/>
+                    </view>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Amount" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="n0K-ks-GaN">
                         <rect key="frame" x="47" y="53" width="45" height="18"/>
                         <constraints>
@@ -138,7 +157,7 @@
                         </constraints>
                         <state key="normal" image="Oval.png"/>
                         <state key="disabled" image="OvalX.png"/>
-                        <state key="selected" image="bluechk.png"/>
+                        <state key="selected" image="Oval_Checked.png"/>
                         <connections>
                             <action selector="onSelBut" destination="Ych-h6-YoZ" eventType="primaryActionTriggered" id="58G-rO-akz"/>
                         </connections>
@@ -200,6 +219,7 @@
                 <outlet property="flags" destination="eaf-U5-Tzm" id="Pwg-VK-7Zx"/>
                 <outlet property="height" destination="c3D-pS-eNG" id="RGM-83-Y6J"/>
                 <outlet property="heightTit" destination="xJ8-nv-JM7" id="zI3-wz-b6v"/>
+                <outlet property="selectedBackgroundView" destination="nOc-HX-HxW" id="nSS-Ql-0iI"/>
                 <outlet property="utxo" destination="eYe-3v-zle" id="Xh4-RY-jhV"/>
                 <outlet property="utxoTit" destination="zwI-9n-fth" id="uAM-ni-L76"/>
             </connections>
@@ -209,7 +229,7 @@
     <resources>
         <image name="Oval.png" width="24" height="24"/>
         <image name="OvalX.png" width="24" height="24"/>
-        <image name="bluechk.png" width="17" height="13"/>
+        <image name="Oval_Checked.png" width="24" height="24"/>
         <image name="chevron_gray_right.png" width="8" height="14"/>
         <image name="empty.png" width="2" height="2"/>
     </resources>
