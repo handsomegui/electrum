@@ -452,3 +452,38 @@ static long UIButtonBlockKey = 0xb10cb10c;
     return [UIColor colorInDeviceRGBWithRed:components[0] green:components[1] blue:components[2] alpha:components[3]];
 }
 @end
+
+@implementation LinkLabel {
+    __weak UITapGestureRecognizer *_gr;
+}
+
+- (void) setLinkText:(NSString *)text {
+    NSAttributedString *ats = [[NSAttributedString alloc] initWithString:text
+                                                              attributes:@{
+                                                                           NSFontAttributeName : self.font,
+                                                                NSForegroundColorAttributeName : self.textColor,
+                                                                 NSUnderlineStyleAttributeName : @(NSUnderlineStyleSingle)
+                                                                           }];
+    self.attributedText = ats;
+    if (!_gr) {
+        self.userInteractionEnabled = YES;
+        UITapGestureRecognizer *gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(linkLabelTapped)];
+        [self addGestureRecognizer:gr];
+        _gr = gr;
+    }
+}
+- (void) linkLabelTapped {
+    static const CGFloat defaultDuration = 0.3;
+    static __weak id lastLink = nil;
+
+    if (_duration <= 0.01) _duration = defaultDuration;
+    lastLink = self;
+    if (!_highlightedColor) _highlightedColor = UIColor.whiteColor;
+    if (_linkWillAnimate) _linkWillAnimate(self);
+    [self textColorAnimationFromColor:self.textColor toColor:_highlightedColor duration:_duration reverses:YES completion:nil];
+    __weak LinkLabel *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_duration/2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if (weakSelf.linkTarget && lastLink == weakSelf) weakSelf.linkTarget(weakSelf);
+    });
+}
+@end

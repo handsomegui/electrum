@@ -281,22 +281,9 @@ class CoinsTableVC(UITableViewController):
                 idx = indexPath.row
                 setup_cell_for_coins_entry(cell, entry)
                 cell.tag = idx
-                def linkTapped(acell : objc_id) -> None:
-                    cellAnim = acell.value + 1
-                    acell = ObjCInstance(acell)
-                    animDur = 0.3
-                    def doOptions() -> None:
-                        if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
-                            # 'poor man's weak ref':
-                            # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
-                            return
-                        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
-                        self.onOptions_(ObjCInstance(acell))
-                    utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
-                    acell.address.textColorAnimationFromColor_toColor_duration_reverses_completion_(
-                        utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), animDur, True, None
-                    )
-                    utils.call_later(animDur/2.0, doOptions)
+                cell.address.tag = idx
+                def linkTapped(o : objc_id) -> None:
+                    self.onOptions_(ObjCInstance(o))
                 def butTapped(acell : objc_id) -> None:
                     self.selectDeselectCell_(ObjCInstance(acell))
                 def doDetail(acell : objc_id) -> None:
@@ -315,7 +302,7 @@ class CoinsTableVC(UITableViewController):
                         UIColor.colorWithRed_green_blue_alpha_(0.5,0.5,0.5,0.4), UIColor.clearColor, animDur, False, None
                     )
                     utils.call_later(animDur/2.0, doPush)
-                cell.onAddress = Block(linkTapped)
+                cell.address.linkTarget = Block(linkTapped)
                 cell.onButton = Block(butTapped)
                 cell.onAccessory = Block(doDetail)
                 self.setupSelectionButtonCell_atIndex_(cell, idx)
@@ -402,7 +389,7 @@ class CoinsTableVC(UITableViewController):
         try:
             if isinstance(obj, UIGestureRecognizer):
                 obj = obj.view
-            elif isinstance(obj, UITableViewCell):
+            elif isinstance(obj, (UITableViewCell, LinkLabel)):
                 pass
             entry = _Get(self)[obj.tag]
             parent = gui.ElectrumGui.gui
@@ -508,6 +495,7 @@ class CoinsTableVC(UITableViewController):
             entry = _Get(self)[index]
             if entry.is_frozen:
                 no_good = True
+                frozen = True
         except:
             no_good = True
         
@@ -532,19 +520,14 @@ def setup_cell_for_coins_entry(cell : ObjCInstance, entry : CoinsEntry) -> None:
     #CoinsEntry = namedtuple("CoinsEntry", "utxo tx_hash address address_str height name label amount amount_str is_frozen is_change base_unit")
 
 
-    cell.onAddress = None # clear objc blocks.. caller sets these
+    cell.address.linkTarget = None # clear objc blocks.. caller sets these
     cell.onButton = None
     # initialize it to base values
     cell.buttonSelected = False
     cell.chevronHidden = False
     
     
-    cell.address.attributedText = NSAttributedString.alloc().initWithString_attributes_(
-        entry.address_str,
-        {
-            NSUnderlineStyleAttributeName : NSUnderlineStyleSingle
-        }    
-    ).autorelease()
+    cell.address.linkText = entry.address_str
     
     kern = utils._kern
     

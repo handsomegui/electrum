@@ -72,7 +72,7 @@
                         <rect key="frame" x="302" y="0.0" width="73" height="136"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
-                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT">
+                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT" customClass="LinkLabel">
                         <rect key="frame" x="47" y="20" width="286" height="26"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -81,6 +81,11 @@
                         <fontDescription key="fontDescription" type="system" pointSize="16"/>
                         <color key="textColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
                         <nil key="highlightedColor"/>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="color" keyPath="highlightedColor">
+                                <color key="value" red="1" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
                     </label>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Height" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="xJ8-nv-JM7">
                         <rect key="frame" x="47" y="74" width="45" height="18"/>
@@ -125,13 +130,14 @@
                         <rect key="frame" x="0.0" y="0.0" width="39" height="135"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
-                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="G9o-Gc-Mt4">
+                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenDisabled="NO" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="G9o-Gc-Mt4">
                         <rect key="frame" x="15" y="22" width="24" height="24"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="24" id="YBU-0Y-pX1"/>
                             <constraint firstAttribute="height" constant="24" id="ZZ0-ha-xZ5"/>
                         </constraints>
                         <state key="normal" image="Oval.png"/>
+                        <state key="disabled" image="OvalX.png"/>
                         <state key="selected" image="bluechk.png"/>
                         <connections>
                             <action selector="onSelBut" destination="Ych-h6-YoZ" eventType="primaryActionTriggered" id="58G-rO-akz"/>
@@ -187,7 +193,7 @@
                 <outlet property="_rightCS" destination="law-L6-HLh" id="cae-hB-A9u"/>
                 <outlet property="_selectionButton" destination="G9o-Gc-Mt4" id="t3P-RH-ogu"/>
                 <outlet property="accessoryFlashView" destination="qt3-tN-Jpc" id="YF3-t0-3x4"/>
-                <outlet property="address" destination="TCr-T7-dkT" id="cHu-4L-n8E"/>
+                <outlet property="address" destination="TCr-T7-dkT" id="0Wc-Oa-vYa"/>
                 <outlet property="amount" destination="5Q8-hR-hEs" id="oBV-kp-6UV"/>
                 <outlet property="amountTit" destination="n0K-ks-GaN" id="m3L-Bj-Zva"/>
                 <outlet property="desc" destination="g6P-Q6-ynd" id="cfB-xt-RHb"/>
@@ -202,6 +208,7 @@
     </objects>
     <resources>
         <image name="Oval.png" width="24" height="24"/>
+        <image name="OvalX.png" width="24" height="24"/>
         <image name="bluechk.png" width="17" height="13"/>
         <image name="chevron_gray_right.png" width="8" height="14"/>
         <image name="empty.png" width="2" height="2"/>

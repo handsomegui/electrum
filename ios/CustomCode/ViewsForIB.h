@@ -11,6 +11,7 @@
 
 #import <UIKit/UIKit.h>
 #import "DZNSegmentedControl/DZNSegmentedControl.h"
+#import "UIKitExtras.h"
 
 
 @interface AddrConvBase : UIViewController
@@ -258,14 +259,12 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // stub to represent python -- implemented in python contacts.py
 @interface ContactsVC : ContactsVCBase
 -(IBAction) onAddBut;
--(IBAction) onTapEdit:(id)sender;
 @end
 
 @interface ContactsCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UIImageView *customAccessory;
 @property (nonatomic, weak) IBOutlet UILabel *name;
-@property (nonatomic, weak) IBOutlet UILabel *address;
-@property (nonatomic, weak) IBOutlet UITapGestureRecognizer *addressGr;
+@property (nonatomic, weak) IBOutlet LinkLabel *address;
 @property (nonatomic, weak) IBOutlet UILabel *numTxs;
 @end
 
@@ -299,7 +298,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface AddressesCell : UITableViewCell
-@property (nonatomic, weak) IBOutlet UILabel *index, *address, *balanceTit, *balance, *flags, *desc;
+@property (nonatomic, weak) IBOutlet LinkLabel *address;
+@property (nonatomic, weak) IBOutlet UILabel *index, *balanceTit, *balance, *flags, *desc;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS, *midCS;
 @end
 
@@ -328,14 +328,14 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface CoinsCell : UITableViewCell
-@property (nonatomic, weak) IBOutlet UILabel *address, *utxo, *amount, *height, *desc, *flags;
+@property (nonatomic, weak) IBOutlet LinkLabel *address;
+@property (nonatomic, weak) IBOutlet UILabel *utxo, *amount, *height, *desc, *flags;
 @property (nonatomic, weak) IBOutlet UILabel *amountTit, *utxoTit, *heightTit;
 @property (nonatomic, weak) IBOutlet UIView *accessoryFlashView;
 @property (nonatomic) BOOL chevronHidden; // defaults to NO. If YES cell will re-layout itself
 @property (nonatomic) BOOL buttonSelected; // defaults to NO. If YES, button will have a checkmark and will be in the 'selected' state
 @property (nonatomic) BOOL buttonEnabled; // defaults to YES. If YES, button will send events and select itself on tap. If NO, it will be grayed out
 @property (nonatomic, copy) void(^onButton)(CoinsCell *cell); // set this block to define a callback for when the button is tapped due to user interaction. Not called if buttonSelected = YES is set programmatically!
-@property (nonatomic, copy) void(^onAddress)(CoinsCell *cell); // set this block to define a callback for when the address 'link' is tapped due to user interaction.
 @property (nonatomic, copy) void(^onAccessory)(CoinsCell *cell); // set this block to define a callback for when the accessory (chevron on right) is tapped.  If chevronHidden = true, no events will come.
 @end
 

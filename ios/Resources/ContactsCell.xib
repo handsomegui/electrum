@@ -34,7 +34,7 @@
                             <constraint firstAttribute="width" constant="37" id="eoq-eW-qnU"/>
                         </constraints>
                     </imageView>
-                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" usesAttributedText="YES" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1bO-yB-ZOS">
+                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" usesAttributedText="YES" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1bO-yB-ZOS" customClass="LinkLabel">
                         <rect key="frame" x="15" y="43" width="323" height="26"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -50,9 +50,11 @@
                             </fragment>
                         </attributedString>
                         <nil key="highlightedColor"/>
-                        <connections>
-                            <outletCollection property="gestureRecognizers" destination="LBL-lK-b4F" appends="YES" id="cfM-LC-FZH"/>
-                        </connections>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="color" keyPath="highlightedColor">
+                                <color key="value" red="1" green="0.54509803921568623" blue="1" alpha="1" colorSpace="deviceRGB"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
                     </label>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="2 Transactions" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Iti-tb-ndr">
                         <rect key="frame" x="15" y="74" width="323" height="18"/>
@@ -88,18 +90,12 @@
             <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
             <connections>
                 <outlet property="address" destination="1bO-yB-ZOS" id="M6u-P9-RhB"/>
-                <outlet property="addressGr" destination="LBL-lK-b4F" id="EeN-EB-fd7"/>
                 <outlet property="customAccessory" destination="A0b-jg-bSf" id="2sQ-UG-3D3"/>
                 <outlet property="name" destination="pQB-Ct-vlJ" id="LLS-zv-BuD"/>
                 <outlet property="numTxs" destination="Iti-tb-ndr" id="G7O-GV-obf"/>
             </connections>
             <point key="canvasLocation" x="33.5" y="95"/>
         </tableViewCell>
-        <tapGestureRecognizer id="LBL-lK-b4F" userLabel="Tap Address">
-            <connections>
-                <action selector="onTapEdit:" destination="-1" id="vZa-rp-8ON"/>
-            </connections>
-        </tapGestureRecognizer>
     </objects>
     <resources>
         <image name="chevron_gray_right.png" width="8" height="14"/>

@@ -19,7 +19,7 @@
                 <rect key="frame" x="0.0" y="0.0" width="375" height="90.5"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT">
+                    <label opaque="NO" contentMode="left" horizontalHuggingPriority="1000" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="19KVgvPXU8Lcucswse4snxbf78dev6aksdjalkajqqa479" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TCr-T7-dkT" customClass="LinkLabel">
                         <rect key="frame" x="15" y="7" width="318" height="26"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -28,6 +28,11 @@
                         <fontDescription key="fontDescription" type="system" pointSize="16"/>
                         <color key="textColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
                         <nil key="highlightedColor"/>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="color" keyPath="highlightedColor">
+                                <color key="value" red="1" green="0.54509803921568623" blue="1" alpha="1" colorSpace="deviceRGB"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
                     </label>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Balance" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="n0K-ks-GaN">
                         <rect key="frame" x="15" y="40" width="45" height="18"/>
@@ -95,7 +100,7 @@
                 </constraints>
             </tableViewCellContentView>
             <connections>
-                <outlet property="address" destination="TCr-T7-dkT" id="cHu-4L-n8E"/>
+                <outlet property="address" destination="TCr-T7-dkT" id="LwW-Wo-NOi"/>
                 <outlet property="balance" destination="5Q8-hR-hEs" id="rXt-Sc-zqA"/>
                 <outlet property="balanceTit" destination="n0K-ks-GaN" id="32V-sO-VVB"/>
                 <outlet property="desc" destination="g6P-Q6-ynd" id="P8C-oS-QvC"/>

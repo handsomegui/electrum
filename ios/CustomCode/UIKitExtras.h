@@ -102,3 +102,13 @@ typedef void(^ActionBlock)(UIControl *);
  **/
 + (UIColor *) colorInDeviceRGBWithHexString:(NSString *)hexString;
 @end
+
+@interface LinkLabel : UILabel
+@property (nonatomic, copy) NSString *linkText; // set this instead of .text or .attributedText to generate an underlined label that is clickable. Be sure to set .textColor to something blue-ish
+@property (nonatomic, copy) void(^linkWillAnimate)(LinkLabel *); // called right before the link animation begins
+@property (nonatomic, copy) void(^linkTarget)(LinkLabel *); // the action for the link
+@property (nonatomic, copy) UIColor *highlightedColor; // the color the link flashes to. Defaults to white. Set it to something purplish
+@property (nonatomic) CGFloat duration; // the duration of the link animation.  defaults to 0.3 seconds
+@end
+
+

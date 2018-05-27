@@ -269,13 +269,12 @@
 - (void) setButtonEnabled:(BOOL)b {
     _selectionButton.enabled = b;
     _butTapArea.userInteractionEnabled = b;
+    if (!b) _selectionButton.alpha = 0.5;
+    else    _selectionButton.alpha = 1.0;
 }
 - (IBAction) onSelBut {
     self.buttonSelected = !self.buttonSelected;
     if (_onButton) _onButton(self);
-}
-- (IBAction) onAddressTap {
-    if (_onAddress) _onAddress(self);
 }
 - (IBAction) onAccessoryTap {
     if (_onAccessory) _onAccessory(self);
@@ -283,10 +282,7 @@
 - (void) awakeFromNib {
     [super awakeFromNib];
     // set up the gesture recognizer for the 'address'
-    UIGestureRecognizer *gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onAddressTap)];
-    [_address addGestureRecognizer:gr];
-
-    gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onAccessoryTap)];
+    UIGestureRecognizer *gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onAccessoryTap)];
     [_accTapArea addGestureRecognizer:gr];
 
     gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onSelBut)];

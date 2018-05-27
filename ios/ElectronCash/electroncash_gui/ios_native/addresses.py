@@ -358,11 +358,6 @@ class AddressesVC(AddressesVCBase):
         
 
     @objc_method
-    def viewWillDisappear_(self, animated : bool) -> None:
-        send_super(__class__, self, 'viewWillDisappear:', animated, argtype=[c_bool])
-        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
-
-    @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
         try:
             addrData = _Get()
@@ -407,11 +402,7 @@ class AddressesVC(AddressesVCBase):
                 
         entry = entries[indexPath.row]
         if self.mode == ModeNormal:
-            cell.address.attributedText = NSAttributedString.alloc().initWithString_attributes_(entry.addr_str, {
-                NSFontAttributeName : UIFont.systemFontOfSize_(16.0),
-                NSUnderlineStyleAttributeName : NSUnderlineStyleSingle,
-                NSForegroundColorAttributeName : utils.uicolor_custom('link')
-            }).autorelease()
+            cell.address.linkText = entry.addr_str
                 
             if entry.label:
                 cell.desc.setText_withKerning_(entry.label, utils._kern)
@@ -445,11 +436,13 @@ class AddressesVC(AddressesVCBase):
                 xtra += [ str(entry.num_tx) + ' Tx' + ('s' if entry.num_tx != 1 else '')]
             cell.flags.setText_withKerning_(', '.join(xtra) if xtra else '', utils._kern)
             
-            
-            if not cell.address.gestureRecognizers:
-                gr = UITapGestureRecognizer.alloc().initWithTarget_action_(self, SEL(b'onTapAddress:')).autorelease()
-                cell.address.addGestureRecognizer_(gr)
+
+            def linkTarget(celladdy : objc_id) -> None:
+                celladdy = ObjCInstance(celladdy)
+                self.onTapAddress_(celladdy)
+                
             cell.address.tag = (self.comboL.selection << 24) | (self.comboR.selection << 16) | (indexPath.row & 0xffff) # useful for onTapAddress to figure out what tapped it
+            cell.address.linkTarget = linkTarget
             
             return cell
             
@@ -533,8 +526,8 @@ class AddressesVC(AddressesVCBase):
         gui.ElectrumGui.gui.toggle_cashaddr(not gui.ElectrumGui.gui.prefs_get_use_cashaddr())
         
     @objc_method
-    def onTapAddress_(self, gr : ObjCInstance) -> None:
-        tag = gr.view.tag
+    def onTapAddress_(self, linkView : ObjCInstance) -> None:
+        tag = linkView.tag
         typ = (tag >> 24)&0xff
         stat = (tag >> 16)&0xff
         row = tag & 0xffff
@@ -543,22 +536,7 @@ class AddressesVC(AddressesVCBase):
         except:
             print("onTapAddress exception:",str(sys.exc_info()[1]))
             return
-
-        linkView = gr.view
-        cellAnim = linkView.ptr.value
-        animDur = 0.3
-        def ShowMenu() -> None:
-            if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
-                # 'poor man's weak ref':
-                # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
-                return
-            utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
-            _ShowAddressContextMenu(entry, self, ipadAnchor = linkView.convertRect_toView_(linkView.bounds, self.view))
-        utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
-        linkView.textColorAnimationFromColor_toColor_duration_reverses_completion_(
-            utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), animDur, True, None
-        )
-        utils.call_later(animDur/2.0, ShowMenu)
+        _ShowAddressContextMenu(entry, self, ipadAnchor = linkView.convertRect_toView_(linkView.bounds, self.view))
 
  
     # -----------------------------------

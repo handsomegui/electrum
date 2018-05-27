@@ -114,6 +114,9 @@ class ContactsVC(ContactsVCBase):
         if self.tv:
             self.tv.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
             self.refreshControl = self.tv.refreshControl
+            uinib = UINib.nibWithNibName_bundle_(_CellIdentifier, None)
+            self.tv.registerNib_forCellReuseIdentifier_(uinib, _CellIdentifier)
+
         # workaround for inability to specify attributed text font italic in IB for some bizarre reason
         ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.noContactsLabel.attributedText).autorelease()
         r = NSRange(0,ats.length())
@@ -125,10 +128,6 @@ class ContactsVC(ContactsVCBase):
         self.butBottom.text = _('New contact')
         # Can't set this property from IB, so we do it here programmatically to create the stroke around the New contact bottom button
         self.butBottom.layer.borderColor = self.butBottom.titleColorForState_(UIControlStateNormal).CGColor
-
-        # DON'T do this since we need to manually load the NIB to associate its file's owner with this instane
-        #nib = UINib.nibWithNibName_bundle_(_CellIdentifier, None)
-        #self.tv.registerNib_forCellReuseIdentifier_(nib, _CellIdentifier)
 
     
     @objc_method
@@ -146,11 +145,6 @@ class ContactsVC(ContactsVCBase):
             self.selected = [presel]
             self.selected = self.updateSelectionButtons()
             self.tv.reloadData()
-
-    @objc_method
-    def viewWillDisappear_(self, animated : bool) -> None:
-        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
-        utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
 
     #### UITableView delegate/dataSource methods...
     @objc_method
@@ -171,36 +165,32 @@ class ContactsVC(ContactsVCBase):
         try:
             contacts = _Get()
             cell = tableView.dequeueReusableCellWithIdentifier_(_CellIdentifier)
+            if cell is None: raise Exception('Cell was None!')
             parent = gui.ElectrumGui.gui
-            if cell is None:
-                objs = NSBundle.mainBundle.loadNibNamed_owner_options_(_CellIdentifier, self, None)
-                for o in objs:
-                    if isinstance(o, UITableViewCell):
-                        cell = o
-                        break
             if contacts:
                 cell.address.tag = indexPath.row # associate the tapped 'link' with this contact
                 c = contacts[indexPath.row]
                 cell.name.text = c.name
                 cell.numTxs.text = str(len(c.hist_entries) if c.hist_entries else 0) + " " + _('Transactions')
-                ats = NSMutableAttributedString.alloc().initWithString_(c.address_str).autorelease()
-                r = NSRange(0, ats.length())
-                ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(16.0, UIFontWeightRegular), r)
                 enabledLink = self.mode == ModeNormal
                 if enabledLink:
-                    ats.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleSingle, r)
-                    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('nav'), r)
+                    cell.address.textColor = utils.uicolor_custom('link')
+                    cell.address.userInteractionEnabled = True
+                    cell.address.linkText = c.address_str
+                    def target(add : objc_id) -> None:
+                        self.onTapAddress_(ObjCInstance(add))
+                    cell.address.linkTarget = target
                 else:
-                    ats.addAttribute_value_range_(NSUnderlineStyleAttributeName, NSUnderlineStyleNone, r)
-                    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('dark'), r)
-                cell.address.attributedText = ats
-                addrgrs = py_from_ns(cell.address.gestureRecognizers)
-                if addrgrs:
-                    addrgrs[0].setEnabled_(enabledLink)
+                    cell.address.attributedText = None
+                    cell.address.textColor = utils.uicolor_custom('dark')
+                    cell.address.userInteractionEnabled = False
+                    cell.address.text = c.address_str
+                    cell.address.linkTarget = None
+                    cell.address.linkWillAnimate = None
                 self.setupAccessoryForCell_atIndex_(cell, indexPath.row)
         except:
             utils.NSLog("exception in Contacts tableView_cellForRowAtIndexPath_: %s",str(sys.exc_info()[1]))
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, _CellIdentifier[-1]).autorelease()
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "ACell").autorelease()
             empty_cell(cell, txt = "")
         return cell
     
@@ -369,28 +359,14 @@ class ContactsVC(ContactsVCBase):
 
 
     @objc_method
-    def onTapEdit_(self, gr : ObjCInstance) -> None:
-        view = gr.view if isinstance(gr, UIGestureRecognizer) else None
+    def onTapAddress_(self, view : ObjCInstance) -> None:
         if not isinstance(view, UILabel):
             return
         try:
-            contact = _Get()[gr.view.tag]
+            contact = _Get()[view.tag]
         except:
             return
-        cellAnim = view.ptr.value 
-        animDur = 0.3
-        def ShowMenu() -> None:
-            if utils.nspy_get_byname(self, 'HAVE_CELL_ANIM') != cellAnim:
-                # 'poor man's weak ref':
-                # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
-                return
-            utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
-            show_contact_options_actionsheet(contact, self, view, onEdit = lambda x: utils.show_notification(_("Contact saved")))
-        utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
-        view.textColorAnimationFromColor_toColor_duration_reverses_completion_(
-            utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), animDur, True, None
-        )
-        utils.call_later(animDur/2.0, ShowMenu)
+        show_contact_options_actionsheet(contact, self, view, onEdit = lambda x: utils.show_notification(_("Contact saved")))
 
 
     @objc_method
