@@ -212,33 +212,34 @@ static double Rand(double lo, double hi)
     } else
         self.backgroundColor = startColor;
     if (reverses) duration /= 2.0;
+    __weak UIView *weakSelf = self;
 
     [UIView animateWithDuration:duration delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
         if (uilabelHack) {
-            self.layer.backgroundColor = destColor.CGColor;
+            weakSelf.layer.backgroundColor = destColor.CGColor;
         } else
-            self.backgroundColor = destColor;
+            weakSelf.backgroundColor = destColor;
     } completion:^(BOOL finished) {
-        if (!finished) return;
+        if (!finished || !weakSelf) return;
         if (reverses) {
-            [self.layer removeAllAnimations];
+            [weakSelf.layer removeAllAnimations];
             if (uilabelHack) {
-                self.layer.backgroundColor = destColor.CGColor;
+                weakSelf.layer.backgroundColor = destColor.CGColor;
             } else
-                self.backgroundColor = destColor;
+                weakSelf.backgroundColor = destColor;
             [UIView animateWithDuration:duration delay:0.0 options: UIViewAnimationOptionAllowUserInteraction |UIViewAnimationOptionCurveLinear animations:^{
                 if (uilabelHack) {
-                    self.layer.backgroundColor = startColor.CGColor;
+                    weakSelf.layer.backgroundColor = startColor.CGColor;
                 } else
-                    self.backgroundColor = startColor;
+                    weakSelf.backgroundColor = startColor;
             } completion:^(BOOL finished2) {
-                if (!finished2) return;
-                [self.layer removeAllAnimations];
-                self.backgroundColor = startColor;
+                if (!finished2 || !weakSelf) return;
+                [weakSelf.layer removeAllAnimations];
+                weakSelf.backgroundColor = startColor;
                 if (completion) completion();
             }];
         } else {
-            self.backgroundColor = destColor;
+            weakSelf.backgroundColor = destColor;
             if (completion) completion();
         }
     }];
@@ -273,9 +274,10 @@ static double Rand(double lo, double hi)
     } completion:^(BOOL finished) {
         if (!finished) return;
         if (reverses) {
-            [self.layer removeAllAnimations];
+            if (!weakSelf) return;
+            [weakSelf.layer removeAllAnimations];
             doApplyColor(destColor);
-            [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve|UIViewAnimationOptionPreferredFramesPerSecond60 animations:^{
+            [UIView transitionWithView:weakSelf duration:duration options:UIViewAnimationOptionTransitionCrossDissolve|UIViewAnimationOptionPreferredFramesPerSecond60 animations:^{
                 doApplyColor(startColor);
             } completion:^(BOOL finished2) {
                 if (!finished2) return;
