@@ -5,6 +5,7 @@
 //  Created by Jonas Gessner 22.08.2013
 //  Copyright (c) 2013 Jonas Gessner. All rights reserved.
 //
+#if 0 // for now we are not compiling this -- since it was causing compiler warnings and we're not even using it!
 
 #import <Foundation/Foundation.h>
 
@@ -214,3 +215,4 @@ OBJC_EXTERN BOOL deswizzleAll(void);
 @end
 
 
+#endif

@@ -437,8 +437,9 @@ class AddressesVC(AddressesVCBase):
             
 
             def linkTarget(celladdy : objc_id) -> None:
-                celladdy = ObjCInstance(celladdy)
-                self.onTapAddress_(celladdy)
+                if self.navigationController and self.navigationController.visibleViewController.ptr == self.ptr:
+                    celladdy = ObjCInstance(celladdy)
+                    self.onTapAddress_(celladdy)
                 
             cell.address.tag = (self.comboL.selection << 24) | (self.comboR.selection << 16) | (indexPath.row & 0xffff) # useful for onTapAddress to figure out what tapped it
             cell.address.linkTarget = linkTarget

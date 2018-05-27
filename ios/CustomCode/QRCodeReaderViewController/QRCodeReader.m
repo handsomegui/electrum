@@ -80,11 +80,28 @@
     self.session            = [[AVCaptureSession alloc] init];
     self.previewLayer       = [AVCaptureVideoPreviewLayer layerWithSession:self.session];
 
+#if __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
+      // before iOS 10.0, this was the way
     for (AVCaptureDevice *device in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
       if (device.position == AVCaptureDevicePositionFront) {
         self.frontDevice = device;
       }
     }
+#else
+   // iOS 10+ method..
+    NSArray<AVCaptureDeviceType> *types = @[
+                                              AVCaptureDeviceTypeBuiltInWideAngleCamera,
+                                              AVCaptureDeviceTypeBuiltInTelephotoCamera,
+                                              AVCaptureDeviceTypeBuiltInDualCamera
+                                              ];
+    AVCaptureDeviceDiscoverySession *session = [AVCaptureDeviceDiscoverySession discoverySessionWithDeviceTypes:types mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionFront];
+    NSArray<AVCaptureDevice *> *devices = session.devices;
+    for (AVCaptureDevice *device in devices) {
+        if (device.position == AVCaptureDevicePositionFront) {
+            self.frontDevice = device;
+        }
+    }
+#endif
 
     if (_frontDevice) {
       self.frontDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:_frontDevice error:nil];

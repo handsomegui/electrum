@@ -282,7 +282,8 @@ class CoinsTableVC(UITableViewController):
                 cell.tag = idx
                 cell.address.tag = idx
                 def linkTapped(o : objc_id) -> None:
-                    self.onOptions_(ObjCInstance(o))
+                    if self.navigationController and self.navigationController.visibleViewController.ptr == self.ptr:
+                        self.onOptions_(ObjCInstance(o))
                 def butTapped(acell : objc_id) -> None:
                     self.selectDeselectCell_(ObjCInstance(acell))
                 def doDetail(acell : objc_id) -> None:
@@ -295,7 +296,8 @@ class CoinsTableVC(UITableViewController):
                             # this detects multiple firings of event and/or if self was dealloc'd before anim finished..
                             return
                         utils.nspy_pop_byname(self, 'HAVE_CELL_ANIM')
-                        PushCoinsDetailVC(entry, self.navigationController)
+                        if self.navigationController and self.navigationController.visibleViewController.ptr == self.ptr:
+                            PushCoinsDetailVC(entry, self.navigationController)
                     utils.nspy_put_byname(self, cellAnim, 'HAVE_CELL_ANIM')
                     acell.accessoryFlashView.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(
                         UIColor.colorWithRed_green_blue_alpha_(0.5,0.5,0.5,0.4), UIColor.clearColor, animDur, False, None

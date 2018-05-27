@@ -177,8 +177,9 @@ class ContactsVC(ContactsVCBase):
                     cell.address.textColor = utils.uicolor_custom('link')
                     cell.address.userInteractionEnabled = True
                     cell.address.linkText = c.address_str
-                    def target(add : objc_id) -> None:
-                        self.onTapAddress_(ObjCInstance(add))
+                    def target(add : objc_id) -> None:                        
+                        if self.navigationController and self.navigationController.visibleViewController.ptr == self.ptr:
+                            self.onTapAddress_(ObjCInstance(add))
                     cell.address.linkTarget = target
                 else:
                     cell.address.attributedText = None

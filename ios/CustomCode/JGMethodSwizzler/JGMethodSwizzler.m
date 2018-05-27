@@ -6,6 +6,8 @@
 //  Copyright (c) 2013 Jonas Gessner. All rights reserved.
 //
 
+#if 0 // for now we are not compiling this -- since it was causing compiler warnings and we're not even using it!
+
 #import "JGMethodSwizzler.h"
 
 #import <objc/runtime.h>
@@ -767,4 +769,6 @@ BOOL deswizzleAll(void) {
 //    return [NSString stringWithFormat:@"Original Class:\n%@\n\n\nOriginal Instance:\n%@\n\n\nOriginal Instance Specific:\n%@\n\n\nDynamic Subclasses:\n%@\n\n\n", originalClassMethods, originalInstanceMethods, originalInstanceInstanceMethods, dynamicSubclassesByObject];
 //}
 
+
+#endif
 
