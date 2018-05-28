@@ -13,6 +13,7 @@
 #import "DZNSegmentedControl/DZNSegmentedControl.h"
 #import "UIKitExtras.h"
 #import "CCActivityIndicator/CCActivityIndicator.h"
+#import "KeyboardVC/KeyboardVC.h"
 
 
 @interface AddrConvBase : UIViewController
@@ -371,13 +372,30 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, strong) NSDictionary *params; // set by the viewcontrollers in a particular story sequence to set up wallet creation params
 @end
 @interface NewWalletVCBase : UIViewController
-@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit;
+@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit, *errMsg;
 @property (nonatomic, weak) IBOutlet UITextField *walletName, *walletPw1, *walletPw2;
+@property (nonatomic, weak) IBOutlet UIView *errMsgView;
 @property (nonatomic, weak) IBOutlet UIButton *nextBut;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS;
 - (IBAction) dismiss;
 @end
 @interface NewWalletVC : NewWalletVCBase
 // implemented in python newwallet.py..
+@end
+
+@interface NewWalletSeed1Base : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *seedTit, *info;
+@property (nonatomic, weak) IBOutlet UITextView *seedtv;
+@property (nonatomic, weak) IBOutlet UIView *infoView;
+@property (nonatomic, weak) IBOutlet UIButton *nextBut;
+
+// below only used in NewWalletSeed2 child class
+@property (nonatomic, weak) IBOutlet KeyboardVC *kvc;
+@end
+@interface NewWalletSeed1 : NewWalletSeed1Base
+// implemented in python newwallet.py
+@end
+@interface NewWalletSeed2 : NewWalletSeed1Base
+// implemented in python newwallet.py
 @end
 #endif /* ViewsForIB_h */

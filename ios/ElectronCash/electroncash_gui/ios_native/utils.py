@@ -91,6 +91,9 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
     view.alpha = float(1.0 if bool(b) else 0.3)
     view.setNeedsDisplay()
 
+def pathsafeify(s : str) -> str:
+    return s.translate({ord(i):None for i in ':/.\\'}).strip()
+
 # new color schem from Max
 _ColorScheme = {
     'dark'      : UIColor.colorInDeviceRGBWithHexString_("#414141").retain(), 
@@ -169,13 +172,17 @@ def nsattributedstring_from_html(html : str) -> ObjCInstance:
     data = ns_from_py(html.encode('utf-8'))
     return NSMutableAttributedString.alloc().initWithHTML_documentAttributes_(data,None).autorelease()
 
-def uilabel_replace_attributed_text(lbl : ObjCInstance, text : str, template : ObjCInstance = None) -> ObjCInstance:
+def uilabel_replace_attributed_text(lbl : ObjCInstance, text : str, template : ObjCInstance = None, font : ObjCInstance = None) -> ObjCInstance:
     if not isinstance(template, NSAttributedString):
         template = lbl.attributedText
     if template is None:
         template = NSAttrubutedString.new().autorelease()
     astr = NSMutableAttributedString.alloc().initWithAttributedString_(template).autorelease()
     astr.replaceCharactersInRange_withString_(NSRange(0,astr.length()), text)
+    if font:
+        r = NSRange(0,astr.length())
+        astr.removeAttribute_range_(NSFontAttributeName,r)
+        astr.addAttribute_value_range_(NSFontAttributeName,font,r)
     lbl.attributedText = astr
     return lbl
 
@@ -859,11 +866,11 @@ class WaitingDialog:
     necessary to maintain a reference to this dialog.'''
     def __init__(self, vc, message, task, on_success=None, on_error=None):
         assert vc
-        title = _("Please wait")
         self.vc = vc
         self.thread = TaskThread()
         def onPresented() -> None:
             self.thread.add(task, on_success, self.dismisser, on_error)
+        #title = _("Please wait")
         #self.alert=show_alert(vc = self.vc, title = title, message = message, actions=[], completion=onPresented)
         self.alert = show_please_wait(vc = self.vc, message = message, completion=onPresented)
 

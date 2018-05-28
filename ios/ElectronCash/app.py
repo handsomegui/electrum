@@ -34,6 +34,13 @@ def main():
 
     config = SimpleConfig(config_options,read_user_dir_function=get_user_dir)
 
+    try:
+        # force remove of lock file as this sometimes causes problems
+        os.remove(os.path.join(config.electrum_path(), 'daemon'))
+        print("Pre-existing 'daemon' lock-file removed!")
+    except:
+        pass
+
     fd, server = daemon.get_fd_or_server(config)
     if fd is not None:
         plugins = None

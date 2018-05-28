@@ -24,7 +24,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+import sys, os
 import traceback
 import bz2
 import base64
@@ -1082,6 +1082,13 @@ class ElectrumGui(PrintError):
     def daemon_is_running(self) -> bool:
         return self.daemon is not None and self.daemon.is_running()
 
+
+    def check_wallet_exists(self, wallet_filename : str) -> bool:
+        w = os.path.split(wallet_filename)[1]
+        path = os.path.split(self.config.get_wallet_path())[0]
+        return os.path.exists(os.path.join(path, w))
+
+        
     def open_last_wallet(self):
         self.config.open_last_wallet()
         path = self.config.get_wallet_path()
