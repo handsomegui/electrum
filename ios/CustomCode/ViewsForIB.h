@@ -12,6 +12,7 @@
 #import <UIKit/UIKit.h>
 #import "DZNSegmentedControl/DZNSegmentedControl.h"
 #import "UIKitExtras.h"
+#import "CCActivityIndicator/CCActivityIndicator.h"
 
 
 @interface AddrConvBase : UIViewController
@@ -361,4 +362,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onSpendFrom;
 @end
 
+@interface PleaseWaitVC : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *message, *pleaseWait;
+@property (nonatomic, weak) IBOutlet CCActivityIndicator *activityIndicator;
+@end
 #endif /* ViewsForIB_h */

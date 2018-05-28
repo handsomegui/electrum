@@ -227,6 +227,22 @@ def show_share_actions(vc : ObjCInstance,
 ###################################################
 ### Show modal alert
 ###################################################
+def show_please_wait(vc : ObjCInstance, message : str, animated : bool = True, completion : Callable[[],None] = None) -> ObjCInstance:
+    pw = None
+    try:
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("PleaseWait", None, None)
+        for o in objs:
+            if isinstance(o, PleaseWaitVC):
+                pw = o
+                break
+    except:
+        NSLog("Could not load PleaseWait.nib:",sys.exc_info()[1])
+    if not pw:
+        return show_alert(vc, title = _("Please wait"), message = message, actions = [], animated = animated, completion = completion)
+    pw.message.text = message
+    vc.presentViewController_animated_completion_(pw, animated, completion)
+    return pw
+    
 def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view in
                title : str, # the alert title
                message : str, # the alert message
@@ -825,7 +841,8 @@ class WaitingDialog:
         self.thread = TaskThread()
         def onPresented() -> None:
             self.thread.add(task, on_success, self.dismisser, on_error)
-        self.alert=show_alert(vc = self.vc, title = title, message = message, actions=[], completion=onPresented)
+        #self.alert=show_alert(vc = self.vc, title = title, message = message, actions=[], completion=onPresented)
+        self.alert = show_please_wait(vc = self.vc, message = message, completion=onPresented)
 
     def __del__(self):
         #print("WaitingDialog __del__")

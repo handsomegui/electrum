@@ -294,3 +294,15 @@
 @implementation CoinsDetailBase
 // auto synthesized properties
 @end
+
+@implementation PleaseWaitVC
+- (void) viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    self.activityIndicator.animating = YES;
+}
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    self.activityIndicator.animating = NO;
+}
+@end
+
