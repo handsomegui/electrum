@@ -310,6 +310,10 @@
 - (UIInterfaceOrientationMask) supportedInterfaceOrientations { return UIInterfaceOrientationMaskPortrait; }
 - (UIInterfaceOrientation) preferredInterfaceOrientationForPresentation { return UIInterfaceOrientationPortrait; }
 - (BOOL) shouldAutorotate { return NO; }
+- (void) awakeFromNib {
+    [super awakeFromNib];
+    self.params = NSDictionary.dictionary;
+}
 @end
 
 @implementation NewWalletVCBase

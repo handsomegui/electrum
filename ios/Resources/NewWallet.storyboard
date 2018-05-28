@@ -138,7 +138,7 @@
                                     </userDefinedRuntimeAttribute>
                                 </userDefinedRuntimeAttributes>
                                 <connections>
-                                    <action selector="onNext" destination="FsD-Wr-KwH" eventType="primaryActionTriggered" id="kJZ-wr-q2d"/>
+                                    <segue destination="ygs-Pa-twa" kind="show" id="42b-WR-fNJ"/>
                                 </connections>
                             </button>
                         </subviews>
@@ -188,6 +188,21 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="yQD-J5-Xb9" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-220" y="123"/>
+        </scene>
+        <!--View Controller-->
+        <scene sceneID="xYa-xc-GrW">
+            <objects>
+                <viewController id="ygs-Pa-twa" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="0P4-OZ-LvY">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="603"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <viewLayoutGuide key="safeArea" id="lHj-Ed-C8D"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Gdh-bn-VLb" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="468" y="124"/>
         </scene>
     </scenes>
 </document>

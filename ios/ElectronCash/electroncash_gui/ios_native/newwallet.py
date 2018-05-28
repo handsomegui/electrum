@@ -1,7 +1,7 @@
 from . import utils
 from . import gui
 from electroncash.i18n import _, language
-
+from typing import Any
 from .uikit_bindings import *
 from .custom_objc import *
 
@@ -52,5 +52,31 @@ class NewWalletVC(NewWalletVCBase):
         pass
     
     @objc_method
-    def onNext(self) -> None:
-        print ("NEXT  TODO: implement")
+    def shouldPerformSegueWithIdentifier_sender_(self, identifier, sender) -> bool:
+        print("shouldPerformSegueWithIdentifier_sender_(",identifier,",",str(sender),")... TODO: IMPLEMENT!")
+        #TODO: check passwords match, wallet name is unique
+        return True
+    
+    @objc_method
+    def prepareForSegue_sender_(self, segue, sender) -> None:
+        print("prepareForSeque called")
+        # TODO: pass along wallet name, password, etc...?
+        _SetParam(self, 'WalletName', self.walletName.text)
+        _SetParam(self, 'WalletPass', self.walletPw2.text)
+
+        print("params=",_Params(self))
+
+
+def _Params(vc : UIViewController) -> dict():
+    return py_from_ns(vc.navigationController.params)
+
+def _SetParams(vc : UIViewController, params : dict) -> None:
+    vc.navigationController.params = params
+
+def _SetParam(vc : UIViewController, paramName : str, paramValue : Any) -> None:
+    d = _Params(vc)
+    if not paramValue:
+        d.pop(paramName, None)
+    else:
+        d[paramName] = paramValue
+    _SetParams(vc, d)
