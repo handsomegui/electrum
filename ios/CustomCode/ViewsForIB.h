@@ -366,4 +366,18 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UILabel *message, *pleaseWait;
 @property (nonatomic, weak) IBOutlet CCActivityIndicator *activityIndicator;
 @end
+
+@interface NewWalletNav : UINavigationController
+@end
+@interface NewWalletVCBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit;
+@property (nonatomic, weak) IBOutlet UITextField *walletName, *walletPw1, *walletPw2;
+@property (nonatomic, weak) IBOutlet UIButton *nextBut;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS;
+- (IBAction) dismiss;
+@end
+@interface NewWalletVC : NewWalletVCBase
+// implemented in python newwallet.py..
+- (IBAction) onNext;
+@end
 #endif /* ViewsForIB_h */

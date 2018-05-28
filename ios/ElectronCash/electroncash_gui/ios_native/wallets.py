@@ -1,6 +1,7 @@
 from . import utils
 from . import gui
 from . import history
+from . import newwallet # Do not remove -- needed to declare NewWalletVC to ObjC runtime  (used by storyboard instantiation)
 from electroncash.i18n import _, language
 
 from .uikit_bindings import *
@@ -338,7 +339,16 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
             return
         c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
         def doAddWallet() -> None:
-            gui.ElectrumGui.gui.show_message(message="'Add Wallet' is not yet implemented.", title="Coming Soon!")
+            #gui.ElectrumGui.gui.show_message(message="'Add Wallet' is not yet implemented.", title="Coming Soon!")
+            sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+            if not sb:
+                utils.NSLog("ERROR: SB IS NULL")
+                return
+            nav = sb.instantiateViewControllerWithIdentifier_("NewWalletNav")
+            if nav:
+                self.presentViewController_animated_completion_(nav, True, None)
+            else:
+                utils.NSLog("ERROR: NAV IS NULL")
         addWalletView.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,doAddWallet)
      
     # overrides base

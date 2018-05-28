@@ -306,3 +306,14 @@
 }
 @end
 
+@implementation NewWalletNav
+- (UIInterfaceOrientationMask) supportedInterfaceOrientations { return UIInterfaceOrientationMaskPortrait; }
+- (UIInterfaceOrientation) preferredInterfaceOrientationForPresentation { return UIInterfaceOrientationPortrait; }
+- (BOOL) shouldAutorotate { return NO; }
+@end
+
+@implementation NewWalletVCBase
+- (IBAction) dismiss { [self.presentingViewController dismissViewControllerAnimated:YES completion:nil]; }
+@end
+
+

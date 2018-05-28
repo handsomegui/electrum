@@ -554,11 +554,11 @@ class NewContactVC(NewContactBase):
         tfwts = { self.name : 0, self.address : 1 }
         for tf in tfwts:
             tf.tag = tfwts[tf]
-            redoTfAttrs(tf) #this hackily reads tag for the font weight
+            utils.uitf_redo_attrs(tf) #this hackily reads tag for the font weight
 
     @objc_method
     def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
-        redoTfAttrs(tf)
+        utils.uitf_redo_attrs(tf)
 
     @objc_method
     def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
@@ -569,28 +569,6 @@ class NewContactVC(NewContactBase):
         tf.resignFirstResponder()
         return True
 
-def redoTfAttrs(tf : ObjCInstance) -> None:
-    weight = UIFontWeightMedium if tf.tag == 1 else UIFontWeightRegular
-    # TESTING ATTRIBUTED STRING STUFF..
-    # 1. Placeholder
-    ats = NSMutableAttributedString.alloc().initWithString_(tf.placeholder).autorelease()
-    r = NSRange(0,ats.length())
-    ats.addAttribute_value_range_(NSFontAttributeName, UIFont.italicSystemFontOfSize_(14.0), r)
-    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('light'), r)
-    ps = NSMutableParagraphStyle.new().autorelease()
-    ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
-    ps.lineBreakMode = NSLineBreakByTruncatingMiddle
-    ps.firstLineHeadIndent = 10.0
-    ps.tailIndent = -10.0
-    ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
-    tf.attributedPlaceholder = ats
-    # 2. Actual text
-    ats = NSMutableAttributedString.alloc().initWithString_(tf.text)
-    r = NSRange(0,ats.length())
-    ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(14.0, weight), r)
-    ats.addAttribute_value_range_(NSForegroundColorAttributeName, utils.uicolor_custom('dark'), r)
-    ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
-    tf.attributedText = ats
 
 
 class ContactDetailVC(ContactDetailVCBase):

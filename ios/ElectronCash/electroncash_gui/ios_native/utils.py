@@ -133,6 +133,29 @@ def tintify(t : ObjCInstance) -> ObjCInstance:
     t.navigationBar.barStyle = UIBarStyleBlack
     return t
 
+def uitf_redo_attrs(tf : ObjCInstance) -> None:
+    weight = UIFontWeightMedium if tf.tag == 1 else UIFontWeightRegular
+    # TESTING ATTRIBUTED STRING STUFF..
+    # 1. Placeholder
+    ats = NSMutableAttributedString.alloc().initWithString_(tf.placeholder).autorelease()
+    r = NSRange(0,ats.length())
+    ats.addAttribute_value_range_(NSFontAttributeName, UIFont.italicSystemFontOfSize_(14.0), r)
+    ats.addAttribute_value_range_(NSForegroundColorAttributeName, uicolor_custom('light'), r)
+    ps = NSMutableParagraphStyle.new().autorelease()
+    ps.setParagraphStyle_(NSParagraphStyle.defaultParagraphStyle)
+    ps.lineBreakMode = NSLineBreakByTruncatingMiddle
+    ps.firstLineHeadIndent = 10.0
+    ps.tailIndent = -10.0
+    ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+    tf.attributedPlaceholder = ats
+    # 2. Actual text
+    ats = NSMutableAttributedString.alloc().initWithString_(tf.text)
+    r = NSRange(0,ats.length())
+    ats.addAttribute_value_range_(NSFontAttributeName, UIFont.systemFontOfSize_weight_(14.0, weight), r)
+    ats.addAttribute_value_range_(NSForegroundColorAttributeName, uicolor_custom('dark'), r)
+    ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
+    tf.attributedText = ats
+
 
 # NB: This isn't normally called since you need to specify the full pathname of the resource you want, instead
 #     if you need images, call uiimage_get, etc.  This does NOT search recursively, since NSBundle sucks.
