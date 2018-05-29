@@ -132,11 +132,15 @@ class NewWalletSeed1(NewWalletSeed1Base):
             self.infoView.setHidden_(True)
             def GenSeed() -> str:
                 return _Mnem().make_seed()
+            def OnError(exc) -> None:
+                def onOk() -> None:
+                    self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+                gui.ElectrumGui.gui.show_error(str(exc[1]), onOk = onOk, vc = self)
             def OnSuccess(result : str) -> None:
                 self.infoView.setHidden_(False)
                 self.seed = result
                 utils.uilabel_replace_attributed_text(self.seedtv, self.seed)        
-            utils.WaitingDialog(self, _("Generating seed..."), GenSeed,  OnSuccess)
+            utils.WaitingDialog(self, _("Generating seed..."), GenSeed,  OnSuccess, OnError)
         else:
             self.infoView.setHidden_(False)
             utils.uilabel_replace_attributed_text(self.seedtv, self.seed)
