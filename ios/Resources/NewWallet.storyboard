@@ -496,6 +496,7 @@
                     <connections>
                         <outlet property="info" destination="HqF-cT-KZj" id="dKe-6v-UjT"/>
                         <outlet property="infoView" destination="XaY-UM-djm" id="lry-mv-NEV"/>
+                        <outlet property="kvcContainerView" destination="qFt-NH-7Gb" id="jIl-hz-5v4"/>
                         <outlet property="nextBut" destination="HpL-n9-Q3R" id="NgA-7B-0Wd"/>
                         <outlet property="seedTit" destination="Nnv-Sj-F0i" id="NKI-of-EvE"/>
                         <outlet property="seedtv" destination="CrD-cX-uO5" id="Gh4-H2-yqK"/>

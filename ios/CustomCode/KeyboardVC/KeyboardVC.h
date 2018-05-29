@@ -24,7 +24,7 @@
 #pragma mark Main Usage Mechanisms
 
 @property (nonatomic, copy) void(^textChanged)(void); ///< attach to this to receive notification when the textView has changed due to key insertions/deletions.  
-@property (nonatomic, readonly) NSString *backSpace; ///< this is sent to callback when user hits backspace
+@property (nonatomic, readonly) NSString *backspace; ///< this is sent to callback when user hits backspace
 
 @property (nonatomic, weak) IBOutlet id<UITextInput> textInput; ///< attach a UITextField or UITextView here if you like, or use the keyCallback if you prefer that method. Attaching a UITextField here will make everything work automatically
 
@@ -34,6 +34,10 @@
 
 - (BOOL) isKeyDisabled:(NSString *)key;
 - (void) setKey:(NSString *)key disabled:(BOOL)disabled;
+- (void) setKey:(NSString *)key enabled:(BOOL)enabled;
+
+- (void) disableAllKeys;
+- (void) enableAllKeys;
 @end
 
 

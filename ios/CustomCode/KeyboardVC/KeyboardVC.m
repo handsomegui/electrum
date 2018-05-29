@@ -68,7 +68,7 @@
     self.blockPasting = YES;
     self.blockSelecting = YES;
     _keySize = CGSizeMake(31.0,42.0);
-    _backSpace = @"⌫";
+    _backspace = @"⌫";
 }
 
 - (void)viewDidLoad {
@@ -84,17 +84,23 @@
                *c = rows;
     CGPoint p = CGPointMake(_hmargin,_vmargin);
     _keyDict = [[NSMutableDictionary alloc] initWithCapacity:26];
+    // the below loop builds the keyboard layout using our custom syntax codes embedded in the above 'rows' string
     for (; *c; ++c) {
         if (*c == '/') {
+            // 'next row', by defaults indents the row in by hmargin points
             p.x = _hmargin;
             p.y += _keySize.height + _vpad;
         } else if (*c == '-') {
+            // indent further by half a key's width plus padding
             p.x += _keySize.width / 2.0 + _hpad;
         } else if (*c == '=') {
+            // indent even more by a whole key plus padding
             p.x += _keySize.width + _hpad;
         } else if (*c == '.') {
+            // tiny pad -- 1.0 points
             p.x += 1.0;
         } else {
+            // actual key. crate the object and set its frame
             char ch = *c;
             BOOL keyRepeat = NO;
             CGRect frame = CGRectMake(p.x, p.y, _keySize.width, _keySize.height);
@@ -104,7 +110,7 @@
             if (ch == '<') {
                 frame.size = CGSizeMake(MAX(frame.size.width, frame.size.height), frame.size.height);
                 keyColor = [UIColor colorInDeviceRGBWithHexString:@"#CCCCCC"];
-                charAsString = _backSpace;
+                charAsString = _backspace;
                 font = [UIFont fontWithName:@"HelveticaNeue-UltraLight" size:16.0];
                 inputOptionsFont = [UIFont fontWithName:@"HelveticaNeue-UltraLight" size:22.0];
                 keyRepeat = YES;
@@ -140,6 +146,16 @@
     return ret;
 }
 
+- (void) keyEnablerDisabler:(BOOL)disabled {
+    NSArray<NSString *> *ks = self.allKeys;
+    for (NSString *k in ks) {
+        [self setKey:k disabled:disabled];
+    }
+}
+
+- (void) disableAllKeys {  [self keyEnablerDisabler:YES]; }
+- (void) enableAllKeys {  [self keyEnablerDisabler:NO]; }
+
 -(void) setupDefaultCallback {
     if (!_keyCallback) {
         __weak KeyboardVC *weakSelf = self;
@@ -154,7 +170,7 @@
                     tv.selectedRange = NSMakeRange(tv.text.length, 0);
             }
 
-            if ([k isEqualToString:weakSelf.backSpace]) {
+            if ([k isEqualToString:weakSelf.backspace]) {
                 [weakSelf.textInput deleteBackward];
             } else {
                 [weakSelf.textInput insertText:k];
@@ -180,6 +196,10 @@
 - (void) setKey:(NSString *)key disabled:(BOOL)disabled {
     _keyDict[key].userInteractionEnabled = !disabled;
     _keyDict[key].alpha = disabled ? 0.4 : 1.0;
+}
+
+- (void) setKey:(NSString *)key enabled:(BOOL)enabled {
+    [self setKey:key disabled:!enabled];
 }
 
 - (void) loadView {

@@ -323,3 +323,32 @@
 @implementation NewWalletSeed1Base
 @end
 
+@implementation SuggestionButton
++ (instancetype) suggestionButtonWithText:(NSString *)text handler:(void(^)(UIControl *))handler {
+    SuggestionButton *but = [SuggestionButton buttonWithType:UIButtonTypeSystem];
+    [but setTitle:text forState:UIControlStateNormal];
+    UIFont *font = [UIFont systemFontOfSize:23.0];
+    but.titleLabel.font = font;
+    //but.titleLabel.textColor = UIColor.blackColor;
+    but.tintColor = UIColor.blackColor;
+    but.titleLabel.adjustsFontSizeToFitWidth = YES;
+    but.titleLabel.minimumScaleFactor = 0.5;
+    but.backgroundColor = UIColor.whiteColor;
+    [but setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+    UIEdgeInsets insets = UIEdgeInsetsMake(5.0, 10.0, 5.0, 10.0);
+    but.titleEdgeInsets = insets;
+    but.layer.cornerRadius = 4.0;
+    but.layer.borderWidth = 2.0;
+    but.layer.borderColor = [UIColor colorInDeviceRGBWithHexString:@"#cccccc"].CGColor;
+    but.clipsToBounds = YES;
+    if (handler) {
+        [but handleControlEvent:UIControlEventPrimaryActionTriggered withBlock:handler];
+    }
+    // auto-size based on contents
+    CGRect f = CGRectMake(0,0,100,42); // testing
+    CGRect r = [text boundingRectWithSize:CGSizeMake(10000.0,f.size.height-insets.bottom-insets.top) options:0 attributes:@{NSFontAttributeName : font} context:nil];
+    f.size = CGSizeMake(r.size.width+insets.left+insets.right, f.size.height);
+    but.frame = f;
+    return but;
+}
+@end
