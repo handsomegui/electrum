@@ -23,7 +23,7 @@
 @property (nonatomic) BOOL lowerCase; ///< defaults to NO. If YES, will use lowercase letters on the keyboard
 #pragma mark Main Usage Mechanisms
 
-@property (nonatomic, copy) void (^keyCallback)(NSString *key);
+@property (nonatomic, copy) void(^textChanged)(void); ///< attach to this to receive notification when the textView has changed due to key insertions/deletions.  
 @property (nonatomic, readonly) NSString *backSpace; ///< this is sent to callback when user hits backspace
 
 @property (nonatomic, weak) IBOutlet id<UITextInput> textInput; ///< attach a UITextField or UITextView here if you like, or use the keyCallback if you prefer that method. Attaching a UITextField here will make everything work automatically

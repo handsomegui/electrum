@@ -305,46 +305,7 @@
                                                     <color key="NSColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                                                     <font key="NSFont" size="14" name="SFProDisplay-Italic"/>
                                                     <real key="NSKern" value="0.0"/>
-                                                    <paragraphStyle key="NSParagraphStyle" alignment="left" lineBreakMode="truncatingTail" baseWritingDirection="natural" minimumLineHeight="20" maximumLineHeight="20" tighteningFactorForTruncation="0.0" allowsDefaultTighteningForTruncation="NO">
-                                                        <tabStops>
-                                                            <textTab alignment="left" location="28">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="56">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="84">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="112">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="140">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="168">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="196">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="224">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="252">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="280">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="308">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="336">
-                                                                <options/>
-                                                            </textTab>
-                                                        </tabStops>
-                                                    </paragraphStyle>
+                                                    <paragraphStyle key="NSParagraphStyle" alignment="left" lineBreakMode="truncatingTail" baseWritingDirection="natural" minimumLineHeight="20" maximumLineHeight="20" tighteningFactorForTruncation="0.0" allowsDefaultTighteningForTruncation="NO"/>
                                                 </attributes>
                                             </fragment>
                                         </attributedString>
@@ -410,10 +371,10 @@
             </objects>
             <point key="canvasLocation" x="468" y="123.68815592203899"/>
         </scene>
-        <!--Seed Reentry-->
+        <!--Seed Entry-->
         <scene sceneID="lQJ-bp-wJd">
             <objects>
-                <viewController title="Seed Reentry" id="hsg-Aj-7Jd" customClass="NewWalletSeed2" sceneMemberID="viewController">
+                <viewController title="Seed Entry" id="hsg-Aj-7Jd" customClass="NewWalletSeed2" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="6TT-vf-vNe">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="603"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -448,51 +409,12 @@
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="TopLeft" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HqF-cT-KZj">
                                         <rect key="frame" x="25" y="0.0" width="315" height="40"/>
                                         <attributedString key="attributedText">
-                                            <fragment content="Use our virtual keyboard and quick suggestions to save time.">
+                                            <fragment content="Use the virtual keyboard and quick suggestions to save time.">
                                                 <attributes>
                                                     <color key="NSColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                                                     <font key="NSFont" size="14" name="SFProDisplay-Italic"/>
                                                     <real key="NSKern" value="0.0"/>
-                                                    <paragraphStyle key="NSParagraphStyle" alignment="left" lineBreakMode="wordWrapping" baseWritingDirection="natural" minimumLineHeight="20" maximumLineHeight="20" tighteningFactorForTruncation="0.0" allowsDefaultTighteningForTruncation="NO">
-                                                        <tabStops>
-                                                            <textTab alignment="left" location="28">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="56">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="84">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="112">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="140">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="168">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="196">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="224">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="252">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="280">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="308">
-                                                                <options/>
-                                                            </textTab>
-                                                            <textTab alignment="left" location="336">
-                                                                <options/>
-                                                            </textTab>
-                                                        </tabStops>
-                                                    </paragraphStyle>
+                                                    <paragraphStyle key="NSParagraphStyle" alignment="left" lineBreakMode="wordWrapping" baseWritingDirection="natural" minimumLineHeight="20" maximumLineHeight="20" tighteningFactorForTruncation="0.0" allowsDefaultTighteningForTruncation="NO"/>
                                                 </attributes>
                                             </fragment>
                                         </attributedString>
@@ -591,6 +513,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="182"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <viewLayoutGuide key="safeArea" id="T0a-qD-Vh7"/>
                     </view>
                     <userDefinedRuntimeAttributes>
                         <userDefinedRuntimeAttribute type="boolean" keyPath="lowerCase" value="NO"/>

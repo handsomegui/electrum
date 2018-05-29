@@ -16,6 +16,9 @@
 - (void) setupMainView:(CGSize)size withVC:(KeyboardVC *)kbdvc;
 @end
 
+@interface KeyboardVC ()
+@property (nonatomic, copy) void (^keyCallback)(NSString *key); ///< made this private since the default one is good enough.. no need to change it
+@end
 
 @implementation KeyboardVC {
     CGSize _keySize;
@@ -151,10 +154,12 @@
                     tv.selectedRange = NSMakeRange(tv.text.length, 0);
             }
 
-            if ([k isEqualToString:weakSelf.backSpace])
+            if ([k isEqualToString:weakSelf.backSpace]) {
                 [weakSelf.textInput deleteBackward];
-            else
+            } else {
                 [weakSelf.textInput insertText:k];
+            }
+            if (weakSelf.textChanged) weakSelf.textChanged();
         };
     }
 }
