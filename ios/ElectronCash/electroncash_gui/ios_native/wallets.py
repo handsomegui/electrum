@@ -37,16 +37,15 @@ class WalletsNav(WalletsNavBase):
 
 class WalletsVC(WalletsVCBase):
     lineHider = objc_property()
-    selWalletIndex = objc_property()
     
     @objc_method
     def dealloc(self) -> None:
         # cleanup code here..
         gui.ElectrumGui.gui.sigHistory.disconnect(self)
         gui.ElectrumGui.gui.sigRequests.disconnect(self)
+        gui.ElectrumGui.gui.sigWallets.disconnect(self)
 
         self.lineHider = None
-        self.selWalletIndex = None
         send_super(__class__, self, 'dealloc')  
 
     @objc_method
@@ -54,7 +53,6 @@ class WalletsVC(WalletsVCBase):
         # put additional setup code here
         self.status = StatusOffline # re-does the text/copy and colors
         self.walletAmount.text = "0"
-        self.selWalletIndex = 0
         # Custom Segmented Control setup
         self.segControl.items = [_("Transactions"), _("Requests")]
         self.segControl.showsCount = False
@@ -66,8 +64,15 @@ class WalletsVC(WalletsVCBase):
         # Can't set this property from IB, so we do it here programmatically to create the stroke around the receive button
         self.receiveBut.layer.borderColor = self.sendBut.backgroundColor.CGColor
 
-        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.doChkTableViewCounts(), self)
-        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.doChkTableViewCounts(), self)
+        gui.ElectrumGui.gui.sigHistory.connect(lambda: self.refresh(), self)
+        gui.ElectrumGui.gui.sigRequests.connect(lambda: self.refresh(), self)
+        gui.ElectrumGui.gui.sigWallets.connect(lambda: self.refresh(), self)
+    
+    @objc_method
+    def refresh(self) -> None:
+        self.doChkTableViewCounts()
+        if self.walletName: self.walletName.text = str(_Get('current'))
+        if self.statusBlurb: self.statusBlurb.sizeToFit()
     
     @objc_method
     def viewDidLoad(self) -> None:
@@ -85,7 +90,7 @@ class WalletsVC(WalletsVCBase):
         self.lineHider.backgroundColor = self.blueBarTop.backgroundColor
         self.navBar.addSubview_(self.lineHider)
         self.lineHider.autoresizingMask = (1<<6)-1
-        self.doChkTableViewCounts()
+        self.refresh()
 
     @objc_method
     def viewWillDisappear_(self, animated : bool) -> None:
@@ -95,11 +100,11 @@ class WalletsVC(WalletsVCBase):
             self.lineHider = None
 
     @objc_method
-    def viewLayoutMarginsDidChange(self) -> None:
-        send_super(__class__, self, 'viewLayoutMarginsDidChange')
+    def viewWillTransitionToSize_withTransitionCoordinator_(self, size : CGSize, coordinator : ObjCInstance) -> None:
+        send_super(__class__, self, 'viewWillTransitionToSize:withTransitionCoordinator:', size, coordinator, argtypes=[CGSize,objc_id])
         if self.txsHelper and self.txsHelper.tv:
             self.txsHelper.tv.reloadData() # this implicitly redoes the central table and the number of preview transactions we see in it
-            self.doChkTableViewCounts()
+        self.refresh()
 
     @objc_method
     def setStatus_(self, mode : int) -> None:
@@ -167,7 +172,6 @@ class WalletsVC(WalletsVCBase):
             if not vc:
                 utils.NSLog("**** Warning: toggleDrawer could not find the requisite view controller in WalletsDrawerVC.nib!")
                 return
-            vc.selectedRow = self.selWalletIndex
             vc.amount.text = self.walletAmount.text
             #vc.units.attributedText = self.walletUnits.attributedText
             vc.units.text = self.walletUnits.text
@@ -247,13 +251,12 @@ class WalletsVC(WalletsVCBase):
 
 
 class WalletsDrawerVC(WalletsDrawerVCBase):
-    selectedRow = objc_property()
     bluchk = objc_property()
         
     @objc_method
     def dealloc(self) -> None:
         #cleanup code here
-        self.selectedRow = None
+        gui.ElectrumGui.gui.sigWallets.disconnect(self)
         self.bluchk = None
         send_super(__class__, self, 'dealloc')
      
@@ -263,7 +266,28 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
         self.tv.tableFooterView = self.tableFooter
         nib = UINib.nibWithNibName_bundle_("WalletsDrawerCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(nib, "WalletsDrawerCell")
+        gui.ElectrumGui.gui.sigWallets.connect(lambda: self.refresh(), self)
        
+    @objc_method
+    def refresh(self) -> None:
+        self.name.text = str(_Get('current'))
+        self.tv and self.tv.reloadData()
+        
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.ensureCurrentIsVisible()
+        
+    @objc_method
+    def ensureCurrentIsVisible(self) -> None:
+        if self.tv:
+            current = _Get('current')
+            wallets = _Get()
+            for i,wallet in enumerate(wallets):
+                if current == wallet.name:
+                    self.tv.scrollToRowAtIndexPath_atScrollPosition_animated_(NSIndexPath.indexPathForRow_inSection_(i, 0), UITableViewScrollPositionMiddle, False)
+                    return
+        
     @objc_method
     def numberOfSectionsInTableView_(self, tableView) -> int:
         return 1
@@ -271,7 +295,8 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
         # TODO: Implement this properly
-        return 2
+        wl = _Get()
+        return len(wl) if wl else 0
 
     @objc_method
     def tableView_heightForHeaderInSection_(self, tableView, section) -> float:
@@ -291,6 +316,10 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
         identifier = "WalletsDrawerCell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+        try:
+            info = _Get()[indexPath.row]
+        except:
+            info = WalletsMgr.Info('Error', 0, 'INVALID')
         if cell is None:
             objs = NSBundle.mainBundle.loadNibNamed_owner_options_("WalletsDrawerCell",None,None)
             for obj in objs:
@@ -302,12 +331,13 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
         size = cell.viewWithTag_(3)
         if not self.bluchk:
             self.bluchk = iv.image
-        if indexPath.row is not self.selectedRow:
-            iv.image = None
-        else:
+        chkd = info.name == _Get('current')
+        if chkd:
             iv.image = self.bluchk
-        name.text = "Wallet %d"%int(indexPath.row+1)
-        size.text = str(pow(2,indexPath.row+4)) + " KB"
+        else:
+            iv.image = None
+        name.text = str(info.name)
+        size.text = "%2.2f KB"%(info.size/1024.0)
         return cell
 
     @objc_method
@@ -317,18 +347,16 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
-        n = self.tableView_numberOfRowsInSection_(tv,0)
-        cell = tv.cellForRowAtIndexPath_(indexPath)
-        iv = cell.viewWithTag_(1)
-        old = tv.cellForRowAtIndexPath_(NSIndexPath.indexPathForRow_inSection_(self.selectedRow,indexPath.section))
-        if old: old.viewWithTag_(1).image = None
-        iv.image = self.bluchk
-        self.selectedRow = indexPath.row
-        #todo : inform wallets vc of selection here...!
-        if self.vc:
-            # temporary hack to 'remember' the selection..
-            # TODO: really implement wallet selection here!
-            self.vc.selWalletIndex = self.selectedRow
+        try:
+            name = _Get()[indexPath.row].name
+            if name == _Get('current'): return
+            gui.ElectrumGui.gui.switch_wallets(vc = self, wallet_name = name,
+                                               onSuccess = lambda: utils.call_later(0.2, self.vc.toggleDrawer),
+                                               onFailure = lambda x: gui.ElectrumGui.gui.show_error(message=str(x), vc = self)
+                                               )
+        except:
+            import sys
+            utils.NSLog("Got exception: %s",str(sys.exc_info()[1]))
 
     @objc_method
     def addWallet(self) -> None:
@@ -374,3 +402,59 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
         else:
             self.chevron.stopAnimating()
         send_super(__class__, self, 'closeAnimated:', animated, argtypes=[c_bool])
+
+
+def _Get(key = None) -> list():
+    # return a list of wallets ultimately from WalletsMgr's list_wallets() function below..
+    return gui.ElectrumGui.gui.sigWallets.get(key)
+
+''' Wallets Manager -- Misc functions to create, inspect, etc wallets all in 1 place.
+    This class wasn't stricly needed but the rationale was to have all wallet management code
+    in the app go through a central place for my own testing and sanity. -Calin, May 2018
+'''
+from typing import Any
+from collections import namedtuple
+import os, sys, glob
+
+class WalletsMgr(utils.DataMgr):
+
+    Info = namedtuple('WalletInfo', 'name size full_path')
+    
+    def __init__(self):
+        super().__init__()
+        
+    def parent(self) -> object:
+        # I'm paranoid about circular references.. so we return this on-demand each time
+        return gui.ElectrumGui.gui
+    
+    def wallets_dir(self) -> str:
+        p = self.parent()
+        return os.path.split(p.config.get_wallet_path())[0] if p and p.config else ''
+    
+    def doReloadForKey(self, key : Any) -> Any:
+        if key in ('current', 'basename', 'name', 'wallet_name', 'wallet', 'opened'):
+            p = self.parent()
+            return p.wallet.basename() if p and p.wallet else None
+        return self.list_wallets()
+    
+    def list_wallets(self) -> list:
+        ret = list()
+        d = self.wallets_dir()
+        if os.path.isdir(d):
+            it = glob.iglob(os.path.join(self.wallets_dir(),'*'))
+            for wf in it:
+                if wf and wf[0] != '.':
+                    st = os.stat(wf)
+                    if st:
+                        fn = os.path.split(wf)[1]
+                        info = WalletsMgr.Info(fn, st.st_size, wf)
+                        ret.append(info)
+        ret.sort(key=lambda x: [x.name, x.size], reverse=False)
+        return ret
+
+    
+    def check_wallet_exists(self, wallet_name : str) -> bool:
+        w = os.path.split(wallet_filename)[1]
+        path = self.wallets_dir()
+        return os.path.exists(os.path.join(path, w))
+

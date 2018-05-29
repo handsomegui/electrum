@@ -263,7 +263,7 @@ def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title 
     )
     return retPW
 
-def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = None, title : str = None) -> ObjCInstance:
+def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = None, title : str = None, onCancel : Callable = None) -> ObjCInstance:
     title =  _("Enter Password") if not title else title
     prompt = _("Enter your password to proceed") if not prompt else prompt
     tf = None
@@ -280,12 +280,14 @@ def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = No
         tf.secureTextEntry = True
     def MyOnOk() -> None:
         if callable(onOk): onOk(tf.text)
+    def MyOnCancel() -> None:
+        if callable(onCancel): onCancel()
 
     alert = utils.show_alert(
         vc = vc,
         title = title,
         message = prompt,
-        actions = [ [ _("OK"), MyOnOk ], [_("Cancel")] ],
+        actions = [ [ _("OK"), MyOnOk ], [_("Cancel"), MyOnCancel ] ],
         cancel = _("Cancel"),
         localRunLoop = False,
         uiTextFieldHandlers = [tfConfigHandler]

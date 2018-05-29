@@ -289,6 +289,12 @@ class SendVC(SendBase):
 
 
     @objc_method
+    def viewDidAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
+        parent().show_warning_if_watching_only(vc = self,
+                                               onOk = lambda: self.presentingViewController.dismissViewControllerAnimated_completion_(True, None))
+
+    @objc_method
     def reformatSpendFrom(self) -> None:
         # Do the "spend from" stuff
         coins = utils.nspy_get_byname(self, 'spend_from')

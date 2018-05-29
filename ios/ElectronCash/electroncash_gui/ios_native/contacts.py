@@ -594,6 +594,7 @@ class ContactDetailVC(ContactDetailVCBase):
     def refresh(self) -> None:
         if not self.viewIfLoaded: return
 
+        self.payToBut.setHidden_(gui.ElectrumGui.gui.wallet and gui.ElectrumGui.gui.wallet.is_watching_only())
         c = _Contact(self)
         if c:
             self.address.text = c.address_str
@@ -856,6 +857,9 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
                 [ _("View on block explorer"), on_block_explorer ],
                 [ _("Delete"), on_delete ],
             ]
+        
+        if parent.wallet.is_watching_only():
+            actions.pop(3)
                         
                 
         utils.show_alert(
