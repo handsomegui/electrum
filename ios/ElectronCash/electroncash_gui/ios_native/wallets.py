@@ -427,26 +427,29 @@ class WalletsMgr(utils.DataMgr):
     
     def __init__(self):
         super().__init__()
-        
+     
+    @classmethod   
     def parent(self) -> object:
         # I'm paranoid about circular references.. so we return this on-demand each time
         return gui.ElectrumGui.gui
     
+    @classmethod   
     def wallets_dir(self) -> str:
         p = self.parent()
         return os.path.split(p.config.get_wallet_path())[0] if p and p.config else ''
     
     def doReloadForKey(self, key : Any) -> Any:
         if key in ('current', 'basename', 'name', 'wallet_name', 'wallet', 'opened'):
-            p = self.parent()
+            p = WalletsMgr.parent()
             return p.wallet.basename() if p and p.wallet else None
-        return self.list_wallets()
+        return WalletsMgr.list_wallets()
     
+    @classmethod   
     def list_wallets(self) -> list:
         ret = list()
         d = self.wallets_dir()
         if os.path.isdir(d):
-            it = glob.iglob(os.path.join(self.wallets_dir(),'*'))
+            it = glob.iglob(os.path.join(d,'*'))
             for wf in it:
                 fn = os.path.split(wf)[1]
                 if fn and fn[0] != '.':
@@ -458,6 +461,7 @@ class WalletsMgr(utils.DataMgr):
         return ret
 
     
+    @classmethod   
     def check_wallet_exists(self, wallet_name : str) -> bool:
         w = os.path.split(wallet_name)[1]
         path = self.wallets_dir()

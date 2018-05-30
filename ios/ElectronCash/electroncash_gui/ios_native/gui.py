@@ -1103,7 +1103,7 @@ class ElectrumGui(PrintError):
 
 
     def check_wallet_exists(self, wallet_filename : str) -> bool:
-        return self.sigWallets.check_wallet_exists(wallet_filename)
+        return wallets.WalletsMgr.check_wallet_exists(wallet_filename)
     
     def generate_new_standard_wallet(self, wallet_name : str, wallet_pass : str, wallet_seed : str,
                                      onSuccess = None, # signature: fun()
@@ -1141,7 +1141,7 @@ class ElectrumGui(PrintError):
                     onFailure(_('Wrong key type') + ' %s'%t1)
                     return
     
-                path = os.path.join(self.sigWallets.wallets_dir(), wallet_name)
+                path = os.path.join(wallets.WalletsMgr.wallets_dir(), wallet_name)
                 storage = WalletStorage(path, manual_upgrades=True)
                 encrypt = True # hard-coded for now -- TODO: put a boolean switch for this in the GUI!
                 storage.set_password(wallet_pass, encrypt)
@@ -1178,7 +1178,7 @@ class ElectrumGui(PrintError):
         if not onSuccess: onSuccess = lambda: None
         if not onCancel: onCancel = lambda: print("User Cancel")
         wallet_name = os.path.split(wallet_name)[1]
-        path = os.path.join(self.sigWallets.wallets_dir(), wallet_name)
+        path = os.path.join(wallets.WalletsMgr.wallets_dir(), wallet_name)
         storage = WalletStorage(path, manual_upgrades=True)
         if not storage.file_exists():
             onFailure("Wallet File Not Found")
