@@ -14,21 +14,23 @@ StatusDownloadingHeaders = 2
 StatusSynchronizing = 3
 
 
-StatusColors = {
-    StatusOnline : UIColor.colorWithRed_green_blue_alpha_(187.0/255.0,255.0/255.0,59.0/255.0,1.0).retain(),
-    StatusOffline : UIColor.colorWithRed_green_blue_alpha_(255.0/255.0,97.0/255.0,97.0/255.0,1.0).retain(),
-    StatusDownloadingHeaders : UIColor.colorWithRed_green_blue_alpha_(255.0/255.0,194.0/255.0,104.0/255.0,1.0).retain(),
-    StatusSynchronizing : UIColor.colorWithRed_green_blue_alpha_(104.0/255.0,255.0/255.0,179.0/255.0,1.0).retain(),
-}
+def StatusColors() -> dict:
+    return {
+        StatusOffline : UIColor.colorWithRed_green_blue_alpha_(255.0/255.0,97.0/255.0,97.0/255.0,1.0),
+        StatusOnline : UIColor.colorWithRed_green_blue_alpha_(187.0/255.0,255.0/255.0,59.0/255.0,1.0),
+        StatusDownloadingHeaders : UIColor.colorWithRed_green_blue_alpha_(255.0/255.0,194.0/255.0,104.0/255.0,1.0),
+        StatusSynchronizing : UIColor.colorWithRed_green_blue_alpha_(104.0/255.0,255.0/255.0,179.0/255.0,1.0),
+    }
 
-VChevronImages = [
-    UIImage.imageNamed_("chevron_00000").retain(),
-    UIImage.imageNamed_("chevron_00001").retain(),
-    UIImage.imageNamed_("chevron_00002").retain(),
-    UIImage.imageNamed_("chevron_00003").retain(),
-    UIImage.imageNamed_("chevron_00004").retain(),
-    UIImage.imageNamed_("chevron_00005").retain(),
-]
+def VChevronImages() -> list:
+    return [
+        UIImage.imageNamed_("chevron_00000"),
+        UIImage.imageNamed_("chevron_00001"),
+        UIImage.imageNamed_("chevron_00002"),
+        UIImage.imageNamed_("chevron_00003"),
+        UIImage.imageNamed_("chevron_00004"),
+        UIImage.imageNamed_("chevron_00005"),
+    ]
 
 class WalletsNav(WalletsNavBase):    
     @objc_method
@@ -113,10 +115,11 @@ class WalletsVC(WalletsVCBase):
             utils.NSLog("WARNING: WalletsVC setStatus on a WalletsVC that is not fully initialized!")
             return
         c = None
+        statusColors = StatusColors()
         try:
-            c = StatusColors[mode]
+            c = statusColors[mode]
         except:
-            c = StatusColors[StatusOffline]
+            c = statusColors[StatusOffline]
         self.statusLabel.backgroundColor = c
         if mode == StatusOnline:
             self.statusBlurb.text = _("All set and good to go.")
@@ -382,7 +385,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     # overrides base
     @objc_method
     def openAnimated_(self, animated : bool) -> None:
-        self.chevron.animationImages = VChevronImages
+        self.chevron.animationImages = VChevronImages()
         if not self.chevron.isAnimating() and animated:
             self.chevron.animationDuration = 0.2
             self.chevron.animationRepeatCount = 1
@@ -394,7 +397,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     # overrides base
     @objc_method
     def closeAnimated_(self, animated : bool) -> None:
-        self.chevron.animationImages = list(reversed(VChevronImages))
+        self.chevron.animationImages = list(reversed(VChevronImages()))
         if not self.chevron.isAnimating() and animated:
             self.chevron.animationDuration = 0.2
             self.chevron.animationRepeatCount = 1
@@ -443,13 +446,13 @@ class WalletsMgr(utils.DataMgr):
         if os.path.isdir(d):
             it = glob.iglob(os.path.join(self.wallets_dir(),'*'))
             for wf in it:
-                if wf and wf[0] != '.':
+                fn = os.path.split(wf)[1]
+                if fn and fn[0] != '.':
                     st = os.stat(wf)
-                    if st:
-                        fn = os.path.split(wf)[1]
+                    if st and not os.path.isdir(wf):
                         info = WalletsMgr.Info(fn, st.st_size, wf)
                         ret.append(info)
-        ret.sort(key=lambda x: [x.name, x.size], reverse=False)
+        ret.sort(key=lambda x: [x.name, 0-x.size], reverse=False)
         return ret
 
     
