@@ -350,16 +350,18 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
+        def showErr(err : str) -> None:
+            gui.ElectrumGui.gui.show_error(message=str(err), vc = self)
         try:
             name = _Get()[indexPath.row].name
             if name == _Get('current'): return
             gui.ElectrumGui.gui.switch_wallets(vc = self, wallet_name = name,
                                                onSuccess = lambda: utils.call_later(0.2, self.vc.toggleDrawer),
-                                               onFailure = lambda x: gui.ElectrumGui.gui.show_error(message=str(x), vc = self)
-                                               )
+                                               onFailure = showErr)
         except:
             import sys
             utils.NSLog("Got exception: %s",str(sys.exc_info()[1]))
+            showErr(sys.exc_info()[1])
 
     @objc_method
     def addWallet(self) -> None:
@@ -457,7 +459,7 @@ class WalletsMgr(utils.DataMgr):
 
     
     def check_wallet_exists(self, wallet_name : str) -> bool:
-        w = os.path.split(wallet_filename)[1]
+        w = os.path.split(wallet_name)[1]
         path = self.wallets_dir()
         return os.path.exists(os.path.join(path, w))
 

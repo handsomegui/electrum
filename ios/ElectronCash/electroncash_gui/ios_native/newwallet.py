@@ -5,6 +5,7 @@ from electroncash.mnemonic import Mnemonic
 from typing import Any
 from .uikit_bindings import *
 from .custom_objc import *
+import sys
 
 
 class NewWalletVC(NewWalletVCBase):
@@ -91,7 +92,7 @@ class NewWalletVC(NewWalletVCBase):
         _SetParam(self, 'WalletName', self.walletName.text)
         _SetParam(self, 'WalletPass', self.walletPw2.text)
 
-class NewWalletSeed1(NewWalletSeed1Base):
+class NewWalletSeed1(NewWalletSeedBase):
     origLabelTxts = objc_property()
     seed = objc_property()
 
@@ -162,11 +163,12 @@ class NewWalletSeed1(NewWalletSeed1Base):
             segue.destinationViewController.seedList = sl
         #print("params=",_Params(self))
 
-class NewWalletSeed2(NewWalletSeed1Base):
+class NewWalletSeed2(NewWalletSeedBase):
     origLabelTxts = objc_property()
     seed = objc_property()
     seedList = objc_property()
     sugButs = objc_property()
+    isDone = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -175,6 +177,7 @@ class NewWalletSeed2(NewWalletSeed1Base):
         self.seed = None
         self.seedList = None
         self.sugButs = None
+        self.isDone = None
         send_super(__class__, self, 'dealloc')
 
     @objc_method
@@ -203,7 +206,9 @@ class NewWalletSeed2(NewWalletSeed1Base):
         d = self.origLabelTxts
         for lbl in lbls:
             if lbl.ptr == self.info.ptr:
-                utils.uilabel_replace_attributed_text(lbl, _(d[lbl.ptr.value]), font=UIFont.italicSystemFontOfSize_(14.0))
+                txt = _('Your seed is important!') + ' ' + _('To make sure that you have properly saved your seed, please retype it here.') + ' ' + _('Use the quick suggestions to save time.')
+                #utils.uilabel_replace_attributed_text(lbl, _(d[lbl.ptr.value]), font=UIFont.italicSystemFontOfSize_(14.0))
+                utils.uilabel_replace_attributed_text(lbl, txt, font=UIFont.italicSystemFontOfSize_(14.0))
             else:
                 lbl.setText_withKerning_(_(d[lbl.ptr.value]), utils._kern)
    
@@ -253,7 +258,6 @@ class NewWalletSeed2(NewWalletSeed1Base):
         try:
             currActualSeedWord = self.seedList[wordNum]
         except:
-            import sys
             utils.NSLog("Error with seed word: %s",sys.exc_info()[1])
             currActualSeedWord = 'TOO MANY WORDS!' # this makes sure we continue even though they have too many words.
         
@@ -274,7 +278,6 @@ class NewWalletSeed2(NewWalletSeed1Base):
                     try:
                         self.seedtv.setText_((' '.join(words[:wordNum]) + (' ' if wordNum else '') + word + ' ').upper())
                     except:
-                        import sys
                         utils.NSLog("Could not set textView: %s",sys.exc_info()[1])
                     self.doSuggestions()
                 but = SuggestionButton.suggestionButtonWithText_handler_(sug, AddButWord)
@@ -301,6 +304,9 @@ class NewWalletSeed2(NewWalletSeed1Base):
                     self.view.addSubview_(but)
 
         self.sugButs = sugButs
+        
+        self.errMsgView.setHidden_(True)
+        self.infoView.setHidden_(False)
 
     @objc_method
     def viewWillTransitionToSize_withTransitionCoordinator_(self, size : CGSize, coordinator : ObjCInstance) -> None:
@@ -315,8 +321,56 @@ class NewWalletSeed2(NewWalletSeed1Base):
     
     @objc_method
     def shouldPerformSegueWithIdentifier_sender_(self, identifier, sender) -> bool:
-        return bool(self.seed)
+        if identifier == 'EMBEDDED_KVC': return True
+        return False
         
+    @objc_method
+    def onNext(self) -> None:
+        def doDismiss() -> None:
+            self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+
+        if self.isDone:
+            doDismiss()
+            return
+            
+        parent = gui.ElectrumGui.gui
+        
+        if list(self.seedList) != self.seedtv.text.strip().lower().split():
+            err = _('The seed you entered does not match the generated seed. Go back to the previous screen and double-check it, then try again.')
+            utils.uilabel_replace_attributed_text(self.errMsg, err, font=UIFont.italicSystemFontOfSize_(14.0))
+            self.errMsgView.setHidden_(False)
+            self.infoView.setHidden_(True)
+            return
+        
+        try:
+            wallet_name = _Params(self)['WalletName']
+            wallet_pass = _Params(self)['WalletPass']
+            wallet_seed = _Params(self)['seed']
+        except:
+            utils.NSLog("onNext in Seed2, got exception: %s", str(sys.exc_info()[1]))
+            return
+
+        def openNew() -> None:
+            parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
+                                  onFailure=onFailure, onCancel=doDismiss)
+        def onSuccess() -> None:
+            self.isDone = True
+            parent.refresh_components('wallets')
+            parent.show_message(vc=self, title=_('New Wallet Created'),
+                                message = _('Your new standard wallet has been successfully created. Would you like to switch to it now?'),
+                                hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
+                                onOk = openNew, onCancel = doDismiss)
+        def onFailure(err : str) -> None:
+            parent.show_error(vc=self, message = str(err))
+            
+        parent.generate_new_standard_wallet(
+            vc = self,
+            wallet_name = wallet_name,
+            wallet_pass = wallet_pass,
+            wallet_seed = wallet_seed,
+            onSuccess = onSuccess,
+            onFailure = onFailure)
+ 
     
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:

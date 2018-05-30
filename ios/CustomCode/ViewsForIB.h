@@ -383,7 +383,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python newwallet.py..
 @end
 
-@interface NewWalletSeed1Base : UIViewController
+@interface NewWalletSeedBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *seedTit, *info;
 @property (nonatomic, weak) IBOutlet UITextView *seedtv;
 @property (nonatomic, weak) IBOutlet UIView *infoView;
@@ -392,12 +392,15 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // below only used in NewWalletSeed2 child class
 @property (nonatomic, weak) IBOutlet KeyboardVC *kvc;
 @property (nonatomic, weak) IBOutlet UIView *kvcContainerView;
+@property (nonatomic, weak) IBOutlet UIView *errMsgView;
+@property (nonatomic, weak) IBOutlet UILabel *errMsg;
 @end
-@interface NewWalletSeed1 : NewWalletSeed1Base
+@interface NewWalletSeed1 : NewWalletSeedBase
 // implemented in python newwallet.py
 @end
-@interface NewWalletSeed2 : NewWalletSeed1Base
+@interface NewWalletSeed2 : NewWalletSeedBase
 // implemented in python newwallet.py
+- (IBAction) onNext;
 @end
 @interface SuggestionButton : UIButton
 + (instancetype) suggestionButtonWithText:(NSString *)text handler:(void(^)(UIControl *))handler;

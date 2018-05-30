@@ -320,7 +320,7 @@
 - (IBAction) dismiss { [self.presentingViewController dismissViewControllerAnimated:YES completion:nil]; }
 @end
 
-@implementation NewWalletSeed1Base
+@implementation NewWalletSeedBase
 @end
 
 @implementation SuggestionButton

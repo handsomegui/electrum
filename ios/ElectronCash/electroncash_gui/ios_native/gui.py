@@ -887,13 +887,17 @@ class ElectrumGui(PrintError):
     
     # can be called from any thread, always runs in main thread
     def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False,
-                     cancelButTitle = _('Cancel'), okButTitle = _('OK'), vc = None, destructive = False):
+                     cancelButTitle = _('Cancel'), okButTitle = _('OK'), vc = None, destructive = False, onCancel = None):
         def func() -> None:
             myvc = self.get_presented_viewcontroller() if vc is None else vc
             actions = [ [str(okButTitle)] ]
             if onOk is not None and callable(onOk): actions[0].append(onOk)
+            nonlocal hasCancel
+            if onCancel: hasCancel = True
             if hasCancel:
-                actions.append( [ str(cancelButTitle) ] )
+                cancA = [ str(cancelButTitle) ]
+                if onCancel: cancA.append(onCancel)
+                actions.append( cancA )
             utils.show_alert(
                 vc = myvc,
                 title = title,
@@ -1100,12 +1104,72 @@ class ElectrumGui(PrintError):
 
     def check_wallet_exists(self, wallet_filename : str) -> bool:
         return self.sigWallets.check_wallet_exists(wallet_filename)
+    
+    def generate_new_standard_wallet(self, wallet_name : str, wallet_pass : str, wallet_seed : str,
+                                     onSuccess = None, # signature: fun()
+                                     onFailure = None, # signature: fun(errMsg)
+                                     vc = None) -> None:
+        if not onSuccess: onSuccess = lambda: None
+        if not onFailure: onFailure = lambda: None
+        if not vc: vc = self.get_presented_viewcontroller()
+        if self.check_wallet_exists(wallet_name):
+            onFailure("A wallet with the same name already exists")
+            return       
+
+        waitDlg = None
+                
+        def DoIt() -> None:    
+            nonlocal waitDlg
+            def doDismiss(animated = True, compl = None) -> None:
+                nonlocal waitDlg
+                if waitDlg:
+                    waitDlg.dismissViewControllerAnimated_completion_(animated, compl)
+                    waitDlg = None
+                    
+            try:
+                from electroncash import keystore
+                from electroncash.wallet import Standard_Wallet
+                
+                seed_type = 'standard'
+                k = keystore.from_seed(wallet_seed, '', False)
+                has_xpub = isinstance(k, keystore.Xpub)
+                if has_xpub:
+                    from electroncash.bitcoin import xpub_type
+                    t1 = xpub_type(k.xpub)
+                if has_xpub and t1 not in ['standard']:
+                    doDismiss(animated = False)
+                    onFailure(_('Wrong key type') + ' %s'%t1)
+                    return
+    
+                path = os.path.join(self.sigWallets.wallets_dir(), wallet_name)
+                storage = WalletStorage(path, manual_upgrades=True)
+                encrypt = True # hard-coded for now -- TODO: put a boolean switch for this in the GUI!
+                storage.set_password(wallet_pass, encrypt)
+                storage.put('seed_type', seed_type)
+                keys = k.dump()
+                storage.put('keystore', keys)
+                wallet = Standard_Wallet(storage)
+                wallet.synchronize()
+                wallet.storage.write()
+                def myOnSuccess() -> None: onSuccess()
+                doDismiss(animated = True, compl = myOnSuccess)
+                    
+            except:
+                doDismiss(animated = False)
+                onFailure(str(sys.exc_info()[1]))
+            
+            
+
+        waitDlg = utils.show_please_wait(vc = vc, message = _("Generating your addresses..."), completion = DoIt)
+        
 
     def switch_wallets(self, wallet_name : str,
                        onSuccess = None, # cb signature is fun(), and this indicates the new wallet is now opened successfully
                        onFailure = None, # cb signature is fun(errmsg : str)
                        onCancel = None,  # cb signature is fun()
-                       vc = None) -> None: 
+                       vc = None,
+                       wallet_pass = None # if None, will prompt for password as needed
+                       ) -> None: 
         if not self.daemon:
             utils.NSLog("Switch wallets but no daemon running!")
             return
@@ -1127,7 +1191,8 @@ class ElectrumGui(PrintError):
             try:
                 wallet = Wallet(storage)
                 wallet.start_threads(self.daemon.network)
-                self.daemon.stop_wallet(self.wallet.storage.path)
+                if self.wallet:
+                    self.daemon.stop_wallet(self.wallet.storage.path)
                 self.wallet = wallet
                 self.daemon.add_wallet(self.wallet)
                 self.config.save_last_wallet(self.wallet)
@@ -1141,9 +1206,12 @@ class ElectrumGui(PrintError):
             waitDlg = None
             def promptPW() -> None:
                 nonlocal waitDlg
+                nonlocal wallet_pass
                 def closeDlg() -> None:
                     nonlocal waitDlg
-                    if waitDlg: waitDlg.dismissViewControllerAnimated_completion_(True, None)
+                    if waitDlg:
+                        waitDlg.dismissViewControllerAnimated_completion_(True, None)
+                        waitDlg = None
                 def myOnCancel() -> None:
                     closeDlg()
                     onCancel()
@@ -1155,9 +1223,15 @@ class ElectrumGui(PrintError):
                     except:
                         self.show_error(message=_("The password was incorrect for this encrypted wallet, please try again."),
                                         title=_('Password Incorrect'), vc = waitDlg, onOk = promptPwLater)
-                prompt = _("This wallet is encrypted with a password, please provide it to proceed:")
-                title = _("Password Required")
-                password_dialog.prompt_password_asynch(vc=waitDlg, onOk=onOk, prompt=prompt, title=title, onCancel=myOnCancel)
+                if wallet_pass:
+                    # try the passed-in password once.. if no good, will end up prompting user
+                    tmppw = wallet_pass
+                    wallet_pass = None # clear it now so we don't keep retrying it if it's bad
+                    onOk(tmppw)
+                else:
+                    prompt = _("This wallet is encrypted with a password, please provide it to proceed:")
+                    title = _("Password Required")
+                    password_dialog.prompt_password_asynch(vc=waitDlg, onOk=onOk, prompt=prompt, title=title, onCancel=myOnCancel)
             def promptPwLater() -> None:
                 utils.call_later(0.2, promptPW)
             waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:20] + "...", completion = promptPwLater)
