@@ -317,7 +317,6 @@
 @end
 
 @implementation NewWalletVCBase
-- (IBAction) dismiss { [self.presentingViewController dismissViewControllerAnimated:YES completion:nil]; }
 @end
 
 @implementation NewWalletSeedBase
@@ -352,3 +351,15 @@
     return but;
 }
 @end
+
+@implementation NewWalletMenuBase
+// auto-synth properties
+- (void) viewDidLoad {
+    self.std.layer.borderColor = self.std.backgroundColor.CGColor;
+    self.restore.layer.borderColor = UIColor.whiteColor.CGColor;
+    self.import.layer.borderColor = UIColor.whiteColor.CGColor;
+    self.master.layer.borderColor = UIColor.whiteColor.CGColor;
+}
+- (IBAction) dismiss { [self.presentingViewController dismissViewControllerAnimated:YES completion:nil]; }
+@end
+

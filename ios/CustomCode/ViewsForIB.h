@@ -377,7 +377,6 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UIView *errMsgView;
 @property (nonatomic, weak) IBOutlet UIButton *nextBut;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS;
-- (IBAction) dismiss;
 @end
 @interface NewWalletVC : NewWalletVCBase
 // implemented in python newwallet.py..
@@ -404,5 +403,19 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 @interface SuggestionButton : UIButton
 + (instancetype) suggestionButtonWithText:(NSString *)text handler:(void(^)(UIControl *))handler;
+@end
+
+@interface NewWalletMenuBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *tit, *blurb;
+@property (nonatomic, weak) IBOutlet UIButton *std, *restore, *import, *master;
+- (IBAction) dismiss;
+@end
+
+@interface NewWalletMenu1 : NewWalletMenuBase
+// implemented in python newwallet.py
+@end
+@interface NewWalletMenu2 : NewWalletMenuBase
+// implemented in python newwallet.py
+- (IBAction) unimplemented;
 @end
 #endif /* ViewsForIB_h */

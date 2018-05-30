@@ -378,6 +378,47 @@ class NewWalletSeed2(NewWalletSeedBase):
         # TODO: stuff
         print("params=",_Params(self))
 
+class NewWalletMenu1(NewWalletMenuBase):
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        pass
+
+class NewWalletMenu2(NewWalletMenuBase):
+    lineHider = objc_property()
+    
+    @objc_method
+    def dealloc(self) -> None:
+        self.lineHider = None
+        send_super(__class__, self, 'dealloc')
+        
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        navBar = self.navigationController.navigationBar if self.navigationController else None
+        if navBar:
+            f = navBar.frame
+            # This line hider is a hack/fix for a weirdness in iOS where there is a white line between the top nav bar and the bottom
+            # 'drawer' area.  This hopefully fixes that.
+            self.lineHider = UIView.alloc().initWithFrame_(CGRectMake(0,f.size.height,f.size.width,1)).autorelease()
+            self.lineHider.backgroundColor = navBar.barTintColor
+            self.lineHider.autoresizingMask = (1<<6)-1
+            navBar.addSubview_(self.lineHider)
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if self.lineHider:
+            self.lineHider.removeFromSuperview()
+            self.lineHider = None
+    
+    @objc_method
+    def unimplemented(self) -> None:
+        gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
 
 def _Params(vc : UIViewController) -> dict():
     return py_from_ns(vc.navigationController.params)

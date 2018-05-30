@@ -377,7 +377,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
             if not sb:
                 utils.NSLog("ERROR: SB IS NULL")
                 return
-            nav = sb.instantiateViewControllerWithIdentifier_("Start_NewWallet_1")
+            nav = sb.instantiateViewControllerWithIdentifier_("Add_A_Wallet")
             if nav:
                 self.presentViewController_animated_completion_(nav, True, None)
             else:
