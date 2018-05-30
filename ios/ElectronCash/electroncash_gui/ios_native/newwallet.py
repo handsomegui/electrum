@@ -403,7 +403,7 @@ class NewWalletMenu2(NewWalletMenuBase):
         if navBar:
             f = navBar.frame
             # This line hider is a hack/fix for a weirdness in iOS where there is a white line between the top nav bar and the bottom
-            # 'drawer' area.  This hopefully fixes that.
+            # main area.  This hopefully fixes that.
             self.lineHider = UIView.alloc().initWithFrame_(CGRectMake(0,f.size.height,f.size.width,1)).autorelease()
             self.lineHider.backgroundColor = navBar.barTintColor
             self.lineHider.autoresizingMask = (1<<6)-1
