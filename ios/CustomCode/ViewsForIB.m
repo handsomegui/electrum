@@ -332,7 +332,7 @@
     //but.titleLabel.textColor = UIColor.blackColor;
     but.tintColor = UIColor.blackColor;
     but.titleLabel.adjustsFontSizeToFitWidth = YES;
-    but.titleLabel.minimumScaleFactor = 0.5;
+    but.titleLabel.minimumScaleFactor = 0.44;
     but.backgroundColor = UIColor.whiteColor;
     [but setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
     UIEdgeInsets insets = UIEdgeInsetsMake(5.0, 10.0, 5.0, 10.0);

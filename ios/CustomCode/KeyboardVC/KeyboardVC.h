@@ -21,9 +21,10 @@
 @property (nonatomic) BOOL blockPasting; ///< defaults to YES. IFF yes and this is the delegate of the TextView/TextField, attempt to block pasting of text.
 @property (nonatomic) BOOL blockSelecting; ///< defaults to YES. IFF yes and this is the delegate of the TextView/TextField, attempt to selecting of text.
 @property (nonatomic) BOOL lowerCase; ///< defaults to NO. If YES, will use lowercase letters on the keyboard
+@property (nonatomic) BOOL lowerCaseInsert; ///< defaults to NO. If YES, will use lowercase letters on insertText call regardless of what the keyboard says
 #pragma mark Main Usage Mechanisms
 
-@property (nonatomic, copy) void(^textChanged)(void); ///< attach to this to receive notification when the textView has changed due to key insertions/deletions.  
+@property (nonatomic, copy) void(^textChanged)(void); ///< attach to this to receive notification when the textView has changed due to key insertions/deletions.
 @property (nonatomic, readonly) NSString *backspace; ///< this is sent to callback when user hits backspace
 
 @property (nonatomic, weak) IBOutlet id<UITextInput> textInput; ///< attach a UITextField or UITextView here if you like, or use the keyCallback if you prefer that method. Attaching a UITextField here will make everything work automatically
@@ -38,6 +39,7 @@
 
 - (void) disableAllKeys;
 - (void) enableAllKeys;
+
 @end
 
 

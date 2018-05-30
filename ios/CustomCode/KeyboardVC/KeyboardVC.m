@@ -173,6 +173,7 @@
             if ([k isEqualToString:weakSelf.backspace]) {
                 [weakSelf.textInput deleteBackward];
             } else {
+                if (weakSelf.lowerCaseInsert) k = [k lowercaseString];
                 [weakSelf.textInput insertText:k];
             }
             if (weakSelf.textChanged) weakSelf.textChanged();

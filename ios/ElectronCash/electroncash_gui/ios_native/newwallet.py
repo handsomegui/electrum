@@ -195,6 +195,7 @@ class NewWalletSeed2(NewWalletSeedBase):
             self.kvc.textInput = self.seedtv
             def callback() -> None: self.doSuggestions()
             self.kvc.textChanged = Block(callback)
+            self.kvc.lowerCaseInsert = True
         else:
             utils.NSLog("ERROR: NewWalletSeed2 cannot find the KeyboardVC! FIXME!")
               
@@ -276,7 +277,7 @@ class NewWalletSeed2(NewWalletSeedBase):
                     but = ObjCInstance(but)
                     word = but.titleForState_(UIControlStateNormal)
                     try:
-                        self.seedtv.setText_((' '.join(words[:wordNum]) + (' ' if wordNum else '') + word + ' ').upper())
+                        self.seedtv.setText_((' '.join(words[:wordNum]) + (' ' if wordNum else '') + word + ' ').lower())
                     except:
                         utils.NSLog("Could not set textView: %s",sys.exc_info()[1])
                     self.doSuggestions()
