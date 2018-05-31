@@ -407,15 +407,23 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 @interface NewWalletMenuBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *tit, *blurb;
-@property (nonatomic, weak) IBOutlet UIButton *std, *restore, *import, *master;
+@property (nonatomic, weak) IBOutlet UIButton *std, *restore, *imp, *master;
 - (IBAction) dismiss;
+// default impl does nothing -- implemented in python newwallet.py
+- (IBAction) unimplemented;
+@end
+@interface NewWalletMenu : NewWalletMenuBase
+// implemented in python newwallet.py
 @end
 
-@interface NewWalletMenu1 : NewWalletMenuBase
-// implemented in python newwallet.py
+@interface OnBoardingWizardBase : UIViewController
 @end
-@interface NewWalletMenu2 : NewWalletMenuBase
+
+@interface OnBoardingWizard : OnBoardingWizardBase
+// implemented in python in newwallet.py
+@end
+@interface OnBoardingMenu : NewWalletMenuBase
 // implemented in python newwallet.py
-- (IBAction) unimplemented;
+- (IBAction) onNewStandardWallet;
 @end
 #endif /* ViewsForIB_h */

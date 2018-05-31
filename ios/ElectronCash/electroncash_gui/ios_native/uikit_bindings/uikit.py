@@ -746,3 +746,19 @@ except NameError as e:
 CIColor = ObjCClass('CIColor') # be careful using CIColor -- it has been known to not work due to iOS bugs
 
 UIStoryboard = ObjCClass('UIStoryboard')
+UIPageViewController = ObjCClass('UIPageViewController')
+#typedef NS_ENUM(NSInteger, UIPageViewControllerNavigationOrientation) {
+UIPageViewControllerNavigationOrientationHorizontal = 0
+UIPageViewControllerNavigationOrientationVertical = 1
+#typedef NS_ENUM(NSInteger, UIPageViewControllerSpineLocation) { // Only pertains to 'UIPageViewControllerTransitionStylePageCurl'.
+UIPageViewControllerSpineLocationNone = 0 #, // Returned if 'spineLocation' is queried when 'transitionStyle' is not 'UIPageViewControllerTransitionStylePageCurl'.
+UIPageViewControllerSpineLocationMin = 1  #,  // Requires one view controller.
+UIPageViewControllerSpineLocationMid = 2  #,  // Requires two view controllers.
+UIPageViewControllerSpineLocationMax = 3  # // Requires one view controller.
+#typedef NS_ENUM(NSInteger, UIPageViewControllerNavigationDirection) { // For 'UIPageViewControllerNavigationOrientationHorizontal', 'forward' is right-to-left, like pages in a book. For 'UIPageViewControllerNavigationOrientationVertical', bottom-to-top, like pages in a wall calendar.
+UIPageViewControllerNavigationDirectionForward = 0
+UIPageViewControllerNavigationDirectionReverse = 1
+#typedef NS_ENUM(NSInteger, UIPageViewControllerTransitionStyle) {
+UIPageViewControllerTransitionStylePageCurl = 0 #, // Navigate between views via a page curl transition.
+UIPageViewControllerTransitionStyleScroll = 1   #// Navigate between views by scrolling.
+

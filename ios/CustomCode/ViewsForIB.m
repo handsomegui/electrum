@@ -357,9 +357,16 @@
 - (void) viewDidLoad {
     self.std.layer.borderColor = self.std.backgroundColor.CGColor;
     self.restore.layer.borderColor = UIColor.whiteColor.CGColor;
-    self.import.layer.borderColor = UIColor.whiteColor.CGColor;
+    self.imp.layer.borderColor = UIColor.whiteColor.CGColor;
     self.master.layer.borderColor = UIColor.whiteColor.CGColor;
 }
 - (IBAction) dismiss { [self.presentingViewController dismissViewControllerAnimated:YES completion:nil]; }
+- (IBAction) unimplemented { NSLog(@"UNIMPLEMENTED CALLED"); }
+@end
+
+@implementation OnBoardingWizardBase
+- (UIInterfaceOrientationMask) supportedInterfaceOrientations { return UIInterfaceOrientationMaskPortrait; }
+- (UIInterfaceOrientation) preferredInterfaceOrientationForPresentation { return UIInterfaceOrientationPortrait; }
+- (BOOL) shouldAutorotate { return NO; }
 @end
 

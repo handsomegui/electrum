@@ -48,6 +48,7 @@ from . import network_dialog
 from . import coins
 from . import contacts
 from . import wallets
+from . import newwallet  # Do not remove -- needed to declare NewWalletVC to ObjC runtime  (used by storyboard instantiation)
 from .custom_objc import *
 
 from electroncash.i18n import _, set_language, languages
@@ -270,9 +271,7 @@ class ElectrumGui(PrintError):
         
         # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
         utils.call_later(1.0, lambda: self.refresh_all())
-                            
-        return True
-
+          
     
     def register_network_callbacks(self):
         # network callbacks

@@ -7,6 +7,21 @@ from .uikit_bindings import *
 from .custom_objc import *
 import sys
 
+def PresentAddWalletWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
+    if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
+    sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+    if not sb:
+        utils.NSLog("ERROR: SB IS NULL")
+        return None
+    nav = sb.instantiateViewControllerWithIdentifier_("Add_A_Wallet")
+    #nav = sb.instantiateViewControllerWithIdentifier_("TESTIE")
+    if nav:
+        if not dontPresentJustReturnIt:
+            vc.presentViewController_animated_completion_(nav, animated, completion)
+    else:
+        utils.NSLog("ERROR: Could not find the storyboard viewcontroller named 'Add_A_Wallet'!")
+    return nav
+
 
 class NewWalletVC(NewWalletVCBase):
     origPlaceholders = objc_property()
@@ -378,18 +393,15 @@ class NewWalletSeed2(NewWalletSeedBase):
         # TODO: stuff
         print("params=",_Params(self))
 
-class NewWalletMenu1(NewWalletMenuBase):
-    @objc_method
-    def viewDidLoad(self) -> None:
-        send_super(__class__, self, 'viewDidLoad')
-        pass
 
-class NewWalletMenu2(NewWalletMenuBase):
+class NewWalletMenu(NewWalletMenuBase):
     lineHider = objc_property()
+    noCancelBut = objc_property()
     
     @objc_method
     def dealloc(self) -> None:
         self.lineHider = None
+        self.noCancelBut = None
         send_super(__class__, self, 'dealloc')
         
     @objc_method
@@ -399,6 +411,9 @@ class NewWalletMenu2(NewWalletMenuBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        if self.noCancelBut:
+            self.navigationItem.leftBarButtonItem = None
+            self.noCancelBut = None
         navBar = self.navigationController.navigationBar if self.navigationController else None
         if navBar:
             f = navBar.frame
@@ -457,3 +472,117 @@ _notification_token = NSNotificationCenter.defaultCenter.addObserverForName_obje
     None,
     Block(_lowMemory)
 ).retain()
+
+
+#####
+# On-Boarding Wizard that comes up on first run when no wallets are present
+#####
+def PresentOnBoardingWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
+    if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
+    sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+    if not sb:
+        utils.NSLog("ERROR: SB IS NULL")
+        return None
+    wiz = sb.instantiateViewControllerWithIdentifier_("On_Boarding")
+    if wiz:
+        if not dontPresentJustReturnIt:
+            vc.presentViewController_animated_completion_(wiz, animated, completion)
+    else:
+        utils.NSLog("ERROR: Could not find the storyboard viewcontroller named 'On_Boarding'!")
+    return wiz
+
+class OnBoardingWizard(OnBoardingWizardBase):
+    ''' On-Boarding Wizard that comes up on first run when no wallets are present'''
+    pvc = objc_property()
+    vcs = objc_property()
+
+
+    @objc_method
+    def dealloc(self) -> None:
+        self.pvc = None
+        self.vcs = None
+        send_super(__class__, self, 'dealloc')
+        
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        vcs = self.childViewControllers
+        for vc in vcs:
+            if isinstance(vc, UIPageViewController):
+                self.pvc = vc
+        if self.pvc:
+            self.pvc.dataSource = self
+            sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+            if not sb:
+                utils.NSLog("ERROR: SB IS NULL")
+                return
+            vcs = [ sb.instantiateViewControllerWithIdentifier_("On_Boarding_%d" % i) for i in range(1,4) ]
+            vcs.append( sb.instantiateViewControllerWithIdentifier_("On_Boarding_Menu") )
+            if not vcs or None in vcs:
+                utils.NSLog("ERROR: Could not find a requisite viewcontroller in %s viewDidLoag method!",str(__class__))
+                return
+            self.vcs = ns_from_py(vcs)
+            self.pvc.setViewControllers_direction_animated_completion_(NSArray.arrayWithObject_(vcs[0]),UIPageViewControllerNavigationDirectionForward,False,None)
+        else:
+            utils.NSLog("ERROR: Could not find the UIPageViewController in the %s viewDidLoad method!",str(__class__))
+
+    @objc_method
+    def preferredStatusBarStyle(self) -> int:
+        return UIStatusBarStyleLightContent
+    
+    @objc_method
+    def presentationCountForPageViewController_(self, pvc) -> int:
+        return len(self.vcs) if self.vcs else 0
+
+    @objc_method
+    def presentationIndexForPageViewController_(self, pvc) -> int:
+        return 0
+    
+    @objc_method
+    def pageViewController_viewControllerBeforeViewController_(self, pvc, vc) -> ObjCInstance:
+        b4 = None
+        vcs = py_from_ns(self.vcs)
+        for i,v in enumerate(vcs):
+            if v == vc and i > 0:
+                b4 = vcs[i-1]
+        return b4
+            
+    
+    @objc_method
+    def pageViewController_viewControllerAfterViewController_(self, pvc, vc) -> ObjCInstance:
+        aft = None
+        vcs = py_from_ns(self.vcs)
+        for i,v in enumerate(vcs):
+            if v == vc and i+1 < len(vcs):
+                aft = vcs[i+1]
+        return aft
+
+class OnBoardingMenu(NewWalletMenuBase):
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        pass
+    @objc_method
+    def unimplemented(self) -> None:
+        gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
+
+    @objc_method
+    def onNewStandardWallet(self) -> None:
+        vc = PresentAddWalletWizard(dontPresentJustReturnIt = True)
+        # hacky mechanism to get to the second viewcontroller in this storyboard.. it works but isn't 100% pretty
+        if isinstance(vc, UINavigationController) and vc.viewControllers and isinstance(vc.viewControllers[0], NewWalletMenu):
+            menu = vc.viewControllers[0]
+            menu.noCancelBut = True
+            _SetParam(menu, 'is_onboarding_wizard', True)
+            sb = UIStoryboard.storyboardWithName_bundle_('NewWallet', None)
+            if sb:
+                vc2 = sb.instantiateViewControllerWithIdentifier_("NewStandardWallet") #NB: If you rename it in storyboard be SURE to update this!
+                if vc2:
+                    vc.pushViewController_animated_(vc2, False)
+                    pvc = self.presentingViewController
+                    if pvc:
+                        pvc.dismissViewControllerAnimated_completion_(True, None)
+                        pvc.presentViewController_animated_completion_(vc, True, None)
+                        return
+        # If this is reached, means the above failed
+        gui.ElectrumGui.gui.show_error(title = "Oops!", message = "Something went wrong! Please email the developers!")
