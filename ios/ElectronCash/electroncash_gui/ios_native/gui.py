@@ -1144,6 +1144,8 @@ class ElectrumGui(PrintError):
                 storage = WalletStorage(path, manual_upgrades=True)
                 encrypt = True # hard-coded for now -- TODO: put a boolean switch for this in the GUI!
                 storage.set_password(wallet_pass, encrypt)
+                if k.may_have_password():
+                    k.update_password(None, wallet_pass)
                 storage.put('seed_type', seed_type)
                 keys = k.dump()
                 storage.put('keystore', keys)
@@ -1283,8 +1285,7 @@ class ElectrumGui(PrintError):
     @staticmethod
     def prompt_password(prmpt = None, dummy=0):
         if ElectrumGui.gui:
-            pw = password_dialog.prompt_password_local_runloop(vc=ElectrumGui.gui.get_presented_viewcontroller(),
-                                                                prompt=prmpt)
+            pw = password_dialog.prompt_password_local_runloop(vc=ElectrumGui.gui.get_presented_viewcontroller(), prompt=prmpt)
             return pw
     
     def password_dialog(self, msg = None) -> str:
@@ -1293,6 +1294,7 @@ class ElectrumGui(PrintError):
     def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, wallet = None) -> ObjCInstance:
         if wallet is None: wallet = self.wallet
         if wallet is None: return None
+        if vc is None: vc = self.get_presented_viewcontroller()
         if not wallet.has_password():
             callBack(None)
             return
@@ -1303,8 +1305,8 @@ class ElectrumGui(PrintError):
                 wallet.check_password(pw)
                 callBack(pw)
             except Exception as e:
-                self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack, prompt, title))
-        return password_dialog.prompt_password_asynch(vc if vc else self.get_presented_viewcontroller(), cb, prompt, title)
+                self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc, wallet=wallet))
+        return password_dialog.prompt_password_asynch(vc, cb, prompt, title)
 
     def generate_wallet(self, path):
         with open(path, "wb") as fdesc:
