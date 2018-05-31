@@ -92,7 +92,7 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
     view.setNeedsDisplay()
 
 def pathsafeify(s : str) -> str:
-    return s.translate({ord(i):None for i in ':/.\\'}).strip()
+    return s.translate({ord(i):None for i in ':/.\$#@[]}{*?'}).strip()
 
 # new color schem from Max
 _ColorScheme = {

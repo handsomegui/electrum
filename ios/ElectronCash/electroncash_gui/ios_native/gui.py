@@ -1235,7 +1235,7 @@ class ElectrumGui(PrintError):
                     password_dialog.prompt_password_asynch(vc=waitDlg, onOk=onOk, prompt=prompt, title=title, onCancel=myOnCancel)
             def promptPwLater() -> None:
                 utils.call_later(0.2, promptPW)
-            waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:20] + "...", completion = promptPwLater)
+            waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:25] + "...", completion = promptPwLater)
         else:
             DoSwicheroo()
        

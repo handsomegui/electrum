@@ -60,6 +60,12 @@ class NewWalletVC(NewWalletVCBase):
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         self.translateUI()
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        self.view.endEditing_(True)
+
     
     @objc_method
     def textFieldShouldReturn_(self, tf) -> bool:
@@ -69,7 +75,7 @@ class NewWalletVC(NewWalletVCBase):
     @objc_method
     def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
         if tf.ptr == self.walletName.ptr:
-            tf.text = utils.pathsafeify(tf.text)
+            tf.text = utils.pathsafeify(tf.text)[:30]
         utils.uitf_redo_attrs(tf)
 
     @objc_method
