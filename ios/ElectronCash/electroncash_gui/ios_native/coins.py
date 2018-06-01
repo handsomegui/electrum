@@ -202,6 +202,7 @@ class CoinsTableVC(UITableViewController):
     selected = objc_property() # NSArray of entry.name strings
     clearBut = objc_property()
     spendBut = objc_property()
+    noCoins = objc_property()
 
     @objc_method
     def initWithStyle_(self, style : int) -> ObjCInstance:
@@ -234,6 +235,7 @@ class CoinsTableVC(UITableViewController):
         self.selected = None
         self.clearBut = None
         self.spendBut = None
+        self.noCoins = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
@@ -241,11 +243,18 @@ class CoinsTableVC(UITableViewController):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("Misc", None, None)
+        for o in objs:
+            if o.tag == 6000:
+                self.noCoins = o
+                lbl = self.noCoins.viewWithTag_(6061)
+                if lbl: lbl.attributedText = utils.ats_replace_font(lbl.attributedText, UIFont.italicSystemFontOfSize_(14.0))
+                break
         nib = UINib.nibWithNibName_bundle_(_CellIdentifier[0], None)
         self.tableView.registerNib_forCellReuseIdentifier_(nib, _CellIdentifier[0])
         self.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
         self.refresh()
-        
+     
     @objc_method
     def viewWillDisappear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
@@ -257,12 +266,25 @@ class CoinsTableVC(UITableViewController):
 
     @objc_method
     def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
+        num = 0
         try:
             coins = _Get(self)
-            return len(coins) if coins else 1
+            num = len(coins) if coins else 0
         except:
             print("Error, exception retrieving coins from nspy cache")
-            return 0
+        self.showHideNoCoins_(num > 0)    
+        return num
+    
+    @objc_method
+    def showHideNoCoins_(self, hide : bool) -> None:
+        if not self.noCoins: return
+        if hide:
+            self.noCoins.removeFromSuperview()
+        else:
+            self.noCoins.removeFromSuperview()
+            self.view.addSubview_(self.noCoins)
+            utils.layout_peg_view_to_superview(self.noCoins)
+
 
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):

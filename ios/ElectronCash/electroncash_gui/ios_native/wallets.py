@@ -69,6 +69,13 @@ class WalletsVC(WalletsVCBase):
         gui.ElectrumGui.gui.sigHistory.connect(lambda: self.refresh(), self)
         gui.ElectrumGui.gui.sigRequests.connect(lambda: self.refresh(), self)
         gui.ElectrumGui.gui.sigWallets.connect(lambda: self.refresh(), self)
+        
+        noViews = [ self.noTXsView, self.noReqsView ]
+        font = UIFont.italicSystemFontOfSize_(14.0)
+        for v in noViews:
+            # mogrify the fonts on the "no tx's" and "no reqs" views to italic since IB sucks.
+            lbl = v.viewWithTag_(4041)
+            if isinstance(lbl, UILabel): lbl.attributedText = utils.ats_replace_font(lbl.attributedText, font)
     
     @objc_method
     def refresh(self) -> None:

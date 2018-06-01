@@ -792,6 +792,8 @@
                         <userDefinedRuntimeAttribute type="boolean" keyPath="lowerCase" value="NO"/>
                         <userDefinedRuntimeAttribute type="boolean" keyPath="blockSelecting" value="YES"/>
                         <userDefinedRuntimeAttribute type="boolean" keyPath="blockPasting" value="YES"/>
+                        <userDefinedRuntimeAttribute type="boolean" keyPath="disabledKeysStillAcceptTouches" value="YES"/>
+                        <userDefinedRuntimeAttribute type="boolean" keyPath="lowerCaseInsert" value="YES"/>
                     </userDefinedRuntimeAttributes>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="bKp-eh-xbR" userLabel="First Responder" sceneMemberID="firstResponder"/>

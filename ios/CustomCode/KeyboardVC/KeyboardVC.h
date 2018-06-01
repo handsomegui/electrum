@@ -22,6 +22,7 @@
 @property (nonatomic) BOOL blockSelecting; ///< defaults to YES. IFF yes and this is the delegate of the TextView/TextField, attempt to selecting of text.
 @property (nonatomic) BOOL lowerCase; ///< defaults to NO. If YES, will use lowercase letters on the keyboard
 @property (nonatomic) BOOL lowerCaseInsert; ///< defaults to NO. If YES, will use lowercase letters on insertText call regardless of what the keyboard says
+@property (nonatomic) BOOL disabledKeysStillAcceptTouches; ///< defaults to NO. If YES, disabled keys will be ghosted out but will still accept touches.
 #pragma mark Main Usage Mechanisms
 
 @property (nonatomic, copy) void(^textChanged)(void); ///< attach to this to receive notification when the textView has changed due to key insertions/deletions.

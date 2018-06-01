@@ -136,6 +136,13 @@ def tintify(t : ObjCInstance) -> ObjCInstance:
     t.navigationBar.barStyle = UIBarStyleBlack
     return t
 
+def ats_replace_font(ats : NSAttributedString, font: UIFont) -> NSMutableAttributedString:
+    out = NSMutableAttributedString.alloc().initWithAttributedString_(ats)
+    r = NSRange(0, out.length())
+    out.removeAttribute_range_(NSFontAttributeName, r)
+    out.addAttribute_value_range_(NSFontAttributeName, font, r)
+    return out
+
 def uitf_redo_attrs(tf : ObjCInstance) -> None:
     weight = UIFontWeightMedium if tf.tag == 1 else UIFontWeightRegular
     # TESTING ATTRIBUTED STRING STUFF..
@@ -368,7 +375,7 @@ def show_timed_alert(vc : ObjCInstance, title : str, message : str,
         call_later(timeout, dismisser)
     alert=show_alert(vc=vc, title=title, message=message, actions=[], style=style, completion=completionFunc)
     return alert
-# Useful for shoing a single UITextField for user input of data
+# Useful for showing an alert with a single UITextField for user input of data
 def show_tf_alert(vc : ObjCInstance, title : str, message : str,
                   completion : Callable[[],None] = None, placeholder : str = "Tap to input", text : str = "",
                   adjustsFontSizeToFitWidth = True, minimumFontSize = 9.0, clearButtonAlwaysVisible = True,
@@ -1207,6 +1214,23 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
         #ps.lineBreakMode = NSLineBreakByWordWrapping
         #ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
     return ats
+###
+# Layout constraint stuff.. programatically
+##
+def layout_peg_view_to_superview(view : UIView) -> None:
+    if not view.superview():
+        NSLog("Warning: layout_peg_view_to_superview -- passed-in view lacks a superview!")
+        return
+    sv = view.superview()
+    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+        sv, NSLayoutAttributeCenterX, NSLayoutRelationEqual, view, NSLayoutAttributeCenterX, 1.0, 0.0 ))
+    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+        sv, NSLayoutAttributeCenterY, NSLayoutRelationEqual, view, NSLayoutAttributeCenterY, 1.0, 0.0 ))
+    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+        sv, NSLayoutAttributeHeight, NSLayoutRelationEqual, view, NSLayoutAttributeHeight, 1.0, 0.0 ))
+    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+        sv, NSLayoutAttributeWidth, NSLayoutRelationEqual, view, NSLayoutAttributeWidth, 1.0, 0.0 ))
+    
 ###############################################################################
 # Facility to register python callbacks for when the keyboard is shown/hidden #
 ###############################################################################

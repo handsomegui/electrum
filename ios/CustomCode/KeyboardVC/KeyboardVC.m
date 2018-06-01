@@ -7,7 +7,7 @@
 //
 
 #import "KeyboardVC.h"
-#import "UIKitExtras.h"
+#import "../UIKitExtras.h"
 #import "CYRKeyboardButton/CYRKeyboardButton.h"
 
 @interface FakeInputView()
@@ -191,12 +191,22 @@
 }
 
 - (BOOL) isKeyDisabled:(NSString *)key {
-    return !_keyDict[key].userInteractionEnabled;
+    return _keyDict[key].alpha < 0.66; // we have to check on alpha as we now support user interaction on pseudo-disabled keys
 }
 
 - (void) setKey:(NSString *)key disabled:(BOOL)disabled {
-    _keyDict[key].userInteractionEnabled = !disabled;
+    _keyDict[key].userInteractionEnabled = !disabled || _disabledKeysStillAcceptTouches;
     _keyDict[key].alpha = disabled ? 0.4 : 1.0;
+}
+
+- (void) setDisabledKeysStillAcceptTouches:(BOOL)b {
+    if (!!b == !!_disabledKeysStillAcceptTouches) return;
+    _disabledKeysStillAcceptTouches = b;
+    NSArray<NSString *> *ak = self.allKeys;
+    for (NSString *k in ak) {
+        // redo it now that we got a new value
+        [self setKey:k disabled:[self isKeyDisabled:k]];
+    }
 }
 
 - (void) setKey:(NSString *)key enabled:(BOOL)enabled {
