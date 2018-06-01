@@ -612,7 +612,7 @@ class RestoreWallet1(NewWalletSeed2):
                 from electroncash.bitcoin import xpub_type
                 t1 = xpub_type(k.xpub)
                 if t1 not in ['standard']:
-                    gui.ElectrumGui.gui.show_error(message = _('Wrong key type') + ' %s'%t1, vc=self)
+                    gui.ElectrumGui.gui.show_error(message = _('Wrong key type') + ": '%s'"%t1, vc=self)
                     return False
             keystores = _Params(self).get('keystores', list())
             keystores.append(k)
