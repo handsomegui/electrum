@@ -244,12 +244,12 @@ class CoinsTableVC(UITableViewController):
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("Misc", None, None)
-        for o in objs:
-            if o.tag == 6000:
-                self.noCoins = o
-                lbl = self.noCoins.viewWithTag_(6061)
-                if lbl: lbl.attributedText = utils.ats_replace_font(lbl.attributedText, UIFont.italicSystemFontOfSize_(14.0))
-                break
+        objs = tuple(filter(lambda x: isinstance(x, UIView) and x.tag==6000, objs)) if objs else None
+        if objs:
+            self.noCoins = objs[0]
+            lbl = self.noCoins.viewWithTag_(6061)
+            if lbl: lbl.attributedText = utils.ats_replace_font(lbl.attributedText, UIFont.italicSystemFontOfSize_(14.0))
+        else: NSLog("WARNING: Could not find the 'no coins' view in Misc.xib!")
         nib = UINib.nibWithNibName_bundle_(_CellIdentifier[0], None)
         self.tableView.registerNib_forCellReuseIdentifier_(nib, _CellIdentifier[0])
         self.refreshControl = gui.ElectrumGui.gui.helper.createAndBindRefreshControl()
