@@ -1444,7 +1444,7 @@
                                             </userDefinedRuntimeAttribute>
                                         </userDefinedRuntimeAttributes>
                                         <connections>
-                                            <action selector="onNext" destination="h0e-sN-UT0" eventType="primaryActionTriggered" id="6G7-V6-YJ2"/>
+                                            <action selector="onRestoreModeSave" destination="h0e-sN-UT0" eventType="primaryActionTriggered" id="GJG-SX-gz0"/>
                                         </connections>
                                     </button>
                                     <view hidden="YES" userInteractionEnabled="NO" contentMode="scaleToFill" verticalHuggingPriority="1000" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="L5S-yf-62j">

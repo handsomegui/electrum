@@ -28,6 +28,7 @@
 
 @property (nonatomic, copy) void (^didBeginEditing)(void);
 @property (nonatomic, copy) void (^didEndEditing)(NSString *newText);
+@property (nonatomic, copy) void (^didChange)(void);
 
 @end
 

@@ -290,6 +290,7 @@ class ElectrumGui(PrintError):
         # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
         utils.call_later(1.0, lambda: self.refresh_all())
 
+
     def register_network_callbacks(self):
         # network callbacks
         if self.daemon.network:
@@ -1121,12 +1122,17 @@ class ElectrumGui(PrintError):
     def check_wallet_exists(self, wallet_filename : str) -> bool:
         return wallets.WalletsMgr.check_wallet_exists(wallet_filename)
     
-    def generate_new_standard_wallet(self, wallet_name : str, wallet_pass : str, wallet_seed : str,
-                                     onSuccess = None, # signature: fun()
-                                     onFailure = None, # signature: fun(errMsg)
-                                     vc = None) -> None:
+    # supports only standard wallets for now...
+    def generate_new_wallet(self, wallet_name : str, wallet_pass : str, wallet_seed : str,
+                            seed_ext : str = '',
+                            seed_type : str = 'standard',
+                            have_keystore : object = None, # not required but if we already have generated a keystore, will use this and ignore wallet_seed param
+                            onSuccess = None, # signature: fun()
+                            onFailure = None, # signature: fun(errMsg)
+                            encrypt : bool = True,
+                            vc : UIViewController = None) -> None:
         if not onSuccess: onSuccess = lambda: None
-        if not onFailure: onFailure = lambda: None
+        if not onFailure: onFailure = lambda x: None
         if not vc: vc = self.get_presented_viewcontroller()
         if self.check_wallet_exists(wallet_name):
             onFailure("A wallet with the same name already exists")
@@ -1141,25 +1147,28 @@ class ElectrumGui(PrintError):
                 if waitDlg:
                     waitDlg.dismissViewControllerAnimated_completion_(animated, compl)
                     waitDlg = None
+                elif compl:
+                    compl()
                     
             try:
                 from electroncash import keystore
                 from electroncash.wallet import Standard_Wallet
-                
-                seed_type = 'standard'
-                k = keystore.from_seed(wallet_seed, '', False)
-                has_xpub = isinstance(k, keystore.Xpub)
-                if has_xpub:
-                    from electroncash.bitcoin import xpub_type
-                    t1 = xpub_type(k.xpub)
-                if has_xpub and t1 not in ['standard']:
-                    doDismiss(animated = False)
-                    onFailure(_('Wrong key type') + ' %s'%t1)
-                    return
+
+                k = have_keystore
+
+                if not k:
+                    k = keystore.from_seed(wallet_seed, seed_ext, False)
+                    has_xpub = isinstance(k, keystore.Xpub)
+                    if has_xpub:
+                        from electroncash.bitcoin import xpub_type
+                        t1 = xpub_type(k.xpub)
+                    if has_xpub and t1 not in ['standard']:
+                        def compl() -> None: onFailure(_('Wrong key type') + ": '%s'"%t1)
+                        doDismiss(animated = False, compl = compl)
+                        return
     
                 path = os.path.join(wallets.WalletsMgr.wallets_dir(), wallet_name)
                 storage = WalletStorage(path, manual_upgrades=True)
-                encrypt = True # hard-coded for now -- TODO: put a boolean switch for this in the GUI!
                 storage.set_password(wallet_pass, encrypt)
                 if k.may_have_password():
                     k.update_password(None, wallet_pass)
@@ -1169,13 +1178,16 @@ class ElectrumGui(PrintError):
                 wallet = Standard_Wallet(storage)
                 wallet.synchronize()
                 wallet.storage.write()
+                self.refresh_components('wallets')
                 def myOnSuccess() -> None: onSuccess()
                 doDismiss(animated = True, compl = myOnSuccess)
                     
             except:
-                doDismiss(animated = False)
-                onFailure(str(sys.exc_info()[1]))
-            
+                einfo = str(sys.exc_info()[1])
+                def myCompl() -> None:
+                    onFailure(einfo)
+                utils.NSLog("Generate wallet failure: %s", einfo)
+                doDismiss(animated = False, compl = myCompl)
             
 
         waitDlg = utils.show_please_wait(vc = vc, message = _("Generating your addresses..."), completion = DoIt)

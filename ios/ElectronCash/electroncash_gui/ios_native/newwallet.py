@@ -109,7 +109,6 @@ class NewWalletVC(NewWalletVCBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
-        _SetParams(self, dict()) # clear any params that may be present if they were forward then back again as they may pick a different path down the wizard tree
         self.translateUI()
 
     @objc_method
@@ -166,7 +165,7 @@ class NewWalletVC(NewWalletVCBase):
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # pass along wallet name, password, etc..
         self.saveVars()
-
+        
 class NewWalletSeed1(NewWalletSeedBase):
     origLabelTxts = objc_property()
     seed = objc_property()
@@ -445,18 +444,20 @@ class NewWalletSeed2(NewWalletSeedBase):
 
         def openNew() -> None:
             parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
-                                  onFailure=onFailure, onCancel=doDismiss)
+                                  onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(self) else None)
         def onSuccess() -> None:
             self.isDone = True
-            parent.refresh_components('wallets')
-            parent.show_message(vc=self, title=_('New Wallet Created'),
-                                message = _('Your new standard wallet has been successfully created. Would you like to switch to it now?'),
-                                hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
-                                onOk = openNew, onCancel = doDismiss)
+            if not _IsOnBoarding(self):
+                parent.show_message(vc=self, title=_('New Wallet Created'),
+                                    message = _('Your new standard wallet has been successfully created. Would you like to switch to it now?'),
+                                    hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
+                                    onOk = openNew, onCancel = doDismiss)
+            else:
+                openNew()
         def onFailure(err : str) -> None:
             parent.show_error(vc=self, message = str(err))
             
-        parent.generate_new_standard_wallet(
+        parent.generate_new_wallet(
             vc = self,
             wallet_name = wallet_name,
             wallet_pass = wallet_pass,
@@ -505,6 +506,10 @@ class RestoreWallet1(NewWalletSeed2):
                 self.view.endEditing_(True)
                 self.tvdel = ECTextViewDelegate.new().autorelease()
                 self.tvdel.tv = self.seedtv
+                def undoErrMsgs() -> None:
+                    self.errMsgView.setHidden_(True)
+                    self.infoView.setHidden_(False)
+                self.tvdel.didChange = undoErrMsgs
                 utils.call_later(0.2, lambda:self.seedtv.becomeFirstResponder())
         self.bip39.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered,onBip39)
         send_super(__class__, self, 'viewDidLoad')
@@ -531,6 +536,14 @@ class RestoreWallet1(NewWalletSeed2):
     def onNext(self) -> None:
         import electroncash.bitcoin as bitcoin 
         seed = ' '.join(self.seedtv.text.strip().lower().split())
+        
+        if not bitcoin.is_seed(seed):
+            err = _('The seed you entered does not appear to be a valid wallet seed.')
+            utils.uilabel_replace_attributed_text(self.errMsg, err, font=UIFont.italicSystemFontOfSize_(14.0))
+            self.errMsgView.setHidden_(False)
+            self.infoView.setHidden_(True)
+            return
+
         seedext = self.seedExt.text.strip().lower() if self.seedExt.text else ''
         is_bip39 = self.bip39.isOn()
         seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
@@ -570,10 +583,10 @@ class RestoreWallet1(NewWalletSeed2):
                 if not derOk:
                     ToErrIsHuman(title = _('Derivation Invalid'), message = _('It appears the derivation you specified is invalid. Please try again'), onOk=lambda:self.onNext())
                     return
-                if self.doBip44(seed, seedext, der):
+                if self.doBip44Keystore(seed, seedext, der):
                     PushIt()
                 else:
-                    ToErrIsHuman()
+                    ToErrIsHuman() # NB: we may already have an alert up from called code above, in which case this is a no-op (hacky but works!)
             def makeTf(tfo : objc_id) -> None:
                 nonlocal tf
                 tf = ObjCInstance(tfo).retain()
@@ -593,42 +606,108 @@ class RestoreWallet1(NewWalletSeed2):
                uiTextFieldHandlers = [makeTf] )
         elif seed_type == 'old':
             print("old seed type")
-            # do old stuff
+            if self.doStandardKeystore(seed, ''):
+                PushIt()
+            else:
+                ToErrIsHuman() # NB: we may already have an alert up from called code above, in which case this is a no-op (hacky but works!)
+
         elif seed_type == 'standard':
             print("standard seed type")
-            # do standard stuff
+            if self.doStandardKeystore(seed, seedext):
+                PushIt()
+            else:
+                ToErrIsHuman() # NB: we may already have an alert up from called code above, in which case this is a no-op (hacky but works!)
         else:
             ToErrIsHuman()
             return
 
     @objc_method
-    def doBip44(self, seed, passphrase, derivation) -> bool:
+    def doBip44Keystore(self, seed, passphrase, derivation) -> bool:
         import electroncash.keystore as keystore
         seed, passphrase, derivation = py_from_ns(seed), py_from_ns(passphrase), py_from_ns(derivation)
         try:
             k = keystore.from_bip39_seed(seed, passphrase, derivation)
-            has_xpub = isinstance(k, keystore.Xpub)
-            if has_xpub:
-                from electroncash.bitcoin import xpub_type
-                t1 = xpub_type(k.xpub)
-                if t1 not in ['standard']:
-                    gui.ElectrumGui.gui.show_error(message = _('Wrong key type') + ": '%s'"%t1, vc=self)
-                    return False
-            keystores = _Params(self).get('keystores', list())
-            keystores.append(k)
-            _SetParam(self, 'keystores', keystores)
+            return _AddKeystore(self, k)
         except:
-            utils.NSLog("Exception in doBip44: %s",sys.exc_info()[1])
+            utils.NSLog("Exception in doBip44Keystore: %s",sys.exc_info()[1])
+        return False
+    
+    @objc_method
+    def doStandardKeystore(self, seed, passphrase) -> bool:
+        import electroncash.keystore as keystore
+        seed, passphrase = py_from_ns(seed), py_from_ns(passphrase)
+        try:
+            k = keystore.from_seed(seed, passphrase, False)
+            return _AddKeystore(self, k)
+        except:
+            utils.NSLog("Exception in doStandardKeystore: %s",sys.exc_info()[1])
+        return False
+
+def _AddKeystore(vc, k) -> bool:
+    import electroncash.keystore as keystore
+    has_xpub = isinstance(k, keystore.Xpub)
+    if has_xpub:
+        from electroncash.bitcoin import xpub_type
+        t1 = xpub_type(k.xpub)
+        if t1 not in ['standard']:
+            gui.ElectrumGui.gui.show_error(message = _('Wrong key type') + ": '%s'"%t1, vc=vc)
             return False
-        return True
+    keystores = _Params(vc).get('keystores', list())
+    keystores.append(k)
+    _SetParam(vc, 'keystores', keystores)
+    return True
 
 class RestoreWallet2(NewWalletVC):
     
     @objc_method
-    def onNext(self) -> None:
+    def onRestoreModeSave(self) -> None:
+        self.view.endEditing_(True)
         if self.doChkFormOk():
             self.saveVars()
-            # todo.. create wallet, etc...
+            print("params =",_Params(self))
+            parent = gui.ElectrumGui.gui
+            try:
+                # create wallet, etc...
+                wallet_name = _Params(self)['WalletName']
+                wallet_pass = _Params(self)['WalletPass']
+                seed = _Params(self)['seed']
+                keystore = _Params(self)['keystores'][0]
+                seedext = _Params(self)['seedext']
+                is_bip39 = _Params(self)['is_bip39']
+                seed_type = _Params(self)['seed_type']
+
+            except:
+                utils.NSLog("onRestoreModeSave, got exception: %s", str(sys.exc_info()[1]))
+                return
+            
+            def doDismiss() -> None:
+                self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+    
+            def openNew() -> None:
+                parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
+                                      onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(self) else None)
+            def onSuccess() -> None:
+                if _IsOnBoarding(self):
+                    openNew()
+                else:
+                    parent.show_message(vc=self, title=_('Wallet Saved'),
+                                        message = _('Your wallet has been successfully restored. Would you like to switch to it now?'),
+                                        hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open Wallet'),
+                                        onOk = openNew, onCancel = doDismiss)
+
+            def onFailure(err : str) -> None:
+                parent.show_error(vc=self, message = str(err))
+                
+            parent.generate_new_wallet(
+                vc = self,
+                wallet_name = wallet_name,
+                wallet_pass = wallet_pass,
+                wallet_seed = seed,
+                seed_ext = seedext,
+                seed_type = seed_type,
+                have_keystore = keystore,
+                onSuccess = onSuccess,
+                onFailure = onFailure)
 
 
 class NewWalletMenu(NewWalletMenuBase):
@@ -648,6 +727,8 @@ class NewWalletMenu(NewWalletMenuBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        _SetParams(self, dict()) # clear any params that may be present if they were forward then back again as they may pick a different path down the wizard tree
+
         if self.noCancelBut:
             self.navigationItem.leftBarButtonItem = None
             self.noCancelBut = None
@@ -690,6 +771,13 @@ def _SetParam(vc : UIViewController, paramName : str, paramValue : Any) -> None:
     else:
         d[paramName] = paramValue
     _SetParams(vc, d)
+    
+def _IsOnBoarding(vc : UIViewController) -> bool:
+    nav = vc.navigationController
+    if isinstance(nav, NewWalletNav):
+        return nav.onBoardingWizard
+    return False
+    
 
 _mnem = None   
 def _Mnem() -> None:
@@ -812,7 +900,8 @@ class OnBoardingMenu(NewWalletMenuBase):
     def jumpToMenu_(self, vcToPushIdentifier) -> None:
         vc = PresentAddWalletWizard(dontPresentJustReturnIt = True)
         # hacky mechanism to get to the second viewcontroller in this storyboard.. it works but isn't 100% pretty
-        if isinstance(vc, UINavigationController) and vc.viewControllers and isinstance(vc.viewControllers[0], NewWalletMenu):
+        if isinstance(vc, NewWalletNav) and vc.viewControllers and isinstance(vc.viewControllers[0], NewWalletMenu):
+            vc.onBoardingWizard = True # tell the viewcontroller chain that we are on-boarding, so don't ask to open new wallets, just do it
             menu = vc.viewControllers[0]
             menu.noCancelBut = True
             menu.navigationItem.title = _("Get Started")

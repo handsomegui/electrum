@@ -102,6 +102,9 @@
     self.text = _tv.text; // calls doPlaceholdifyIfNeeded
     if (_didEndEditing) _didEndEditing(_text);
 }
+- (void) textViewDidChange:(UITextView *)textView {
+    if (_didChange) _didChange();
+}
 
 - (void) closeKeyboard { [_tv endEditing:YES]; }
 @end

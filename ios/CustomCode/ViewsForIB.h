@@ -369,6 +369,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface NewWalletNavBase : UINavigationController
+@property (nonatomic) BOOL onBoardingWizard;
 @end
 @interface NewWalletNav : NewWalletNavBase
 // implemented in python newwallet.py
@@ -385,7 +386,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 @interface RestoreWallet2 : NewWalletVC
 // implemented in python newwallet.py
-- (IBAction) onNext;
+- (IBAction) onRestoreModeSave;
 @end
 
 @interface NewWalletSeedBase : UIViewController
