@@ -536,8 +536,9 @@ class RestoreWallet1(NewWalletSeed2):
     def onNext(self) -> None:
         import electroncash.bitcoin as bitcoin 
         seed = ' '.join(self.seedtv.text.strip().lower().split())
+        is_bip39 = self.bip39.isOn()
         
-        if not bitcoin.is_seed(seed):
+        if not seed or (not is_bip39 and not bitcoin.is_seed(seed)):
             err = _('The seed you entered does not appear to be a valid wallet seed.')
             utils.uilabel_replace_attributed_text(self.errMsg, err, font=UIFont.italicSystemFontOfSize_(14.0))
             self.errMsgView.setHidden_(False)
@@ -545,7 +546,6 @@ class RestoreWallet1(NewWalletSeed2):
             return
 
         seedext = self.seedExt.text.strip().lower() if self.seedExt.text else ''
-        is_bip39 = self.bip39.isOn()
         seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
         
         def PushIt() -> None:
