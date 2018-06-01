@@ -50,11 +50,13 @@ class NewWalletVC(NewWalletVCBase):
         self.origPS = self.errMsg.attributedText.attribute_atIndex_effectiveRange_(NSParagraphStyleAttributeName, 0, None)
         
         def slideUpButton(rect : CGRect) -> None:
-            # on keyboard show, squeeze the layout (this includes the error message text line spacing)
+            # slide the 'next' button up so it's above the keyboard when the keyboard is shown
             self.nextButBotCS.constant = 5 + rect.size.height
             if utils.is_ipad():
                 self.nextButBotCS.constant = origButConstant + rect.size.height
             else: #if utils.is_iphone()
+                # on iPhone, things get cramped when we do this.. so..
+                # on keyboard show, squeeze the layout (this includes the error message text line spacing)
                 self.nextButBotCS.constant = 5 + rect.size.height
                 self.errHeightCS.constant = origHConstant / 2.0
                 self.errTopCS.constant = 10
