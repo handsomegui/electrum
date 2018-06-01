@@ -104,6 +104,7 @@ class NewWalletVC(NewWalletVCBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        _SetParams(self, dict()) # clear any params that may be present if they were forward then back again as they may pick a different path down the wizard tree
         self.translateUI()
 
     @objc_method
@@ -151,12 +152,15 @@ class NewWalletVC(NewWalletVCBase):
         # check passwords match, wallet name is unique
         return self.doChkFormOk()
         
-    
+    @objc_method
+    def saveVars(self) -> None:
+        _SetParam(self, 'WalletName', self.walletName.text)
+        _SetParam(self, 'WalletPass', self.walletPw2.text)
+        
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # pass along wallet name, password, etc..
-        _SetParam(self, 'WalletName', self.walletName.text)
-        _SetParam(self, 'WalletPass', self.walletPw2.text)
+        self.saveVars()
 
 class NewWalletSeed1(NewWalletSeedBase):
     origLabelTxts = objc_property()
@@ -235,6 +239,7 @@ class NewWalletSeed2(NewWalletSeedBase):
     seedList = objc_property()
     sugButs = objc_property()
     isDone = objc_property()
+    restoreMode = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -244,6 +249,7 @@ class NewWalletSeed2(NewWalletSeedBase):
         self.seedList = None
         self.sugButs = None
         self.isDone = None
+        self.restoreMode = None
         send_super(__class__, self, 'dealloc')
 
     @objc_method
@@ -268,12 +274,17 @@ class NewWalletSeed2(NewWalletSeedBase):
     @objc_method
     def translateUI(self) -> None:
         lbls = [ self.seedTit, self.info ]
+        if self.seedExtTit: lbls.append(self.seedExtTit)
+        if self.bip39Tit: lbls.append(self.bip39Tit)
         if not self.origLabelTxts:
             self.origLabelTxts = { lbl.ptr.value : lbl.text for lbl in lbls }
         d = self.origLabelTxts
         for lbl in lbls:
             if lbl.ptr == self.info.ptr:
-                txt = _('Your seed is important!') + ' ' + _('To make sure that you have properly saved your seed, please retype it here.') + ' ' + _('Use the quick suggestions to save time.')
+                if not self.restoreMode:
+                    txt = _('Your seed is important!') + ' ' + _('To make sure that you have properly saved your seed, please retype it here.') + ' ' + _('Use the quick suggestions to save time.')
+                else:
+                    txt = _('You can restore a wallet that was created by any version of Electron Cash.')
                 #utils.uilabel_replace_attributed_text(lbl, _(d[lbl.ptr.value]), font=UIFont.italicSystemFontOfSize_(14.0))
                 utils.uilabel_replace_attributed_text(lbl, txt, font=UIFont.italicSystemFontOfSize_(14.0))
             else:
@@ -288,7 +299,6 @@ class NewWalletSeed2(NewWalletSeedBase):
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
-        #print("got seed list",*self.seedList)
         self.seedtv.becomeFirstResponder()
  
     @objc_method
@@ -322,11 +332,12 @@ class NewWalletSeed2(NewWalletSeedBase):
         self.sugButs = list()
         
         currActualSeedWord = ''
-        try:
-            currActualSeedWord = self.seedList[wordNum]
-        except:
-            utils.NSLog("Error with seed word: %s",sys.exc_info()[1])
-            currActualSeedWord = 'TOO MANY WORDS!' # this makes sure we continue even though they have too many words.
+        if not self.restoreMode:
+            try:
+                currActualSeedWord = self.seedList[wordNum]
+            except:
+                utils.NSLog("Error with seed word: %s",sys.exc_info()[1])
+                currActualSeedWord = 'TOO MANY WORDS!' # this makes sure we continue even though they have too many words.
         
         #print("currActualSeedWord=",currActualSeedWord)
         
@@ -388,11 +399,12 @@ class NewWalletSeed2(NewWalletSeedBase):
     
     @objc_method
     def shouldPerformSegueWithIdentifier_sender_(self, identifier, sender) -> bool:
-        if identifier == 'EMBEDDED_KVC': return True
+        if identifier in ('EMBEDDED_KVC'): return True
         return False
         
     @objc_method
     def onNext(self) -> None:
+        ''' only calld from IB connections if not in restoreMode! '''
         def doDismiss() -> None:
             self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
 
@@ -444,6 +456,46 @@ class NewWalletSeed2(NewWalletSeedBase):
         # TODO: stuff
         print("params=",_Params(self))
 
+class RestoreWallet1(NewWalletSeed2):
+
+    @objc_method
+    def viewDidLoad(self) -> None:
+        self.restoreMode = True
+        self.seedTit.text = _('Enter your seed phrase') # override the text title to be appropriate to this screen
+        send_super(__class__, self, 'viewDidLoad')
+    
+    @objc_method
+    def textFieldDidBeginEditing_(self, tf) -> None:
+        if tf.ptr.value == self.seedExt.ptr.value:
+            self.kvcContainerView.setHidden_(True)
+    @objc_method
+    def textFieldDidEndEditing_(self, tf) -> None:
+        if tf.ptr.value == self.seedExt.ptr.value:
+            self.kvcContainerView.setHidden_(False)
+    @objc_method
+    def textFieldShouldReturn_(self, tf) -> None:
+        if tf.ptr.value == self.seedExt.ptr.value:
+            tf.resignFirstResponder()
+            utils.call_later(0.2, lambda:self.seedtv.becomeFirstResponder())
+            return True
+        return False
+       
+    @objc_method
+    def onNext(self) -> None:
+        print("ON NEXT...")
+        # TODO verify seed, create wallets, etc here...
+        sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+        vc = sb.instantiateViewControllerWithIdentifier_("RESTORE_SEED_2")
+        self.navigationController.pushViewController_animated_(vc, True)
+
+class RestoreWallet2(NewWalletVC):
+    
+    @objc_method
+    def onNext(self) -> None:
+        if self.doChkFormOk():
+            self.saveVars()
+            # todo.. create wallet, etc...
+
 
 class NewWalletMenu(NewWalletMenuBase):
     lineHider = objc_property()
@@ -487,10 +539,13 @@ class NewWalletMenu(NewWalletMenuBase):
         gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
 
 def _Params(vc : UIViewController) -> dict():
-    return py_from_ns(vc.navigationController.params)
+    nav = vc.navigationController
+    return py_from_ns(nav.params) if isinstance(nav, NewWalletNav) else dict()
 
 def _SetParams(vc : UIViewController, params : dict) -> None:
-    vc.navigationController.params = params
+    nav = vc.navigationController
+    if isinstance(nav, NewWalletNav):
+        nav.params = params
 
 def _SetParam(vc : UIViewController, paramName : str, paramValue : Any) -> None:
     d = _Params(vc)
@@ -618,16 +673,15 @@ class OnBoardingMenu(NewWalletMenuBase):
         gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
 
     @objc_method
-    def onNewStandardWallet(self) -> None:
+    def jumpToMenu_(self, vcToPushIdentifier) -> None:
         vc = PresentAddWalletWizard(dontPresentJustReturnIt = True)
         # hacky mechanism to get to the second viewcontroller in this storyboard.. it works but isn't 100% pretty
         if isinstance(vc, UINavigationController) and vc.viewControllers and isinstance(vc.viewControllers[0], NewWalletMenu):
             menu = vc.viewControllers[0]
             menu.noCancelBut = True
-            _SetParam(menu, 'is_onboarding_wizard', True)
             sb = UIStoryboard.storyboardWithName_bundle_('NewWallet', None)
             if sb:
-                vc2 = sb.instantiateViewControllerWithIdentifier_("NewStandardWallet") #NB: If you rename it in storyboard be SURE to update this!
+                vc2 = sb.instantiateViewControllerWithIdentifier_(vcToPushIdentifier) #NB: If you rename it in storyboard be SURE to update this!
                 if vc2:
                     vc.pushViewController_animated_(vc2, False)
                     pvc = self.presentingViewController
@@ -637,3 +691,11 @@ class OnBoardingMenu(NewWalletMenuBase):
                         return
         # If this is reached, means the above failed
         gui.ElectrumGui.gui.show_error(title = "Oops!", message = "Something went wrong! Please email the developers!")
+
+    @objc_method
+    def onNewStandardWallet(self) -> None:
+        self.jumpToMenu_("NewStandardWallet")
+        
+    @objc_method
+    def onRestoreSeed(self) -> None:
+        self.jumpToMenu_("RESTORE_SEED_1")

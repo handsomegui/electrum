@@ -381,6 +381,10 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface NewWalletVC : NewWalletVCBase
 // implemented in python newwallet.py..
 @end
+@interface RestoreWallet2 : NewWalletVC
+// implemented in python newwallet.py
+- (IBAction) onNext;
+@end
 
 @interface NewWalletSeedBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *seedTit, *info;
@@ -388,11 +392,15 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UIView *infoView;
 @property (nonatomic, weak) IBOutlet UIButton *nextBut;
 
-// below only used in NewWalletSeed2 child class
+// below only used in NewWalletSeed2 and RestoreWallet1 child classes
 @property (nonatomic, weak) IBOutlet KeyboardVC *kvc;
 @property (nonatomic, weak) IBOutlet UIView *kvcContainerView;
 @property (nonatomic, weak) IBOutlet UIView *errMsgView;
 @property (nonatomic, weak) IBOutlet UILabel *errMsg;
+// below only used by RestoreWallet1 child class
+@property (nonatomic, weak) IBOutlet UILabel *seedExtTit, *bip39Tit;
+@property (nonatomic, weak) IBOutlet UITextField *seedExt;
+@property (nonatomic, weak) IBOutlet UISwitch *bip39;
 @end
 @interface NewWalletSeed1 : NewWalletSeedBase
 // implemented in python newwallet.py
@@ -401,9 +409,13 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python newwallet.py
 - (IBAction) onNext;
 @end
+@interface RestoreWallet1 : NewWalletSeed2
+// implemented in python newwallet.py
+@end
 @interface SuggestionButton : UIButton
 + (instancetype) suggestionButtonWithText:(NSString *)text handler:(void(^)(UIControl *))handler;
 @end
+
 
 @interface NewWalletMenuBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *tit, *blurb;
@@ -425,5 +437,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface OnBoardingMenu : NewWalletMenuBase
 // implemented in python newwallet.py
 - (IBAction) onNewStandardWallet;
+- (IBAction) onRestoreSeed;
 @end
+
 #endif /* ViewsForIB_h */
