@@ -338,6 +338,11 @@ UITextFieldViewModeWhileEditing = 1
 UITextFieldViewModeUnlessEditing = 2
 UITextFieldViewModeAlways = 3
 
+UITextAutocapitalizationTypeNone = 0
+UITextAutocapitalizationTypeWords = 1
+UITextAutocapitalizationTypeSentences = 2
+UITextAutocapitalizationTypeAllCharacters = 3
+
 # UITextView.h
 UITextView = ObjCClass('UITextView')
 

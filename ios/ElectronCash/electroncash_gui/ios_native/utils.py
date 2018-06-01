@@ -368,6 +368,42 @@ def show_timed_alert(vc : ObjCInstance, title : str, message : str,
         call_later(timeout, dismisser)
     alert=show_alert(vc=vc, title=title, message=message, actions=[], style=style, completion=completionFunc)
     return alert
+# Useful for shoing a single UITextField for user input of data
+def show_tf_alert(vc : ObjCInstance, title : str, message : str,
+                  completion : Callable[[],None] = None, placeholder : str = "Tap to input", text : str = "",
+                  adjustsFontSizeToFitWidth = True, minimumFontSize = 9.0, clearButtonAlwaysVisible = True,
+                  onOk : Callable[[],str] = None, onCancel : Callable[[],None] = None, animated : bool = True,
+                  secureTextEntry = False, autocapitalizationType = UITextAutocapitalizationTypeNone,
+                  autocorrectionType = UITextAutocorrectionTypeNo, spellCheckingType = UITextSpellCheckingTypeNo) -> ObjCInstance:
+    tf = None
+    def SetupTF(tfo : objc_id) -> None:
+        nonlocal tf
+        tf = ObjCInstance(tfo).retain() # need to retain it because it will get released when dialog goes away, but we want its data in MyOnOk below..
+        tf.placeholder = placeholder if placeholder else ''
+        tf.adjustsFontSizeToFitWidth = adjustsFontSizeToFitWidth
+        tf.minimumFontSize = minimumFontSize
+        tf.clearButtonMode = UITextFieldViewModeAlways if clearButtonAlwaysVisible else UITextFieldViewModeWhileEditing
+        tf.secureTextEntry = secureTextEntry
+        tf.autocapitalizationType = autocapitalizationType
+        tf.autocorrectionType = autocorrectionType
+        tf.spellCheckingType = spellCheckingType
+        tf.text = text if text else ''
+    def MyOnCancel() -> None:
+        nonlocal tf
+        tf.release()
+        tf = None
+        if callable(onCancel):
+            onCancel()
+    def MyOnOk() -> None:
+        nonlocal tf
+        userInput = tf.text
+        tf.release()
+        tf = None
+        if callable(onOk):
+            onOk(userInput)
+
+    return show_alert(vc = vc, title = title, message = message, completion = completion, cancel = _('Cancel'), animated = animated,
+                      uiTextFieldHandlers = [ SetupTF ], actions = [ [ _('OK'), MyOnOk ], [ _('Cancel'), MyOnCancel ] ])
 
 ###################################################
 ### Calling callables later or from the main thread

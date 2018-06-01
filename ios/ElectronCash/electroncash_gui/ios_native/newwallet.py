@@ -568,18 +568,10 @@ class RestoreWallet1(NewWalletSeed2):
             from electroncash.keystore import bip44_derivation, bip44_derivation_145
             default_derivation = bip44_derivation_145(0)
             test=bitcoin.is_bip32_derivation
-            tf = None
-            def onCancel() -> None:
-                nonlocal tf
-                tf.release()
-                tf = None
-            def onOk() -> None:
-                nonlocal tf
-                der = tf.text.strip()
+            def onOk(text : str) -> None:
+                der = text.strip()
                 derOk = test(der)
                 print('der=',der,'test results=',derOk)
-                tf.release()
-                tf = None
                 if not derOk:
                     ToErrIsHuman(title = _('Derivation Invalid'), message = _('It appears the derivation you specified is invalid. Please try again'), onOk=lambda:self.onNext())
                     return
@@ -587,23 +579,14 @@ class RestoreWallet1(NewWalletSeed2):
                     PushIt()
                 else:
                     ToErrIsHuman() # NB: we may already have an alert up from called code above, in which case this is a no-op (hacky but works!)
-            def makeTf(tfo : objc_id) -> None:
-                nonlocal tf
-                tf = ObjCInstance(tfo).retain()
-                tf.placeholder = _('Derivation') + '...'
-                tf.adjustsFontSizeToFitWidth = True
-                tf.minimumFontSize = 9.0
-                tf.clearButtonMode = UITextFieldViewModeAlways
-                tf.text = default_derivation
-            alert = utils.show_alert(
-                vc = self,
-                title=_('Derivation'),
-                message = ' '.join([_('Enter your wallet derivation here.'),
-                                     _('If you are not sure what this is, leave this field unchanged.'),
-                                     _("If you want the wallet to use legacy Bitcoin addresses use m/44'/0'/0'"),
-                                     _("If you want the wallet to use Bitcoin Cash addresses use m/44'/145'/0'")]),
-               actions = [ [_('OK'), onOk], [_('Cancel'), onCancel]  ],
-               uiTextFieldHandlers = [makeTf] )
+            alert = utils.show_tf_alert(vc = self,
+                                        title=_('Derivation'),
+                                        message = ' '.join([_('Enter your wallet derivation here.'),
+                                                             _('If you are not sure what this is, leave this field unchanged.'),
+                                                             _("If you want the wallet to use legacy Bitcoin addresses use m/44'/0'/0'"),
+                                                             _("If you want the wallet to use Bitcoin Cash addresses use m/44'/145'/0'")]),
+                                        onOk = onOk, placeholder = _('Derivation') + '...', text = default_derivation
+                                        )
         elif seed_type == 'old':
             print("old seed type")
             if self.doStandardKeystore(seed, ''):
