@@ -26,19 +26,62 @@ def PresentAddWalletWizard(vc : ObjCInstance = None, animated : bool = True, com
 class NewWalletVC(NewWalletVCBase):
     origPlaceholders = objc_property()
     origLabelTxts = objc_property()
+    origPS = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
         # cleanup code here
         self.origPlaceholders = None
         self.origLabelTxts = None
+        self.origPS = None
         send_super(__class__, self, 'dealloc')
 
 
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
+        self.setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown()
         
+    @objc_method
+    def setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown(self) -> None:
+        origButConstant = self.nextButBotCS.constant
+        origHConstant = self.errHeightCS.constant
+        origErrTopConstant = self.errTopCS.constant
+        self.origPS = self.errMsg.attributedText.attribute_atIndex_effectiveRange_(NSParagraphStyleAttributeName, 0, None)
+        
+        def slideUpButton(rect : CGRect) -> None:
+            # on keyboard show, squeeze the layout (this includes the error message text line spacing)
+            self.nextButBotCS.constant = 5 + rect.size.height
+            if utils.is_ipad():
+                self.nextButBotCS.constant = origButConstant + rect.size.height
+            else: #if utils.is_iphone()
+                self.nextButBotCS.constant = 5 + rect.size.height
+                self.errHeightCS.constant = origHConstant / 2.0
+                self.errTopCS.constant = 10
+                ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.errMsg.attributedText).autorelease()
+                ps = NSMutableParagraphStyle.new().autorelease()
+                ps.setParagraphStyle_(self.origPS)
+                ps.maximumLineHeight = 17.0
+                ps.minimumLineHeight = 17.0
+                ats.removeAttribute_range_(NSParagraphStyleAttributeName, NSRange(0, ats.length()))
+                ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, NSRange(0, ats.length()))
+                self.errMsg.attributedText = ats            
+            self.view.layoutIfNeeded()
+        def slideDownButton() -> None:
+            # when keyboard hides, undo the damage done above
+            self.nextButBotCS.constant = origButConstant
+            if utils.is_iphone():
+                self.errHeightCS.constant = origHConstant
+                self.errTopCS.constant = origErrTopConstant
+                ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.errMsg.attributedText).autorelease()
+                ats.removeAttribute_range_(NSParagraphStyleAttributeName, NSRange(0, ats.length()))
+                ats.addAttribute_value_range_(NSParagraphStyleAttributeName, self.origPS, NSRange(0, ats.length()))
+                self.errMsg.attributedText = ats
+            self.view.layoutIfNeeded()
+        
+        # NB: this cleans itself up automatically due to objc associated object magic on self.view's deallocation
+        utils.register_keyboard_callbacks(self.view, onWillShow=slideUpButton, onWillHide=slideDownButton)
+
     @objc_method
     def translateUI(self) -> None:
         lbls = [ self.walletNameTit, self.walletPw1Tit, self.walletPw2Tit ]

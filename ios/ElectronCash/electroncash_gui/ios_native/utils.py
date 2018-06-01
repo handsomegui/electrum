@@ -1035,15 +1035,22 @@ class NSDeallocObserver(PySig):
         Note that it is not necessary to keep a reference to this object around as it automatically gets associated with
         internal data structures and auto-removes itself once the signal is emitted. The signal itself has 1 param, the objc_id
         of the watched object. The watched object may or may not still be alive when the signal is emitted, however.'''
-    def __init__(self, ns : ObjCInstance):
+    def __init__(self, ns : ObjCInstance, observer_class : MyNSObs = None):
         if not isinstance(ns, (ObjCInstance, objc_id)):
             raise ValueError("Argument for NSDeallocObserver must be an ObjCInstance or objc_id")
         super().__init__()
         self.ptr = ns.ptr if isinstance(ns, ObjCInstance) else ns
         import rubicon.objc.runtime as rt
-        self.observer = MyNSObs.new().autorelease()
+        if observer_class is None: observer_class = MyNSObs
+        self.observer = observer_class.new().autorelease()
         rt.libobjc.objc_setAssociatedObject(self.ptr, self.observer.ptr, self.observer.ptr, 0x301)
         nspy_put(self.observer, self) # our NSObject keeps a strong reference to us
+        
+    def dissociate(self) -> None:
+        self.disconnect()
+        import rubicon.objc.runtime as rt
+        rt.libobjc.objc_setAssociatedObject(self.ptr, self.observer.ptr, objc_id(0), 0x301)
+        
 
     '''
     # This is here for debugging purposes.. Commented out as __del__ is dangerous if it has external dependencies
@@ -1164,3 +1171,73 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
         #ps.lineBreakMode = NSLineBreakByWordWrapping
         #ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
     return ats
+###############################################################################
+# Facility to register python callbacks for when the keyboard is shown/hidden #
+###############################################################################
+_kbcb_idx = 0
+_kbcb_dict = dict()
+_kbcb_Entry = namedtuple('_kbcb_Entry', 'handle view obs handler onWillHide onWillShow onDidHide onDidShow')
+class UTILSKBCBHandler(NSObject):
+    handle = objc_property()
+    @objc_method
+    def dealloc(self) -> None:
+        self.handle = None
+        send_super(__class__, self, 'dealloc')
+    @objc_method
+    def willHide_(self, sender) -> None:
+        entry = _kbcb_dict.get(self.handle, None)
+        if entry and entry.onWillHide: entry.onWillHide()
+    @objc_method
+    def didHide_(self, sender) -> None:
+        entry = _kbcb_dict.get(self.handle, None)
+        if entry and entry.onDidHide: entry.onDidHide()
+    @objc_method
+    def willShow_(self, sender) -> None:
+        entry = _kbcb_dict.get(self.handle, None)
+        if not entry: return
+        rect = py_from_ns(sender.userInfo)[str(UIKeyboardFrameEndUserInfoKey)].CGRectValue
+        window = entry.view.window()
+        if window: rect = entry.view.convertRect_fromView_(rect, window)
+        if entry.onWillShow: entry.onWillShow(rect)
+    @objc_method
+    def didShow_(self, sender) -> None:
+        entry = _kbcb_dict.get(self.handle, None)
+        if not entry: return
+        rect = py_from_ns(sender.userInfo)[str(UIKeyboardFrameEndUserInfoKey)].CGRectValue
+        window = entry.view.window()
+        if window: rect = entry.view.convertRect_fromView_(rect, window)
+        if entry.onDidShow: entry.onDidShow(rect)
+    
+# it's safe to never unregister, as an objc associated object will be created for the view in question and will clean everything up on
+# view dealloc. The '*Hide' callbacks should take 0 arguments, the '*Show' callbacks take 1, a CGRect of the keyboard in the destination view's coordinates
+def register_keyboard_callbacks(view : ObjCInstance, onWillHide = None, onWillShow = None, onDidHide = None, onDidShow = None) -> int:
+    if not any([onWillHide, onWillShow, onDidShow, onDidShow]) or not view or not isinstance(view, UIView):
+        NSLog("WARNING: register_keyboard_callbacks: need at least one callback specified, as well as non-null view! Will return early!")
+        return 0
+    global _kbcb_idx
+    _kbcb_idx += 1
+    handle = _kbcb_idx
+    obs = NSDeallocObserver(view)
+    handler = UTILSKBCBHandler.new()
+    handler.handle = handle
+    
+    entry = _kbcb_Entry(handle, view, obs, handler, onWillHide, onWillShow, onDidHide, onDidShow)
+    if entry.onWillHide: NSNotificationCenter.defaultCenter.addObserver_selector_name_object_(entry.handler,SEL('willHide:'),UIKeyboardWillHideNotification,None)
+    if entry.onWillShow: NSNotificationCenter.defaultCenter.addObserver_selector_name_object_(entry.handler,SEL('willShow:'),UIKeyboardWillShowNotification,None)
+    if entry.onDidHide: NSNotificationCenter.defaultCenter.addObserver_selector_name_object_(entry.handler,SEL('didHide:'),UIKeyboardDidHideNotification,None)
+    if entry.onDidShow: NSNotificationCenter.defaultCenter.addObserver_selector_name_object_(entry.handler,SEL('didShow:'),UIKeyboardDidShowNotification,None)
+    _kbcb_dict[handle] = entry    
+    obs.connect(lambda x: unregister_keyboard_callbacks(handle))
+    return handle
+
+def unregister_keyboard_callbacks(handle : int) -> None:
+    entry = None
+    if isinstance(handle, int): entry = _kbcb_dict.pop(handle, None)
+    if entry:
+        if entry.onWillHide: NSNotificationCenter.defaultCenter.removeObserver_name_object_(entry.handler,UIKeyboardWillHideNotification,None)
+        if entry.onWillShow: NSNotificationCenter.defaultCenter.removeObserver_name_object_(entry.handler,UIKeyboardWillShowNotification,None)
+        if entry.onDidHide: NSNotificationCenter.defaultCenter.removeObserver_name_object_(entry.handler,UIKeyboardDidHideNotification,None)
+        if entry.onDidShow: NSNotificationCenter.defaultCenter.removeObserver_name_object_(entry.handler,UIKeyboardDidShowNotification,None)
+        entry.obs.disconnect()
+        entry.obs.dissociate()
+        entry.handler.release()

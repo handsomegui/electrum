@@ -622,6 +622,15 @@ UITapGestureRecognizer = ObjCClass('UITapGestureRecognizer')
 #NSNotificationCenter stuff
 NSNotificationCenter = ObjCClass('NSNotificationCenter')
 UIApplicationDidReceiveMemoryWarningNotification = ObjCInstance(c_void_p.in_dll(uikit, "UIApplicationDidReceiveMemoryWarningNotification"))
+UIKeyboardWillShowNotification  = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardWillShowNotification"))
+UIKeyboardDidShowNotification = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardDidShowNotification"))
+UIKeyboardWillHideNotification = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardWillHideNotification"))
+UIKeyboardDidHideNotification = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardDidHideNotification"))
+UIKeyboardFrameBeginUserInfoKey = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardFrameBeginUserInfoKey"))# NSValue of CGRect
+UIKeyboardFrameEndUserInfoKey = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardFrameEndUserInfoKey"))# NSValue of CGRect
+UIKeyboardAnimationDurationUserInfoKey = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardAnimationDurationUserInfoKey"))# NSNumber of double
+UIKeyboardAnimationCurveUserInfoKey = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardAnimationCurveUserInfoKey"))# NSNumber of NSUInteger (UIViewAnimationCurve)
+UIKeyboardIsLocalUserInfoKey = ObjCInstance(c_void_p.in_dll(uikit, "UIKeyboardIsLocalUserInfoKey"))# NSNumber of BOOL
 
 #NSFileManager
 NSFileManager = ObjCClass("NSFileManager")
@@ -637,6 +646,19 @@ UIDeviceOrientationLandscapeLeft = 3  #,       // Device oriented horizontally, 
 UIDeviceOrientationLandscapeRight = 4  #,      // Device oriented horizontally, home button on the left
 UIDeviceOrientationFaceUp = 5  #,              // Device oriented flat, face up
 UIDeviceOrientationFaceDown = 5  #             // Device oriented flat, face down
+UIInterfaceOrientationUnknown            = UIDeviceOrientationUnknown
+UIInterfaceOrientationPortrait           = UIDeviceOrientationPortrait
+UIInterfaceOrientationPortraitUpsideDown = UIDeviceOrientationPortraitUpsideDown
+UIInterfaceOrientationLandscapeLeft      = UIDeviceOrientationLandscapeRight
+UIInterfaceOrientationLandscapeRight     = UIDeviceOrientationLandscapeLeft
+UIInterfaceOrientationMaskPortrait = (1 << UIInterfaceOrientationPortrait)
+UIInterfaceOrientationMaskLandscapeLeft = (1 << UIInterfaceOrientationLandscapeLeft)
+UIInterfaceOrientationMaskLandscapeRight = (1 << UIInterfaceOrientationLandscapeRight)
+UIInterfaceOrientationMaskPortraitUpsideDown = (1 << UIInterfaceOrientationPortraitUpsideDown)
+UIInterfaceOrientationMaskLandscape = (UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight)
+UIInterfaceOrientationMaskAll = (UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight | UIInterfaceOrientationMaskPortraitUpsideDown)
+UIInterfaceOrientationMaskAllButUpsideDown = (UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight)
+
 
 #UIDeviceBatteryState
 UIDeviceBatteryStateUnknown = 0

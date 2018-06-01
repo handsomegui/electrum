@@ -82,6 +82,24 @@ class MyTabBarController(UITabBarController):
         self.didLayout = True
         send_super(__class__, self, 'viewDidLayoutSubviews')
 
+    @objc_method
+    def supportedInterfaceOrientations(self) -> int:
+        pvc = self.presentedViewController
+        if pvc:
+            while pvc.presentedViewController:
+                pvc = pvc.presentedViewController
+            return pvc.supportedInterfaceOrientations()
+        return send_super(__class__, self, 'supportedInterfaceOrientations', restype=c_int)
+    
+    @objc_method
+    def shouldAutorotate(self) -> bool:
+        pvc = self.presentedViewController
+        if pvc:
+            while pvc.presentedViewController:
+                pvc = pvc.presentedViewController
+            return pvc.shouldAutorotate()
+        return send_super(__class__, self, 'shouldAutorotate', restype=c_bool)
+
 
 class GuiHelper(NSObject):
     

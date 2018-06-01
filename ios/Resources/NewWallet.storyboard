@@ -360,7 +360,7 @@
                                                     <constraint firstAttribute="height" constant="18" id="NG2-dA-WOr"/>
                                                 </constraints>
                                             </imageView>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="TopLeft" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Ces-Y7-igc">
+                                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="TopLeft" horizontalHuggingPriority="251" verticalHuggingPriority="1000" verticalCompressionResistancePriority="250" usesAttributedText="YES" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Ces-Y7-igc">
                                                 <rect key="frame" x="25" y="0.0" width="315" height="40"/>
                                                 <attributedString key="attributedText">
                                                     <fragment content="There is a problem with your form and action is required bla bla bla...">
@@ -402,7 +402,7 @@
                                     <constraint firstItem="seh-IT-8Js" firstAttribute="leading" secondItem="fnB-C8-Gss" secondAttribute="leading" id="HTT-Jz-n8H"/>
                                     <constraint firstItem="W0m-nW-qy3" firstAttribute="top" secondItem="Fzd-ZY-t1b" secondAttribute="bottom" constant="5" id="Mtn-DD-vFv"/>
                                     <constraint firstItem="Weu-dS-B16" firstAttribute="leading" secondItem="fnB-C8-Gss" secondAttribute="leading" id="SUZ-zt-3vu"/>
-                                    <constraint firstItem="zuV-JL-yit" firstAttribute="top" relation="greaterThanOrEqual" secondItem="Gre-gg-6t9" secondAttribute="bottom" priority="999" constant="3" id="V55-Lh-k2S"/>
+                                    <constraint firstItem="zuV-JL-yit" firstAttribute="top" relation="greaterThanOrEqual" secondItem="Gre-gg-6t9" secondAttribute="bottom" constant="3" id="V55-Lh-k2S"/>
                                     <constraint firstAttribute="height" constant="603" id="XVE-Cj-JnG"/>
                                     <constraint firstItem="seh-IT-8Js" firstAttribute="trailing" secondItem="fnB-C8-Gss" secondAttribute="trailing" id="cEC-Sz-6Hu"/>
                                     <constraint firstItem="1e6-VN-XRi" firstAttribute="top" secondItem="seh-IT-8Js" secondAttribute="bottom" constant="5" id="caV-pM-uPu"/>
@@ -453,8 +453,10 @@
                         <barButtonItem key="backBarButtonItem" title="Back" id="JXL-nP-fWz"/>
                     </navigationItem>
                     <connections>
+                        <outlet property="errHeightCS" destination="EA2-Cw-9T7" id="YJh-rg-U06"/>
                         <outlet property="errMsg" destination="Ces-Y7-igc" id="tIf-in-Xp7"/>
                         <outlet property="errMsgView" destination="Gre-gg-6t9" id="zE6-D2-Nwk"/>
+                        <outlet property="errTopCS" destination="u7G-FN-ltf" id="hzm-Fx-SNr"/>
                         <outlet property="nextBut" destination="zuV-JL-yit" id="Gjf-zN-7Y6"/>
                         <outlet property="nextButBotCS" destination="uZZ-Wy-3wD" id="Rjn-U7-Oa1"/>
                         <outlet property="walletName" destination="Weu-dS-B16" id="hLi-Ai-mha"/>
