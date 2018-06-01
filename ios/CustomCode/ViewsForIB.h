@@ -368,8 +368,10 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet CCActivityIndicator *activityIndicator;
 @end
 
-@interface NewWalletNav : UINavigationController
-@property (nonatomic, strong) NSDictionary *params; // set by the viewcontrollers in a particular story sequence to set up wallet creation params
+@interface NewWalletNavBase : UINavigationController
+@end
+@interface NewWalletNav : NewWalletNavBase
+// implemented in python newwallet.py
 @end
 @interface NewWalletVCBase : UIViewController
 @property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit, *errMsg;

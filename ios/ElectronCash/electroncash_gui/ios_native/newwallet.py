@@ -22,6 +22,11 @@ def PresentAddWalletWizard(vc : ObjCInstance = None, animated : bool = True, com
         utils.NSLog("ERROR: Could not find the storyboard viewcontroller named 'Add_A_Wallet'!")
     return nav
 
+class NewWalletNav(NewWalletNavBase):
+    @objc_method
+    def dealloc(self) -> None:
+        utils.nspy_pop(self)
+        send_super(__class__, self, 'dealloc')
 
 class NewWalletVC(NewWalletVCBase):
     origPlaceholders = objc_property()
@@ -294,12 +299,23 @@ class NewWalletSeed2(NewWalletSeedBase):
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         self.translateUI()
-        self.doSuggestions()
+        if not self.bip39 or not self.bip39.isOn():
+            self.doSuggestions()
  
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
-        self.seedtv.becomeFirstResponder()
+        if not self.bip39 or not self.bip39.isOn():
+            self.seedtv.becomeFirstResponder()
+ 
+    @objc_method
+    def clearSugButs(self) -> None:
+        # next, do suggestion buttons
+        sugButs = py_from_ns(self.sugButs)
+        for but in sugButs:
+            but.removeFromSuperview()
+        self.sugButs = list()
+        
  
     @objc_method
     def doSuggestions(self) -> None:
@@ -325,9 +341,7 @@ class NewWalletSeed2(NewWalletSeedBase):
             self.kvc.setKey_enabled_(c, True)
             
         # next, do suggestion buttons
-        sugButs = py_from_ns(self.sugButs)
-        for but in sugButs:
-            but.removeFromSuperview()
+        self.clearSugButs()
         sugButs = list()
         self.sugButs = list()
         
@@ -457,36 +471,156 @@ class NewWalletSeed2(NewWalletSeedBase):
         print("params=",_Params(self))
 
 class RestoreWallet1(NewWalletSeed2):
+    tvdel = objc_property()
+    
+    @objc_method
+    def dealloc(self) -> None:
+        self.tvdel = None
+        send_super(__class__, self, 'dealloc')
 
     @objc_method
     def viewDidLoad(self) -> None:
         self.restoreMode = True
         self.seedTit.text = _('Enter your seed phrase') # override the text title to be appropriate to this screen
+                
+        def onBip39(b : objc_id) -> None:
+            sw = ObjCInstance(b)
+            if not sw.isOn():
+                if self.tvdel:
+                    self.tvdel.tv = None
+                    self.tvdel = None
+                self.seedtv.inputView = None
+                self.seedtv.inputAccessoryView = None
+                self.view.endEditing_(True)
+                self.kvcContainerView.setHidden_(False)
+                self.seedtv.selectedRange = NSRange(len(self.seedtv.text) if self.seedtv.text else 0, 0);
+                self.kvc.textInput = self.seedtv
+                utils.call_later(0.2, lambda:(self.seedtv.becomeFirstResponder(),self.doSuggestions()))
+            else:
+                self.clearSugButs()
+                self.kvc.textInput = None
+                self.seedtv.delegate = None
+                self.seedtv.inputView = None
+                self.kvcContainerView.setHidden_(True)
+                self.view.endEditing_(True)
+                self.tvdel = ECTextViewDelegate.new().autorelease()
+                self.tvdel.tv = self.seedtv
+                utils.call_later(0.2, lambda:self.seedtv.becomeFirstResponder())
+        self.bip39.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered,onBip39)
         send_super(__class__, self, 'viewDidLoad')
     
     @objc_method
     def textFieldDidBeginEditing_(self, tf) -> None:
         if tf.ptr.value == self.seedExt.ptr.value:
+            self.clearSugButs()
             self.kvcContainerView.setHidden_(True)
     @objc_method
     def textFieldDidEndEditing_(self, tf) -> None:
         if tf.ptr.value == self.seedExt.ptr.value:
-            self.kvcContainerView.setHidden_(False)
+            self.kvcContainerView.setHidden_(False or self.bip39.isOn())
     @objc_method
     def textFieldShouldReturn_(self, tf) -> None:
         if tf.ptr.value == self.seedExt.ptr.value:
             tf.resignFirstResponder()
-            utils.call_later(0.2, lambda:self.seedtv.becomeFirstResponder())
+            if not self.bip39.isOn():
+                utils.call_later(0.2, lambda:self.seedtv.becomeFirstResponder())
             return True
         return False
        
     @objc_method
     def onNext(self) -> None:
-        print("ON NEXT...")
-        # TODO verify seed, create wallets, etc here...
-        sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
-        vc = sb.instantiateViewControllerWithIdentifier_("RESTORE_SEED_2")
-        self.navigationController.pushViewController_animated_(vc, True)
+        import electroncash.bitcoin as bitcoin 
+        seed = ' '.join(self.seedtv.text.strip().lower().split())
+        seedext = self.seedExt.text.strip().lower() if self.seedExt.text else ''
+        is_bip39 = self.bip39.isOn()
+        seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
+        
+        def PushIt() -> None:
+            _SetParam(self, 'seed', seed)
+            _SetParam(self, 'seedext', seedext)
+            _SetParam(self, 'is_bip39', is_bip39)
+            _SetParam(self, 'seed_type', seed_type)
+            _SetParam(self, 'wallet_type', 'standard')
+            print("params =", _Params(self))
+            sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+            vc = sb.instantiateViewControllerWithIdentifier_("RESTORE_SEED_2")
+            self.navigationController.pushViewController_animated_(vc, True)
+            
+        def ToErrIsHuman(title = "Oops!", message = "Something went wrong! Please email the developers!", onOk = None) -> None:
+            gui.ElectrumGui.gui.show_error(vc = self, title = title, message = message, onOk = onOk)
+
+        
+        if seed_type == 'bip39':
+            # do bip39 stuff
+            from electroncash.keystore import bip44_derivation, bip44_derivation_145
+            default_derivation = bip44_derivation_145(0)
+            test=bitcoin.is_bip32_derivation
+            tf = None
+            def onCancel() -> None:
+                nonlocal tf
+                tf.release()
+                tf = None
+            def onOk() -> None:
+                nonlocal tf
+                der = tf.text.strip()
+                derOk = test(der)
+                print('der=',der,'test results=',derOk)
+                tf.release()
+                tf = None
+                if not derOk:
+                    ToErrIsHuman(title = _('Derivation Invalid'), message = _('It appears the derivation you specified is invalid. Please try again'), onOk=lambda:self.onNext())
+                    return
+                if self.doBip44(seed, seedext, der):
+                    PushIt()
+                else:
+                    ToErrIsHuman()
+            def makeTf(tfo : objc_id) -> None:
+                nonlocal tf
+                tf = ObjCInstance(tfo).retain()
+                tf.placeholder = _('Derivation') + '...'
+                tf.adjustsFontSizeToFitWidth = True
+                tf.minimumFontSize = 9.0
+                tf.clearButtonMode = UITextFieldViewModeAlways
+                tf.text = default_derivation
+            alert = utils.show_alert(
+                vc = self,
+                title=_('Derivation'),
+                message = ' '.join([_('Enter your wallet derivation here.'),
+                                     _('If you are not sure what this is, leave this field unchanged.'),
+                                     _("If you want the wallet to use legacy Bitcoin addresses use m/44'/0'/0'"),
+                                     _("If you want the wallet to use Bitcoin Cash addresses use m/44'/145'/0'")]),
+               actions = [ [_('OK'), onOk], [_('Cancel'), onCancel]  ],
+               uiTextFieldHandlers = [makeTf] )
+        elif seed_type == 'old':
+            print("old seed type")
+            # do old stuff
+        elif seed_type == 'standard':
+            print("standard seed type")
+            # do standard stuff
+        else:
+            ToErrIsHuman()
+            return
+
+    @objc_method
+    def doBip44(self, seed, passphrase, derivation) -> bool:
+        import electroncash.keystore as keystore
+        seed, passphrase, derivation = py_from_ns(seed), py_from_ns(passphrase), py_from_ns(derivation)
+        try:
+            k = keystore.from_bip39_seed(seed, passphrase, derivation)
+            has_xpub = isinstance(k, keystore.Xpub)
+            if has_xpub:
+                from electroncash.bitcoin import xpub_type
+                t1 = xpub_type(k.xpub)
+                if t1 not in ['standard']:
+                    gui.ElectrumGui.gui.show_error(message = _('Wrong key type') + ' %s'%t1, vc=self)
+                    return False
+            keystores = _Params(self).get('keystores', list())
+            keystores.append(k)
+            _SetParam(self, 'keystores', keystores)
+        except:
+            utils.NSLog("Exception in doBip44: %s",sys.exc_info()[1])
+            return False
+        return True
 
 class RestoreWallet2(NewWalletVC):
     
@@ -540,16 +674,18 @@ class NewWalletMenu(NewWalletMenuBase):
 
 def _Params(vc : UIViewController) -> dict():
     nav = vc.navigationController
-    return py_from_ns(nav.params) if isinstance(nav, NewWalletNav) else dict()
+    p = utils.nspy_get(nav) if isinstance(nav, NewWalletNav) else dict()
+    if not p: p = dict()
+    return p
 
 def _SetParams(vc : UIViewController, params : dict) -> None:
     nav = vc.navigationController
     if isinstance(nav, NewWalletNav):
-        nav.params = params
+        utils.nspy_put(nav, params)
 
 def _SetParam(vc : UIViewController, paramName : str, paramValue : Any) -> None:
     d = _Params(vc)
-    if not paramValue:
+    if paramValue is None:
         d.pop(paramName, None)
     else:
         d[paramName] = paramValue
@@ -679,6 +815,7 @@ class OnBoardingMenu(NewWalletMenuBase):
         if isinstance(vc, UINavigationController) and vc.viewControllers and isinstance(vc.viewControllers[0], NewWalletMenu):
             menu = vc.viewControllers[0]
             menu.noCancelBut = True
+            menu.navigationItem.title = _("Get Started")
             sb = UIStoryboard.storyboardWithName_bundle_('NewWallet', None)
             if sb:
                 vc2 = sb.instantiateViewControllerWithIdentifier_(vcToPushIdentifier) #NB: If you rename it in storyboard be SURE to update this!
@@ -690,7 +827,7 @@ class OnBoardingMenu(NewWalletMenuBase):
                         pvc.presentViewController_animated_completion_(vc, True, None)
                         return
         # If this is reached, means the above failed
-        gui.ElectrumGui.gui.show_error(title = "Oops!", message = "Something went wrong! Please email the developers!")
+        gui.ElectrumGui.gui.show_error(vc = self, title = "Oops!", message = "Something went wrong! Please email the developers!")
 
     @objc_method
     def onNewStandardWallet(self) -> None:
