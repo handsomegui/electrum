@@ -56,6 +56,14 @@ def is_2x_screen() -> bool:
 def is_iphone() -> bool:
     return bool(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
 
+def is_iphone5() -> bool:
+    # iphone5 has 1136 pix height
+    return is_iphone() and ( abs(UIScreen.mainScreen.nativeBounds.size.height - 1136.0) < 0.5 )
+
+def is_iphone4() -> bool:
+    # iphone4 has <1136 pix height
+    return is_iphone() and ( UIScreen.mainScreen.nativeBounds.size.height - 1136.0 < -0.5 )
+
 def is_ipad() -> bool:
     return not is_iphone()
 

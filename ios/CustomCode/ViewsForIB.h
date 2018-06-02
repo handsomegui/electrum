@@ -397,6 +397,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 // below only used in NewWalletSeed2 and RestoreWallet1 child classes
 @property (nonatomic, weak) IBOutlet KeyboardVC *kvc;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *kvcHeightCS;
 @property (nonatomic, weak) IBOutlet UIView *kvcContainerView;
 @property (nonatomic, weak) IBOutlet UIView *errMsgView;
 @property (nonatomic, weak) IBOutlet UILabel *errMsg;
@@ -431,6 +432,23 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python newwallet.py
 @end
 
+@interface Import1Base : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *tit;
+@property (nonatomic, weak) IBOutlet UITextView *tv;
+@property (nonatomic, weak) IBOutlet UIView *errMsgView, *infoView;
+@property (nonatomic, weak) IBOutlet UILabel *errMsg, *info;
+@property (nonatomic, weak) IBOutlet UIButton *nextBut;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS;
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *tvDel;
+
+@property (nonatomic, weak) id qr, qrvc; ///< used in python by subclass. Declared here to take advantage of ARC.
+@end
+
+@interface Import1 : Import1Base
+// implemented in python newwallet.py
+- (IBAction) onQRBut;
+@end
+
 @interface OnBoardingWizardBase : UIViewController
 @end
 
@@ -441,6 +459,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python newwallet.py
 - (IBAction) onNewStandardWallet;
 - (IBAction) onRestoreSeed;
+- (IBAction) onImportAddysPks;
 @end
 
 #endif /* ViewsForIB_h */

@@ -31,6 +31,23 @@
     }
 }
 
+- (NSAttributedString *) genAttrText:(NSString *) text {
+    // nonempty string.. remove placeholder
+    NSMutableDictionary *attrs = [NSMutableDictionary dictionaryWithDictionary:@{
+                                                                                 NSFontAttributeName : _font,
+                                                                                 NSForegroundColorAttributeName : _color
+                                                                                 }];
+    if (_centerPlaceholder) {
+        NSMutableParagraphStyle *ps = [NSMutableParagraphStyle new];
+        [ps setParagraphStyle: _paragraphStyle ? _paragraphStyle : [NSParagraphStyle defaultParagraphStyle]];
+        [ps setAlignment:_savedAlignment];
+        [attrs addEntriesFromDictionary:@{NSParagraphStyleAttributeName : ps}];
+    } else if (_paragraphStyle) {
+        [attrs addEntriesFromDictionary:@{NSParagraphStyleAttributeName : _paragraphStyle}];
+    }
+    return [[NSAttributedString alloc] initWithString:text attributes:attrs];
+}
+
 - (void) doPlaceholdifyIfNeeded:(BOOL)forceoff {
     if (_tv && !_text.length && _placeholderText.length && !_isPlaceholder) {
         // empty string.. put in placeholder
@@ -45,27 +62,15 @@
             [attrs addEntriesFromDictionary:@{NSParagraphStyleAttributeName : ps}];
         }
         _tv.attributedText = [[NSAttributedString alloc] initWithString:_placeholderText attributes:attrs];
-        _tv.font = _placeholderFont;
-        _tv.textColor = _placeholderColor;
-        if (_centerPlaceholder) _tv.textAlignment = NSTextAlignmentCenter;
         _isPlaceholder = YES;
     } else if (_tv && _isPlaceholder && (_text.length || forceoff)) {
         NSString *text = _text ? _text : @"";
-        // nonempty string.. remove placeholder
-        NSMutableDictionary *attrs = [NSMutableDictionary dictionaryWithDictionary:@{
-                                                                                     NSFontAttributeName : _font,
-                                                                                     NSForegroundColorAttributeName : _color
-                                                                                     }];
-        if (_centerPlaceholder) {
-            NSMutableParagraphStyle *ps = [NSMutableParagraphStyle new];
-            [ps setParagraphStyle:[NSParagraphStyle defaultParagraphStyle]];
-            [ps setAlignment:_savedAlignment];
-            [attrs addEntriesFromDictionary:@{NSParagraphStyleAttributeName : ps}];
-        }
-        _tv.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attrs];
-        _tv.font = _font;
-        _tv.textColor = _color;
-        if (_centerPlaceholder) _tv.textAlignment = _savedAlignment;
+        if (!text.length) {
+            // if it's empty string, do it twice, first time with a space, to have the label "pick up" the attributes properly
+            _tv.attributedText = [self genAttrText:@" "];
+            _tv.attributedText = [self genAttrText:text];
+        } else
+            _tv.attributedText = [self genAttrText:text];
         _isPlaceholder = NO;
     }
 }
@@ -90,7 +95,7 @@
 
 - (void) setText:(NSString *)text {
     _text = [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    if (!_isPlaceholder) _tv.text = _text;
+    if (!_isPlaceholder) _tv.attributedText = [self genAttrText:_text];
     [self doPlaceholdifyIfNeeded:NO];
 }
 

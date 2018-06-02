@@ -271,6 +271,9 @@ class NewWalletSeed2(NewWalletSeedBase):
             self.kvc.textInput = self.seedtv
             def callback() -> None: self.doSuggestions()
             self.kvc.textChanged = Block(callback)
+            if self.kvcHeightCS and utils.is_iphone5():
+                self.kvcHeightCS.constant = self.kvcHeightCS.constant - 70.0
+
         else:
             utils.NSLog("ERROR: NewWalletSeed2 cannot find the KeyboardVC! FIXME!")
               
@@ -465,7 +468,6 @@ class NewWalletSeed2(NewWalletSeedBase):
             onFailure = onFailure)
  
     
-    @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # TODO: stuff
         print("params=",_Params(self))
@@ -735,6 +737,108 @@ class NewWalletMenu(NewWalletMenuBase):
     def unimplemented(self) -> None:
         gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
 
+class Import1(Import1Base):
+ 
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        self.tvDel.placeholderText = _("Tap to add text...")
+        self.tvDel.placeholderFont = UIFont.italicSystemFontOfSize_(14.0)
+        self.tvDel.font = UIFont.systemFontOfSize_weight_(14.0, UIFontWeightMedium)
+        self.tvDel.paragraphStyle = self.tv.attributedText.attribute_atIndex_effectiveRange_(NSParagraphStyleAttributeName, 0, None)
+        self.tvDel.tv = self.tv
+        self.tvDel.text = ""
+        def hideErrBox() -> None:
+            if not self.errMsgView.isHidden():
+                self.errMsgView.setHidden_(True)
+                self.infoView.setHidden_(False)
+        self.tvDel.didChange = Block(hideErrBox)
+        self.tit.setText_withKerning_(_("Import Bitcoin Cash Addresses or Private Keys"), utils._kern)
+        utils.uilabel_replace_attributed_text(lbl=self.info, font = UIFont.italicSystemFontOfSize_(14.0),
+                                              text = _("Enter a list of private keys to create a regular spending wallet. " +
+                                                       "Alternatively, you can create a 'watching-only' wallet by " +
+                                                       "entering a list of Bitcoin Cash addresses."))
+        utils.uilabel_replace_attributed_text(lbl=self.errMsg, font = UIFont.italicSystemFontOfSize_(14.0), text = " ")
+
+        self.setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown()
+        
+    @objc_method
+    def setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown(self) -> None:
+        origButConstant = self.nextButBotCS.constant
+        
+        def slideUpButton(rect : CGRect) -> None:
+            # slide the 'next' button up so it's above the keyboard when the keyboard is shown
+            self.nextButBotCS.constant = origButConstant + rect.size.height
+            self.view.layoutIfNeeded()
+        def slideDownButton() -> None:
+            # when keyboard hides, undo the damage done above
+            self.nextButBotCS.constant = origButConstant
+            self.view.layoutIfNeeded()
+        
+        # NB: this cleans itself up automatically due to objc associated object magic on self.view's deallocation
+        utils.register_keyboard_callbacks(self.view, onWillShow=slideUpButton, onWillHide=slideDownButton)
+
+    @objc_method
+    def onQRBut(self) -> None:
+        #print("On QR...")
+        if not QRCodeReader.isAvailable:
+            utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
+        else:
+            self.qr = QRCodeReader.new().autorelease()
+            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
+            self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
+            self.qrvc.delegate = self
+            self.presentViewController_animated_completion_(self.qrvc, True, None)
+        
+    @objc_method
+    def reader_didScanResult_(self, reader, result) -> None:
+        utils.NSLog("Reader data = '%s'",str(result))
+        reader.stopScanning()
+        from .contacts import cleanup_address_remove_colon
+        result = cleanup_address_remove_colon(result)
+        self.tvDel.text = self.tvDel.text + " " + result
+        self.readerDidCancel_(reader) # just close it once we get data
+             
+    @objc_method
+    def readerDidCancel_(self, reader) -> None:
+        if reader is not None: reader.stopScanning()
+        self.dismissViewControllerAnimated_completion_(True, None)
+        self.qr = None
+        self.qrvc = None
+   
+    @objc_method
+    def words(self) -> ObjCInstance:
+        return ns_from_py(str(self.tvDel.text).split())
+   
+    # TODO: override this in the subclass that is to handle xpub/xpriv etc keys
+    @objc_method
+    def doChkFormOk(self) -> bool:
+        self.view.endEditing_(True)
+        words = py_from_ns(self.words())
+        import electroncash.bitcoin as bitcoin
+        from electroncash.address import Address
+        print("words =",words)
+        for w in words:
+            if Address.is_valid(w) or bitcoin.is_private_key(w):
+                self.infoView.setHidden_(False)
+                self.errMsgView.setHidden_(True)
+                return True
+        utils.uilabel_replace_attributed_text(self.errMsg, _("You appear to have entered no valid Bitcoin Cash addresses or private keys."))
+        self.infoView.setHidden_(True)
+        self.errMsgView.setHidden_(False)
+        return False        
+   
+    @objc_method
+    def shouldPerformSegueWithIdentifier_sender_(self, identifier, sender) -> bool:
+        # checks here that form is ok, etc
+        return self.doChkFormOk()
+    
+    @objc_method
+    def prepareForSegue_sender_(self, segue, sender) -> None:
+        # TODO: stuff
+        _SetParam(self, 'words', py_from_ns(self.words()))
+        print("params =",_Params(self))
+
 def _Params(vc : UIViewController) -> dict():
     nav = vc.navigationController
     p = utils.nspy_get(nav) if isinstance(nav, NewWalletNav) else dict()
@@ -786,9 +890,9 @@ _notification_token = NSNotificationCenter.defaultCenter.addObserverForName_obje
 ).retain()
 
 
-#####
-# On-Boarding Wizard that comes up on first run when no wallets are present
-#####
+#############################################################################
+# On-Boarding Wizard that comes up on first run when no wallets are present #
+#############################################################################
 def PresentOnBoardingWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
     if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
     sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
@@ -907,3 +1011,7 @@ class OnBoardingMenu(NewWalletMenuBase):
     @objc_method
     def onRestoreSeed(self) -> None:
         self.jumpToMenu_("RESTORE_SEED_1")
+        
+    @objc_method
+    def onImportAddysPks(self) -> None:
+        self.jumpToMenu_("IMPORT_KEYS_1")

@@ -10,6 +10,15 @@
 #import "../UIKitExtras.h"
 #import "CYRKeyboardButton/CYRKeyboardButton.h"
 
+
+static BOOL IS_IPHONE_5(void) {
+    static int isiPhone5 = -12345;
+
+    if (isiPhone5 == -12345)
+        isiPhone5 = (int)(( fabs( ( double )[ [ UIScreen mainScreen ] nativeBounds ].size.height - ( double )1136.0 ) < DBL_EPSILON ) && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone);
+    return (BOOL)isiPhone5;
+}
+
 @interface FakeInputView()
 @property (nonatomic, weak) UIView *mainView;
 @property (nonatomic, weak) KeyboardVC *kbdvc;
@@ -30,7 +39,7 @@
     static CGSize size =  {-1.,-1.};
 
     if (size.width < 0.0) {
-        size = CGSizeMake(375,182);
+        size = IS_IPHONE_5() ? CGSizeMake(365,112) : CGSizeMake(375,182);
         if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
             size.height += 50;
     }
@@ -61,13 +70,13 @@
 }
 
 - (void) commonInit {
-    self.vpad = 12.0;
-    self.hpad = 6.0;
-    self.hmargin = 5.0;
-    self.vmargin = 13.0;
+    self.vpad = IS_IPHONE_5() ? 3.0 : 12.0;
+    self.hpad = IS_IPHONE_5() ? 6.0 : 6.0;
+    self.hmargin = IS_IPHONE_5() ? 30.0 : 5.0;
+    self.vmargin = IS_IPHONE_5() ? 4.0 : 13.0;
     self.blockPasting = YES;
     self.blockSelecting = YES;
-    _keySize = CGSizeMake(31.0,42.0);
+    _keySize = IS_IPHONE_5() ? CGSizeMake(25.0, 33.0) : CGSizeMake(31.0,42.0);
     _backspace = @"⌫";
 }
 
