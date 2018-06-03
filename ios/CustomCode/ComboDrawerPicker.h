@@ -33,7 +33,7 @@
 - (void) toggleOpen;
 
 - (void)openAnimated:(BOOL)animated;
-- (void)closeAnimated:(bool)animated;
+- (void)closeAnimated:(BOOL)animated;
 @end
 
 #endif // CustomDrawerPicker_H
