@@ -235,6 +235,7 @@ class NewWalletSeed1(NewWalletSeedBase):
         sl = py_from_ns(self.seed).split()
         _SetParam(self, 'seed', s)
         _SetParam(self, 'seed_list', sl)
+        print("FYI -- the seed is: ",s)
         if isinstance(segue.destinationViewController, NewWalletSeed2):
             segue.destinationViewController.seed = s
             segue.destinationViewController.seedList = sl
@@ -423,14 +424,10 @@ class NewWalletSeed2(NewWalletSeedBase):
     @objc_method
     def onNext(self) -> None:
         ''' only calld from IB connections if not in restoreMode! '''
-        def doDismiss() -> None:
-            self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
 
         if self.isDone:
-            doDismiss()
+            _DoDismiss(vc=self)
             return
-            
-        parent = gui.ElectrumGui.gui
         
         if list(self.seedList) != self.seedtv.text.strip().lower().split():
             err = _('The seed you entered does not match the generated seed. Go back to the previous screen and double-check it, then try again.')
@@ -445,35 +442,23 @@ class NewWalletSeed2(NewWalletSeedBase):
             wallet_seed = _Params(self)['seed']
         except:
             utils.NSLog("onNext in Seed2, got exception: %s", str(sys.exc_info()[1]))
+            _ToErrIsHuman(self)
             return
 
-        def openNew() -> None:
-            parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
-                                  onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(self) else None)
-        def onSuccess() -> None:
+        def Completion() -> None:
             self.isDone = True
-            if not _IsOnBoarding(self):
-                parent.show_message(vc=self, title=_('New Wallet Created'),
-                                    message = _('Your new standard wallet has been successfully created. Would you like to switch to it now?'),
-                                    hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
-                                    onOk = openNew, onCancel = doDismiss)
-            else:
-                openNew()
-        def onFailure(err : str) -> None:
-            parent.show_error(vc=self, message = str(err))
             
-        parent.generate_new_wallet(
-            vc = self,
+        _WizardGenerateNewWallet(
+            vc = self, completion = Completion,
             wallet_name = wallet_name,
             wallet_pass = wallet_pass,
-            wallet_seed = wallet_seed,
-            onSuccess = onSuccess,
-            onFailure = onFailure)
+            wallet_seed = wallet_seed)
  
     
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # TODO: stuff
-        print("params=",_Params(self))
+        #print("params=",_Params(self))
+        pass
 
 class RestoreWallet1(NewWalletSeed2):
     tvdel = objc_property()
@@ -557,7 +542,7 @@ class RestoreWallet1(NewWalletSeed2):
             _SetParam(self, 'is_bip39', is_bip39)
             _SetParam(self, 'seed_type', seed_type)
             _SetParam(self, 'wallet_type', 'standard')
-            print("params =", _Params(self))
+            #print("params =", _Params(self))
             sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
             vc = sb.instantiateViewControllerWithIdentifier_("RESTORE_SEED_2")
             self.navigationController.pushViewController_animated_(vc, True)
@@ -649,7 +634,7 @@ class RestoreWallet2(NewWalletVC):
         self.view.endEditing_(True)
         if self.doChkFormOk():
             self.saveVars()
-            print("params =",_Params(self))
+            #print("params =",_Params(self))
             parent = gui.ElectrumGui.gui
             try:
                 # create wallet, etc...
@@ -664,35 +649,15 @@ class RestoreWallet2(NewWalletVC):
             except:
                 utils.NSLog("onRestoreModeSave, got exception: %s", str(sys.exc_info()[1]))
                 return
-            
-            def doDismiss() -> None:
-                self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
-    
-            def openNew() -> None:
-                parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
-                                      onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(self) else None)
-            def onSuccess() -> None:
-                if _IsOnBoarding(self):
-                    openNew()
-                else:
-                    parent.show_message(vc=self, title=_('Wallet Saved'),
-                                        message = _('Your wallet has been successfully restored. Would you like to switch to it now?'),
-                                        hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open Wallet'),
-                                        onOk = openNew, onCancel = doDismiss)
-
-            def onFailure(err : str) -> None:
-                parent.show_error(vc=self, message = str(err))
-                
-            parent.generate_new_wallet(
+                            
+            _WizardGenerateNewWallet(
                 vc = self,
                 wallet_name = wallet_name,
                 wallet_pass = wallet_pass,
                 wallet_seed = seed,
                 seed_ext = seedext,
                 seed_type = seed_type,
-                have_keystore = keystore,
-                onSuccess = onSuccess,
-                onFailure = onFailure)
+                have_keystore = keystore)
 
 
 class NewWalletMenu(NewWalletMenuBase):
@@ -1061,12 +1026,9 @@ class ImportSaveWallet(NewWalletVC):
     def onSave(self) -> None:
         self.view.endEditing_(True)
         if self.doChkFormOk():
-            parent = gui.ElectrumGui.gui
-            def ToErrIsHuman(title = "Oops!", message = "Something went wrong! Please email the developers!", onOk = None) -> None:
-                parent.show_error(vc = self, title = title, message = message, onOk = onOk)
             try:
                 self.saveVars()
-                print("params =", _Params(self))
+                #print("params =", _Params(self))
                 wallet_name = _Params(self)['WalletName']
                 addys = []
                 keys = []
@@ -1079,34 +1041,16 @@ class ImportSaveWallet(NewWalletVC):
                 else:
                     raise Exception('Can\'t find imported_keystore_type in _Params!')
                 
-                def onFailure(msg : str) -> None:
-                    utils.NSLog("Got error from generate_new_wallet: %s", msg)
-                    ToErrIsHuman()
-                    
-                def doDismiss() -> None:
-                    self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
-
-                def openNew() -> None:
-                    parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
-                                          onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(self) else None)
-                def onSuccess() -> None:
-                    if not _IsOnBoarding(self):
-                        parent.show_message(vc=self, title=_('New Wallet Created'),
-                                            message = _('Your new imported wallet has been successfully created. Would you like to switch to it now?'),
-                                            hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
-                                            onOk = openNew, onCancel = doDismiss)
-                    else:
-                        openNew()
-                
-                parent.generate_new_wallet(vc = self, wallet_name = wallet_name, wallet_pass = wallet_pass,
-                                           message = _("Generating your wallet..."),
-                                           watching_addresses = addys, private_keys = keys, encrypt = True,
-                                           onSuccess=onSuccess,onFailure=onFailure)
+                _WizardGenerateNewWallet(vc = self, wallet_name = wallet_name, wallet_pass = wallet_pass,
+                                         message = _("Generating your wallet..."),
+                                         watching_addresses = addys, private_keys = keys, encrypt = True)
             except:
                 utils.NSLog("Exception in ImportSaveWallet onSave: %s", sys.exc_info()[1])
-                ToErrIsHuman()
+                _ToErrIsHuman(vc=self)
 
-
+####################
+# Useful Helpers   #
+####################
 ImportItem = namedtuple("ImportItem", "item typ info") # typ=0 is invalid, typ=1 is address typ=2 is private key. if valid, info is the Address object for the key and/or address
 def _ImportItemify(item : str) -> ImportItem:
     item = item.strip()
@@ -1121,9 +1065,49 @@ def _ImportItemify(item : str) -> ImportItem:
         info = PublicKey.from_WIF_privkey(item).address
     return ImportItem(item, typ, info)
 
-####################
-# Useful Helpers   #
-####################
+def _ToErrIsHuman(vc : UIViewController, title = "Oops!", message = "Something went wrong! Please email the developers!", onOk = None) -> None:
+    parent = gui.ElectrumGui.gui    
+    parent.show_error(vc = vc, title = title, message = message, onOk = onOk)
+
+def _DoDismiss(vc : UIViewController) -> None:
+    vc.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+    
+def _WizardGenerateNewWallet(vc : UIViewController, **kwargs) -> None:
+    if kwargs.get('onSuccess', None) or kwargs.get('onFailure', None):
+        raise ValueError('_WizardGenerateNewWallet cannot be passed an onFailure or onSuccess callback!')
+    completion = kwargs.pop('completion', None)
+    if not completion: completion = lambda: None
+    wallet_name = kwargs.get('wallet_name', None)
+    wallet_pass = kwargs.get('wallet_pass', None)
+    if not wallet_name:
+        raise ValueError('_WizardGenerateNewWallet: wallet_name kwarg missing!')
+    parent = gui.ElectrumGui.gui
+    
+    def ToErrIsHuman() -> None:  _ToErrIsHuman(vc=vc)
+    
+    def onFailure(msg : str) -> None:
+        utils.NSLog("Got error from generate_new_wallet: %s", msg)
+        ToErrIsHuman()
+        
+    def doDismiss() -> None: _DoDismiss(vc)
+
+    def openNew() -> None:
+        parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = vc, onSuccess=doDismiss,
+                              onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(vc) else None)
+        
+    def onSuccess() -> None:
+        completion()
+        if not _IsOnBoarding(vc):
+            parent.show_message(vc=vc, title=_('New Wallet Created'),
+                                message = _('Your new imported wallet has been successfully created. Would you like to switch to it now?'),
+                                hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
+                                onOk = openNew, onCancel = doDismiss)
+        else:
+            openNew()
+
+    parent.generate_new_wallet(vc = vc, onSuccess = onSuccess, onFailure = onFailure, **kwargs)
+    
+
 def _Params(vc : UIViewController) -> dict():
     nav = vc.navigationController
     p = utils.nspy_get(nav) if isinstance(nav, NewWalletNav) else dict()
