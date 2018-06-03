@@ -8,6 +8,7 @@ from .custom_objc import *
 import sys
 from collections import namedtuple
 import electroncash.bitcoin as bitcoin
+import electroncash.keystore as keystore
 from electroncash.address import Address, PublicKey
 
 
@@ -571,8 +572,7 @@ class RestoreWallet1(NewWalletSeed2):
         
         if seed_type == 'bip39':
             # do bip39 stuff
-            from electroncash.keystore import bip44_derivation, bip44_derivation_145
-            default_derivation = bip44_derivation_145(0)
+            default_derivation = keystore.bip44_derivation_145(0)
             test=bitcoin.is_bip32_derivation
             def onOk(text : str) -> None:
                 der = text.strip()
@@ -612,7 +612,6 @@ class RestoreWallet1(NewWalletSeed2):
 
     @objc_method
     def doBip44Keystore(self, seed, passphrase, derivation) -> bool:
-        import electroncash.keystore as keystore
         seed, passphrase, derivation = py_from_ns(seed), py_from_ns(passphrase), py_from_ns(derivation)
         try:
             k = keystore.from_bip39_seed(seed, passphrase, derivation)
@@ -623,7 +622,6 @@ class RestoreWallet1(NewWalletSeed2):
     
     @objc_method
     def doStandardKeystore(self, seed, passphrase) -> bool:
-        import electroncash.keystore as keystore
         seed, passphrase = py_from_ns(seed), py_from_ns(passphrase)
         try:
             k = keystore.from_seed(seed, passphrase, False)
@@ -633,7 +631,6 @@ class RestoreWallet1(NewWalletSeed2):
         return False
 
 def _AddKeystore(vc, k) -> bool:
-    import electroncash.keystore as keystore
     has_xpub = isinstance(k, keystore.Xpub)
     if has_xpub:
         t1 = bitcoin.xpub_type(k.xpub)
@@ -659,7 +656,7 @@ class RestoreWallet2(NewWalletVC):
                 wallet_name = _Params(self)['WalletName']
                 wallet_pass = _Params(self)['WalletPass']
                 seed = _Params(self)['seed']
-                keystore = _Params(self)['keystores'][0]
+                ks = _Params(self)['keystores'][0]
                 seedext = _Params(self)['seedext']
                 is_bip39 = _Params(self)['is_bip39']
                 seed_type = _Params(self)['seed_type']
@@ -675,7 +672,7 @@ class RestoreWallet2(NewWalletVC):
                 wallet_seed = seed,
                 seed_ext = seedext,
                 seed_type = seed_type,
-                have_keystore = keystore)
+                have_keystore = ks)
 
 
 class NewWalletMenu(NewWalletMenuBase):
@@ -737,11 +734,20 @@ class Import1(Import1Base):
                 self.errMsgView.setHidden_(True)
                 self.infoView.setHidden_(False)
         self.tvDel.didChange = Block(hideErrBox)
-        self.tit.setText_withKerning_(_("Import Bitcoin Cash Addresses or Private Keys"), utils._kern)
+        if self.masterKeyMode:
+            titText = _("Create a wallet using a Master Key")
+            infoText =  (_("Specify a master key to re-create a deterministic wallet.") 
+                         + " " + _("To create a watching-only wallet, please enter your master public key (xpub/ypub/zpub).")
+                         + " " + _("To create a spending wallet, please enter a master private key (xprv/yprv/zprv).") )
+
+        else:
+            titText = _("Import Bitcoin Cash Addresses or Private Keys")
+            infoText = _("Enter a list of private keys to create a regular spending wallet. " +
+                         "Alternatively, you can create a 'watching-only' wallet by " +
+                         "entering a list of Bitcoin Cash addresses.")
+        self.tit.setText_withKerning_(titText, utils._kern)
         utils.uilabel_replace_attributed_text(lbl=self.info, font = UIFont.italicSystemFontOfSize_(14.0),
-                                              text = _("Enter a list of private keys to create a regular spending wallet. " +
-                                                       "Alternatively, you can create a 'watching-only' wallet by " +
-                                                       "entering a list of Bitcoin Cash addresses."))
+                                              text = infoText)
         utils.uilabel_replace_attributed_text(lbl=self.errMsg, font = UIFont.italicSystemFontOfSize_(14.0), text = " ")
 
         self.setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown()
@@ -779,8 +785,9 @@ class Import1(Import1Base):
     def reader_didScanResult_(self, reader, result) -> None:
         utils.NSLog("Reader data = '%s'",str(result))
         reader.stopScanning()
-        from .contacts import cleanup_address_remove_colon
-        result = cleanup_address_remove_colon(result)
+        if not self.masterKeyMode:
+            from .contacts import cleanup_address_remove_colon
+            result = cleanup_address_remove_colon(result)
         self.tvDel.text = str(self.tvDel.text).strip() + " " + result
         self.readerDidCancel_(reader) # just close it once we get data
              
@@ -795,18 +802,33 @@ class Import1(Import1Base):
     def words(self) -> ObjCInstance:
         return ns_from_py(str(self.tvDel.text).split())
    
-    # TODO: override this in the subclass that is to handle xpub/xpriv etc keys
     @objc_method
     def doChkFormOk(self) -> bool:
+        def ErrMsg(msg):
+            utils.uilabel_replace_attributed_text(self.errMsg, msg)
+            self.infoView.setHidden_(True)
+            self.errMsgView.setHidden_(False)
+        def ClearErrMsg():
+            self.infoView.setHidden_(False)
+            self.errMsgView.setHidden_(True)
+            
         words = py_from_ns(self.words())
-        for w in words:
-            if Address.is_valid(w) or bitcoin.is_private_key(w):
-                self.infoView.setHidden_(False)
-                self.errMsgView.setHidden_(True)
+        if self.masterKeyMode:
+            if len(words) > 1:
+                ErrMsg(_("You appear to have entered more than one item. Each wallet can only have a single master key. To use multiple master keys, create a new wallet for each key."))
+            elif not words:
+                ErrMsg(_("Please specify a master key to continue. Valid keys are long strings starting with either xpub/ypub/zpub or xprv/yprv/zprv."))
+            elif keystore.is_master_key(words[0]):
+                ClearErrMsg()
                 return True
-        utils.uilabel_replace_attributed_text(self.errMsg, _("You appear to have entered no valid Bitcoin Cash addresses or private keys."))
-        self.infoView.setHidden_(True)
-        self.errMsgView.setHidden_(False)
+            else:
+                ErrMsg(_("The provided key does not appear to be a valid master key. Valid keys are long strings starting with either xpub/ypub/zpub or xprv/yprv/zprv. Please try again."))
+        else:
+            for w in words:
+                if Address.is_valid(w) or bitcoin.is_private_key(w):
+                    ClearErrMsg()
+                    return True
+            ErrMsg( _("You appear to have entered no valid Bitcoin Cash addresses or private keys.") )
         return False        
    
     @objc_method
@@ -818,7 +840,11 @@ class Import1(Import1Base):
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # TODO: stuff
-        _SetParam(self, 'words', py_from_ns(self.words()))
+        if self.masterKeyMode:
+            k = keystore.from_master_key(self.tvDel.text)
+            _SetParam(self, 'keystore', k)
+        else:
+            _SetParam(self, 'words', py_from_ns(self.words()))
         
 class Import2(Import2Base):
     @objc_method
@@ -835,16 +861,71 @@ class Import2(Import2Base):
         ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.errMsg.attributedText).autorelease()
         ats.addAttribute_value_range_(NSKernAttributeName, utils._kern, NSRange(0, ats.length())) # make error msg be kerned a bit more to fit better
         self.errMsg.attributedText = ats
-        
-        self.items = _Params(self).get('words', list())
+
+        if self.masterKeyMode:
+            self.items = list()
+        else:
+            self.items = _Params(self).get('words', list())
         
         uinib = UINib.nibWithNibName_bundle_("ImportCell", None)
         self.tv.registerNib_forCellReuseIdentifier_(uinib, "ImportCell")
-
+        
+        ## Bar button item is optional in future but so far in the views we're using it's always there
+        bb = self.navigationItem.rightBarButtonItem
+        if bb:
+            from .addresses import _GetBBTitle
+            bb.possibleTitles = NSSet.setWithArray_(_GetBBTitle('*'))
+            d = { NSFontAttributeName : UIFont.systemFontOfSize_weight_(14.0, UIFontWeightRegular) }
+            bb.setTitleTextAttributes_forState_(d, UIControlStateNormal)
+            d[NSFontAttributeName] = UIFont.systemFontOfSize_weight_(14.0, UIFontWeightRegular)
+            bb.setTitleTextAttributes_forState_(d, UIControlStateHighlighted)
+            bb.title = _GetBBTitle()
+ 
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes = [c_bool])
         self.refresh()
+        
+    @objc_method
+    def viewDidAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewDidAppear:', animated, argtypes = [c_bool])
+        if self.masterKeyMode and not self.items:
+            k = _Params(self).get('keystore', None)
+            if not k:
+                utils.NSLog("Import2.viewDidAppear_: Oops! Can't find keystore in params! This shouldn't happen...")
+                _ToErrIsHuman(self)
+                return
+            # pop up a waiting dialog here and generate some addresses to display...
+            def Get20Addys() -> list():
+                ret = list()
+                for i in range(0,20):
+                    #pubkey, addr = keystore.xpubkey_to_address(k.get_xpubkey(0,i))
+                    addr = Address.from_pubkey(k.derive_pubkey(0, i))
+                    ret.append(addr.to_ui_string())
+                return ret
+            def Err(excinf):
+                utils.NSLog("Something went wrong! Got an exception when deriving addresses in Import2.viewDidAppear_: %s", str(excinf[1]))
+                _ToErrIsHuman(self)
+            def Success(l : list) -> None:
+                self.items = l
+                self.refresh()
+            utils.WaitingDialog(vc = self, message = _("Deriving addresses..."), task=Get20Addys, on_success=Success, on_error=Err)
+     
+    @objc_method
+    def toggleAddressFormat(self) -> None:
+        bb = self.navigationItem.rightBarButtonItem
+        if bb:
+            from .addresses import _GetBBTitle
+            gui.ElectrumGui.gui.toggle_cashaddr(not gui.ElectrumGui.gui.prefs_get_use_cashaddr())
+            bb.title = _GetBBTitle()
+            newitems = list()
+            for it in self.items:
+                if Address.is_valid(it):
+                    it = Address.from_string(it).to_ui_string()
+                newitems.append(it)
+            self.items = newitems
+            self.refresh()
+
         
     @objc_method
     def refresh(self) -> None:
@@ -869,6 +950,7 @@ class Import2(Import2Base):
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         cell = None
         try:
+            k = _Params(self).get('keystore', None)
             cell = tableView.dequeueReusableCellWithIdentifier_("ImportCell")
             if cell is None: raise Exception("Dafuq UIKit?!")
             item = str(self.items[indexPath.row])
@@ -876,7 +958,7 @@ class Import2(Import2Base):
             cell.item.text = ii.item
             cell.num.text = str(indexPath.row + 1)
             if ii.typ == 1:
-                cell.desc.text = "Bitcoin Cash Address"
+                cell.desc.text = "Bitcoin Cash Address" + (" (watching-only)" if k and k.is_watching_only() else "")
             elif ii.typ == 2:
                 cell.desc.text = "Private Key - Address: " + ii.info.to_ui_string()
             else:
@@ -909,7 +991,7 @@ class Import2(Import2Base):
     
     @objc_method
     def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
-        return UITableViewCellEditingStyleDelete
+        return UITableViewCellEditingStyleDelete if not self.masterKeyMode else UITableViewCellEditingStyleNone
 
     @objc_method
     def removeItemAtIndex_(self, index : int) -> None:
@@ -934,6 +1016,9 @@ class Import2(Import2Base):
         ''' This method is called in iOS 11.0+ only .. so we only create this UISwipeActionsConfiguration ObjCClass
             here rather than in uikit_bindings.py
         '''
+        if self.masterKeyMode:
+            return None
+        
         try:
             row = int(indexPath.row) # save param outside objcinstance object and into python for 'handler' closure
             section = int(indexPath.section)
@@ -969,47 +1054,62 @@ class Import2(Import2Base):
         
         ret = True
         asError = False
-        
-        items = list(self.items)
-        valid_items = list()
-        for x in items:
-            item = _ImportItemify(x)
-            if item.typ == 1: numaddr += 1
-            elif item.typ == 2: numpk += 1
-            if item.typ:
-                if self.forceType == 2 and item.typ == 1:
-                    pass
-                else:
-                    numvalid += 1
-                    valid_items.append(item)
-        utils.nspy_put_byname(self, valid_items, 'valid_items')
         msg = ""
-        if numvalid < len(items):
-            msg += _("%d valid item(s)"%numvalid) + " (" + _("invalid items will be discarded") + ")."
-        if self.forceType == 1 and numpk:
-            msg += " " + _("This is a wathching-only wallet, so the given private keys will be converted to watching addresses.")
-        elif self.forceType == 2 and numaddr:
-            msg =  _("To import addresses into a spending wallet, you must use their private key.")
-            asError = True
-            ret = False
-        elif numpk and numaddr:
-            msg = _("Cannot specify private keys and addresses in the same wallet. Addresses will result in a watching-only wallet, and private keys in a spending wallet. Remove incompatible items (by swiping them left).")
-            ret = False
-            asError = True
-        elif numpk:
-            if not self.forceType:
-                msg += " " + _("Importing these keys will create a fully capable spending wallet.")
+        
+        if self.masterKeyMode:
+            ret = True
+            k = _Params(self).get('keystore', None)
+            if k:
+                if k.is_watching_only():
+                    msg = _("A deterministic wallet will be created using the provided master public key. This wallet will be watching-only.")
+                else:
+                    msg = _("A deterministic wallet will be created using the provided master private key. This wallet will be able to freely send and receive Bitcoin Cash.")
             else:
-                msg += " " + _("Importing these keys will add addresses and keys to your spending wallet.")
-        elif numaddr:
-            if not self.forceType:
-                msg += " " + _("Importing these addresses will create a watching-only wallet.")
-            else:
-                msg += " " + _("Importing these addresses will add them to your watching-only wallet.")
-        elif not numvalid:
-            msg = _("No valid items remain. Cannot proceed -- go back and try again.")
-            asError = True
-            ret = False
+                ret = False
+                msg = _("An unknown error occurred. Cannot proceed.")
+                asError = True
+        else:
+            # regular bitcoin address / private key import
+            items = list(self.items)
+            valid_items = list()
+            for x in items:
+                item = _ImportItemify(x)
+                if item.typ == 1: numaddr += 1
+                elif item.typ == 2: numpk += 1
+                if item.typ:
+                    if self.forceType == 2 and item.typ == 1:
+                        pass
+                    else:
+                        numvalid += 1
+                        valid_items.append(item)
+            utils.nspy_put_byname(self, valid_items, 'valid_items')
+            msg = ""
+            if numvalid < len(items):
+                msg += _("%d valid item(s)"%numvalid) + " (" + _("invalid items will be discarded") + ")."
+            if self.forceType == 1 and numpk:
+                msg += " " + _("This is a wathching-only wallet, so the given private keys will be converted to watching addresses.")
+            elif self.forceType == 2 and numaddr:
+                msg =  _("To import addresses into a spending wallet, you must use their private key.")
+                asError = True
+                ret = False
+            elif numpk and numaddr:
+                msg = _("Cannot specify private keys and addresses in the same wallet. Addresses will result in a watching-only wallet, and private keys in a spending wallet. Remove incompatible items (by swiping them left).")
+                ret = False
+                asError = True
+            elif numpk:
+                if not self.forceType:
+                    msg += " " + _("Importing these keys will create a fully capable spending wallet.")
+                else:
+                    msg += " " + _("Importing these keys will add addresses and keys to your spending wallet.")
+            elif numaddr:
+                if not self.forceType:
+                    msg += " " + _("Importing these addresses will create a watching-only wallet.")
+                else:
+                    msg += " " + _("Importing these addresses will add them to your watching-only wallet.")
+            elif not numvalid:
+                msg = _("No valid items remain. Cannot proceed -- go back and try again.")
+                asError = True
+                ret = False
         if asError:
             utils.uilabel_replace_attributed_text(lbl=self.errMsg, text = msg)
             self.errMsgView.setHidden_(False)
@@ -1028,9 +1128,10 @@ class Import2(Import2Base):
     
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
-        valids = utils.nspy_get_byname(self, 'valid_items')
-        _SetParam(self, 'valid_items', valids)
-        _SetParam(self, 'imported_keystore_type', valids[0].typ)
+        if not self.masterKeyMode:
+            valids = utils.nspy_get_byname(self, 'valid_items')
+            _SetParam(self, 'valid_items', valids)
+            _SetParam(self, 'imported_keystore_type', valids[0].typ)
 
 class ImportSaveWallet(NewWalletVC):
     
@@ -1288,3 +1389,7 @@ class OnBoardingMenu(NewWalletMenuBase):
     @objc_method
     def onImportAddysPks(self) -> None:
         self.jumpToMenu_("IMPORT_KEYS_1")
+        
+    @objc_method
+    def onMasterKey(self) -> None:
+        self.jumpToMenu_("MASTER_KEY_1")

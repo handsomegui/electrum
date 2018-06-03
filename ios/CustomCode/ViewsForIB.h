@@ -446,7 +446,8 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS;
 @property (nonatomic, strong) IBOutlet ECTextViewDelegate *tvDel;
 
-@property (nonatomic, weak) id qr, qrvc; ///< used in python by subclass. Declared here to take advantage of ARC.
+@property (nonatomic, weak) id qr, qrvc; ///< used in python by subclass. Declared here to take advantage of ARC and weak refs
+@property (nonatomic) BOOL masterKeyMode; ///< defaults to NO, but the Master key screens set this to YES and the python subclass uses this to change the behavior/display of the Import1 screen
 @end
 
 @interface Import1 : Import1Base
@@ -462,11 +463,13 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 @property (nonatomic, strong) NSArray<NSString *> *items; ///< used in python as a property but declared here to take advantage of ARC
 @property (nonatomic) NSInteger forceType; ///< set this to only accept private keys (=2) or only watching-only public keys (=1) -- to be used in future code that re-uses this class for importing
+@property (nonatomic) BOOL masterKeyMode; ///< similar to Import1Base's flag.  This is for the "Import Master Key" set of screens and is set to true there.
 @end
 
 @interface Import2 : Import2Base
 // implemented in python newwallet.py
 - (IBAction) onNext;
+- (IBAction) toggleAddressFormat;
 @end
 
 @interface ImportCell : UITableViewCell
@@ -485,6 +488,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onNewStandardWallet;
 - (IBAction) onRestoreSeed;
 - (IBAction) onImportAddysPks;
+- (IBAction) onMasterKey;
 @end
 
 #endif /* ViewsForIB_h */
