@@ -10,6 +10,10 @@ from collections import namedtuple
 import electroncash.bitcoin as bitcoin
 from electroncash.address import Address, PublicKey
 
+
+#################################################################################################
+#    Use the below 2 functions to call up either the On-Boarding or the "New Wallet" wizards    #
+#################################################################################################
 def PresentAddWalletWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
     if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
     sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
@@ -17,13 +21,27 @@ def PresentAddWalletWizard(vc : ObjCInstance = None, animated : bool = True, com
         utils.NSLog("ERROR: SB IS NULL")
         return None
     nav = sb.instantiateViewControllerWithIdentifier_("Add_A_Wallet")
-    #nav = sb.instantiateViewControllerWithIdentifier_("TESTIE")
     if nav:
         if not dontPresentJustReturnIt:
             vc.presentViewController_animated_completion_(nav, animated, completion)
     else:
         utils.NSLog("ERROR: Could not find the storyboard viewcontroller named 'Add_A_Wallet'!")
     return nav
+
+def PresentOnBoardingWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
+    if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
+    sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
+    if not sb:
+        utils.NSLog("ERROR: SB IS NULL")
+        return None
+    wiz = sb.instantiateViewControllerWithIdentifier_("On_Boarding")
+    if wiz:
+        if not dontPresentJustReturnIt:
+            vc.presentViewController_animated_completion_(wiz, animated, completion)
+    else:
+        utils.NSLog("ERROR: Could not find the storyboard viewcontroller named 'On_Boarding'!")
+    return wiz
+#################################################################################################
 
 class NewWalletNav(NewWalletNavBase):
     @objc_method
@@ -1162,20 +1180,6 @@ _notification_token = NSNotificationCenter.defaultCenter.addObserverForName_obje
 #############################################################################
 # On-Boarding Wizard that comes up on first run when no wallets are present #
 #############################################################################
-def PresentOnBoardingWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
-    if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
-    sb = UIStoryboard.storyboardWithName_bundle_("NewWallet", None)
-    if not sb:
-        utils.NSLog("ERROR: SB IS NULL")
-        return None
-    wiz = sb.instantiateViewControllerWithIdentifier_("On_Boarding")
-    if wiz:
-        if not dontPresentJustReturnIt:
-            vc.presentViewController_animated_completion_(wiz, animated, completion)
-    else:
-        utils.NSLog("ERROR: Could not find the storyboard viewcontroller named 'On_Boarding'!")
-    return wiz
-
 class OnBoardingWizard(OnBoardingWizardBase):
     ''' On-Boarding Wizard that comes up on first run when no wallets are present'''
     pvc = objc_property()
