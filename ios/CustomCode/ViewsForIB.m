@@ -323,6 +323,14 @@ static BOOL IS_IPHONE_5(void) {
 @end
 
 @implementation NewWalletVCBase
+- (void) setNoPWCheck:(BOOL)b {
+    if (!!b == !!_noPWCheck) return;
+    _noPWCheck = b;
+    NSArray<UIView *> * items = @[ _walletPw1Tit, _walletPw1, _walletPw2Tit, _walletPw2 ];
+    for (UIView *v in items) {
+        v.hidden = b;
+    }
+}
 @end
 
 @implementation NewWalletSeedBase
@@ -374,6 +382,9 @@ static BOOL IS_IPHONE_5(void) {
 @end
 
 @implementation Import2Base
+@end
+
+@implementation ImportCell
 @end
 
 @implementation OnBoardingWizardBase

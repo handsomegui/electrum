@@ -380,6 +380,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UIView *errMsgView;
 @property (nonatomic, weak) IBOutlet UIButton *nextBut;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS, *errHeightCS, *errTopCS;
+@property (nonatomic) BOOL noPWCheck; ///< set by ImportSaveWallet child class to skip the password check for wallets that lack a password (watching-only wallets)
 @end
 @interface NewWalletVC : NewWalletVCBase
 // implemented in python newwallet.py..
@@ -387,6 +388,10 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface RestoreWallet2 : NewWalletVC
 // implemented in python newwallet.py
 - (IBAction) onRestoreModeSave;
+@end
+@interface ImportSaveWallet : NewWalletVC
+// implemented in python newwallet.py
+- (IBAction) onSave;
 @end
 
 @interface NewWalletSeedBase : UIViewController
@@ -456,11 +461,17 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UIButton *nextBut;
 
 @property (nonatomic, strong) NSArray<NSString *> *items; ///< used in python as a property but declared here to take advantage of ARC
+@property (nonatomic) NSInteger forceType; ///< set this to only accept private keys (=2) or only watching-only public keys (=1) -- to be used in future code that re-uses this class for importing
 @end
 
 @interface Import2 : Import2Base
 // implemented in python newwallet.py
 - (IBAction) onNext;
+@end
+
+@interface ImportCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UILabel *num, *item, *desc, *status;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *centerYCS;
 @end
 
 @interface OnBoardingWizardBase : UIViewController

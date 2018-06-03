@@ -39,6 +39,7 @@ class PrefsVC(UITableViewController):
     networkStatusIcon = objc_property()
     lockIcon = objc_property()
     hasSeed = objc_property()
+    hasPW = objc_property()
         
     @objc_method
     def init(self) -> ObjCInstance:
@@ -52,6 +53,7 @@ class PrefsVC(UITableViewController):
         self.networkStatusIcon = None
         self.lockIcon = None
         self.hasSeed = None
+        self.hasPW = None
         self.warnButtonColor = UIColor.colorWithRed_green_blue_alpha_(0.8,0.0,0.0,1.0)
         self.updateCurrencies()
         self.updateExchanges()
@@ -75,6 +77,7 @@ class PrefsVC(UITableViewController):
         self.networkStatusIcon = None
         self.lockIcon = None
         self.hasSeed = None
+        self.hasPW = None
         send_super(__class__, self, 'dealloc')
 
     @objc_method
@@ -140,7 +143,10 @@ class PrefsVC(UITableViewController):
         assert section >= 0 and section < len(SECTION_TITLES)
         secName = SECTION_TITLES[section]
         if secName == 'Tools':
-            return 3 if not self.hasSeed else 4
+            if self.hasPW:
+                return 3 if not self.hasSeed else 4
+            else:
+                return 2
         elif secName == 'Fees':
             return 2
         elif secName == 'Transactions':
@@ -177,7 +183,7 @@ class PrefsVC(UITableViewController):
                 self.navigationController.pushViewController_animated_(vc, True)
             elif row == 1: # Network Dialog
                 parent.show_network_dialog(vc = self)
-            elif row == 2: # Password dialog
+            elif row == 2 and self.hasPW: # Password dialog
                 parent.show_change_password(vc = self)
             elif row == 3 and self.hasSeed:
                 def gotPW(pw) -> None:

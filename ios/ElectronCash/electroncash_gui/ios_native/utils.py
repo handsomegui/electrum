@@ -112,7 +112,8 @@ _ColorScheme = {
     'linktapped': UIColor.colorInDeviceRGBWithHexString_("#FF8BFF").retain(), 
     'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
     'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
-    'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(),
+    'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(), # very bright green
+    'green'     : UIColor.colorInDeviceRGBWithHexString_("#9BDF1B").retain(), # less bright green
 }
     
 def uicolor_custom(name : str) -> ObjCInstance:

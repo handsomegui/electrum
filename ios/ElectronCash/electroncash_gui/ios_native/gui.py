@@ -589,6 +589,7 @@ class ElectrumGui(PrintError):
 
         lockIcon = "lock.png" if self.wallet and self.wallet.has_password() else "unlock.png"
         hasSeed =  bool(self.wallet.has_seed())
+        hasPW = not bool(self.wallet.is_watching_only())
 
         if len(self.tx_notifications):
             self.notify_transactions()
@@ -603,11 +604,13 @@ class ElectrumGui(PrintError):
 
         if self.prefsVC and (self.prefsVC.networkStatusText != networkStatusText
                              or self.prefsVC.lockIcon != lockIcon
-                             or self.prefsVC.hasSeed != hasSeed):
+                             or self.prefsVC.hasSeed != hasSeed
+                             or self.prefsVC.hasPW != hasPW):
             self.prefsVC.networkStatusText = networkStatusText
             self.prefsVC.networkStatusIcon = UIImage.imageNamed_(icon)
             self.prefsVC.lockIcon = lockIcon
             self.prefsVC.hasSeed = hasSeed
+            self.prefsVC.hasPW = hasPW
             self.prefsVC.refresh()
             
     def notify_transactions(self):
@@ -1123,33 +1126,44 @@ class ElectrumGui(PrintError):
         return wallets.WalletsMgr.check_wallet_exists(wallet_filename)
     
     # supports only standard wallets for now...
-    def generate_new_wallet(self, wallet_name : str, wallet_pass : str, wallet_seed : str,
+    def generate_new_wallet(self, wallet_name : str,
+                            wallet_pass : str = '',
+                            wallet_seed : str = '',
                             seed_ext : str = '',
                             seed_type : str = 'standard',
                             have_keystore : object = None, # not required but if we already have generated a keystore, will use this and ignore wallet_seed param
+                            private_keys : list = [], # if specified, ignores wallet_seed and have_keystore, do not specify this and watching_addresses at the same time 
+                            watching_addresses : list = [], # if specified, ignores wallet_seed and have_keystore and wallet_pass.. do not specify this and private_keys at the same time
                             onSuccess = None, # signature: fun()
                             onFailure = None, # signature: fun(errMsg)
                             encrypt : bool = True,
-                            vc : UIViewController = None) -> None:
+                            vc : UIViewController = None,
+                            message : str = None) -> None:
         if not onSuccess: onSuccess = lambda: None
         if not onFailure: onFailure = lambda x: None
         if not vc: vc = self.get_presented_viewcontroller()
         if self.check_wallet_exists(wallet_name):
             onFailure("A wallet with the same name already exists")
-            return       
+            return
+        
+        if private_keys and (watching_addresses or wallet_seed or have_keystore):
+            raise ValueError('Cannot specify private_keys along with other seed related params or watching addresses')
+        if watching_addresses and (wallet_seed or have_keystore or wallet_pass or private_keys):
+            raise ValueError('Cannot specify watching_addresses along with other seed related params, private keys, or a wallet password')
+        
 
         waitDlg = None
-                
-        def DoIt() -> None:    
+
+        def doDismiss(animated = True, compl = None) -> None:
             nonlocal waitDlg
-            def doDismiss(animated = True, compl = None) -> None:
-                nonlocal waitDlg
-                if waitDlg:
-                    waitDlg.dismissViewControllerAnimated_completion_(animated, compl)
-                    waitDlg = None
-                elif compl:
-                    compl()
-                    
+            if waitDlg:
+                waitDlg.dismissViewControllerAnimated_completion_(animated, compl)
+                waitDlg = None
+            elif compl:
+                compl()
+                
+        def DoIt_Seed_Or_Keystore() -> None:    
+            nonlocal waitDlg
             try:
                 from electroncash import keystore
                 from electroncash.wallet import Standard_Wallet
@@ -1169,9 +1183,10 @@ class ElectrumGui(PrintError):
     
                 path = os.path.join(wallets.WalletsMgr.wallets_dir(), wallet_name)
                 storage = WalletStorage(path, manual_upgrades=True)
-                storage.set_password(wallet_pass, encrypt)
-                if k.may_have_password():
-                    k.update_password(None, wallet_pass)
+                if wallet_pass:
+                    storage.set_password(wallet_pass, encrypt)
+                    if k.may_have_password():
+                        k.update_password(None, wallet_pass)
                 storage.put('seed_type', seed_type)
                 keys = k.dump()
                 storage.put('keystore', keys)
@@ -1186,11 +1201,55 @@ class ElectrumGui(PrintError):
                 einfo = str(sys.exc_info()[1])
                 def myCompl() -> None:
                     onFailure(einfo)
-                utils.NSLog("Generate wallet failure: %s", einfo)
+                utils.NSLog("Generate keystore/seed wallet failure: %s", einfo)
                 doDismiss(animated = False, compl = myCompl)
-            
 
-        waitDlg = utils.show_please_wait(vc = vc, message = _("Generating your addresses..."), completion = DoIt)
+        def DoIt_Imported() -> None:    
+            nonlocal waitDlg                    
+            try:
+                from electroncash import keystore
+                from electroncash.wallet import ImportedAddressWallet, ImportedPrivkeyWallet
+
+                path = os.path.join(wallets.WalletsMgr.wallets_dir(), wallet_name)
+                storage = WalletStorage(path, manual_upgrades=True)
+                keystores = list()
+                
+                if private_keys:
+                    text = ' '.join(private_keys)
+                    wallet = ImportedPrivkeyWallet.from_text(storage, text, None)
+                    keystores = wallet.get_keystores()
+                elif watching_addresses:
+                    text = ' '.join(watching_addresses)
+                    wallet = ImportedAddressWallet.from_text(storage, text)
+                else:
+                    raise ValueError('Missing one of private_keys or watching_addresses!')
+
+                if wallet_pass:                
+                    storage.set_password(wallet_pass, encrypt)
+                    for k in keystores:
+                        if k.may_have_password():
+                            k.update_password(None, wallet_pass)
+                    wallet.save_keystore()
+                wallet.synchronize()
+                wallet.storage.write()
+                self.refresh_components('wallets')
+                def myOnSuccess() -> None: onSuccess()
+                doDismiss(animated = True, compl = myOnSuccess)
+                    
+            except:
+                einfo = str(sys.exc_info()[1])
+                def myCompl() -> None:
+                    onFailure(einfo)
+                utils.NSLog("Generate imported wallet failure: %s", einfo)
+                doDismiss(animated = False, compl = myCompl)
+
+        
+        if private_keys or watching_addresses:
+            func = DoIt_Imported
+        else:
+            func = DoIt_Seed_Or_Keystore
+        if not message: message = _("Generating your addresses...")
+        waitDlg = utils.show_please_wait(vc = vc, message = message, completion = func)
         
 
     def switch_wallets(self, wallet_name : str,

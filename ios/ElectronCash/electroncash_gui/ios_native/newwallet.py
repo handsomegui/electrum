@@ -6,6 +6,9 @@ from typing import Any
 from .uikit_bindings import *
 from .custom_objc import *
 import sys
+from collections import namedtuple
+import electroncash.bitcoin as bitcoin
+from electroncash.address import Address, PublicKey
 
 def PresentAddWalletWizard(vc : ObjCInstance = None, animated : bool = True, completion : Block = None, dontPresentJustReturnIt = False) -> ObjCInstance:
     if not vc: vc = gui.ElectrumGui.gui.get_presented_viewcontroller()
@@ -141,9 +144,9 @@ class NewWalletVC(NewWalletVCBase):
             errMsg = _("Wallet name is empty. Please enter a wallet name to proceed.")
         elif gui.ElectrumGui.gui.check_wallet_exists(self.walletName.text):
             errMsg = _("A wallet with that name already exist. Please enter a different wallet name to proceed.")
-        elif not self.walletPw1.text:
+        elif not self.noPWCheck and not self.walletPw1.text:
             errMsg = _("Wallet password is empty. Please set a wallet password to proceed. You can disable wallet password protection later if you wish.")
-        elif self.walletPw1.text != self.walletPw2.text:
+        elif not self.noPWCheck and self.walletPw1.text != self.walletPw2.text:
             errMsg = _("Wallet passwords do not match. Please confirm the password you wish to set for your wallet by entering the same password twice.")
 
         if errMsg:
@@ -535,7 +538,6 @@ class RestoreWallet1(NewWalletSeed2):
        
     @objc_method
     def onNext(self) -> None:
-        import electroncash.bitcoin as bitcoin 
         seed = ' '.join(self.seedtv.text.strip().lower().split())
         is_bip39 = self.bip39.isOn()
         
@@ -631,8 +633,7 @@ def _AddKeystore(vc, k) -> bool:
     import electroncash.keystore as keystore
     has_xpub = isinstance(k, keystore.Xpub)
     if has_xpub:
-        from electroncash.bitcoin import xpub_type
-        t1 = xpub_type(k.xpub)
+        t1 = bitcoin.xpub_type(k.xpub)
         if t1 not in ['standard']:
             gui.ElectrumGui.gui.show_error(message = _('Wrong key type') + ": '%s'"%t1, vc=vc)
             return False
@@ -784,6 +785,7 @@ class Import1(Import1Base):
         if not QRCodeReader.isAvailable:
             utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
         else:
+            self.view.endEditing_(True)
             self.qr = QRCodeReader.new().autorelease()
             self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
             self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
@@ -796,7 +798,7 @@ class Import1(Import1Base):
         reader.stopScanning()
         from .contacts import cleanup_address_remove_colon
         result = cleanup_address_remove_colon(result)
-        self.tvDel.text = self.tvDel.text + " " + result
+        self.tvDel.text = str(self.tvDel.text).strip() + " " + result
         self.readerDidCancel_(reader) # just close it once we get data
              
     @objc_method
@@ -813,11 +815,7 @@ class Import1(Import1Base):
     # TODO: override this in the subclass that is to handle xpub/xpriv etc keys
     @objc_method
     def doChkFormOk(self) -> bool:
-        self.view.endEditing_(True)
         words = py_from_ns(self.words())
-        import electroncash.bitcoin as bitcoin
-        from electroncash.address import Address
-        print("words =",words)
         for w in words:
             if Address.is_valid(w) or bitcoin.is_private_key(w):
                 self.infoView.setHidden_(False)
@@ -831,23 +829,44 @@ class Import1(Import1Base):
     @objc_method
     def shouldPerformSegueWithIdentifier_sender_(self, identifier, sender) -> bool:
         # checks here that form is ok, etc
+        self.view.endEditing_(True)
         return self.doChkFormOk()
     
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # TODO: stuff
         _SetParam(self, 'words', py_from_ns(self.words()))
-        print("params =",_Params(self))
         
 class Import2(Import2Base):
+    @objc_method
+    def dealloc(self) -> None:
+        utils.nspy_pop(self)
+        send_super(__class__, self, 'dealloc')
+        
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         utils.uilabel_replace_attributed_text(lbl=self.info, font = UIFont.italicSystemFontOfSize_(14.0),
                                               text = _("..."))
         utils.uilabel_replace_attributed_text(lbl=self.errMsg, font = UIFont.italicSystemFontOfSize_(14.0), text = "...")
+        ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.errMsg.attributedText).autorelease()
+        ats.addAttribute_value_range_(NSKernAttributeName, utils._kern, NSRange(0, ats.length())) # make error msg be kerned a bit more to fit better
+        self.errMsg.attributedText = ats
         
         self.items = _Params(self).get('words', list())
+        
+        uinib = UINib.nibWithNibName_bundle_("ImportCell", None)
+        self.tv.registerNib_forCellReuseIdentifier_(uinib, "ImportCell")
+
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes = [c_bool])
+        self.refresh()
+        
+    @objc_method
+    def refresh(self) -> None:
+        self.tv.reloadData()
+        self.doChkFormOk()       
 
     #### UITableView delegate/dataSource methods...
     @objc_method
@@ -867,16 +886,41 @@ class Import2(Import2Base):
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
         cell = None
         try:
-            raise Exception('UNIMPLEMENTED')
+            cell = tableView.dequeueReusableCellWithIdentifier_("ImportCell")
+            if cell is None: raise Exception("Dafuq UIKit?!")
+            item = str(self.items[indexPath.row])
+            ii = _ImportItemify(item)
+            cell.item.text = ii.item
+            cell.num.text = str(indexPath.row + 1)
+            if ii.typ == 1:
+                cell.desc.text = "Bitcoin Cash Address"
+            elif ii.typ == 2:
+                cell.desc.text = "Private Key - Address: " + ii.info.to_ui_string()
+            else:
+                cell.desc.text = ""
+            # re-align 'title' to center or above center depending on whether we have a description or not
+            if cell.desc.text:
+                cell.centerYCS.constant = -8.0
+            else:
+                cell.centerYCS.constant = 0.0
+            if ii.typ and (not self.forceType or int(self.forceType) == int(ii.typ)):
+                cell.status.text = _("Valid")
+                cell.status.textColor = utils.uicolor_custom('green')
+            else:
+                cell.status.text = _("Invalid")
+                cell.status.textColor = utils.uicolor_custom('red')
         except:
             utils.NSLog("exception in Import2 tableView_cellForRowAtIndexPath_: %s",str(sys.exc_info()[1]))
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "ACell").autorelease()
-            cell.textLabel.text = "*Error*"
+            cell.textLabel.text = " "
         return cell
             
+    @objc_method
+    def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
+        return 65.0
     
     @objc_method
-    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
         tv.deselectRowAtIndexPath_animated_(indexPath,False)
     
@@ -885,11 +929,22 @@ class Import2(Import2Base):
         return UITableViewCellEditingStyleDelete
 
     @objc_method
+    def removeItemAtIndex_(self, index : int) -> None:
+        items = py_from_ns(self.items)
+        try:
+            items.pop(index)
+        except:
+            utils.NSLog("Failed to pop item at index %d", index)
+        self.items = items
+
+    @objc_method
     def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv, editingStyle : int, indexPath) -> None:
         if editingStyle == UITableViewCellEditingStyleDelete:
-            if True:
-                # TODO: update self.items
-                tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
+            self.removeItemAtIndex_(row)
+            self.doChkFormOk()
+            self.retain()
+            utils.call_later(0.4, lambda: self.autorelease().refresh())
+            tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
 
     @objc_method
     def tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
@@ -902,8 +957,11 @@ class Import2(Import2Base):
             def handler(a : objc_id, v : objc_id, c : objc_id) -> None:
                 result = False
                 try:
-                    ip = NSIndexPath.indexPathForRow_inSection_(row,section)
-                    # Update model here...
+                    #ip = NSIndexPath.indexPathForRow_inSection_(row,section)
+                    self.removeItemAtIndex_(row)
+                    self.doChkFormOk()
+                    self.retain()
+                    utils.call_later(0.4, lambda: self.autorelease().refresh())
                     result = True
                 except:
                     traceback.print_exc(file=sys.stderr)
@@ -921,9 +979,148 @@ class Import2(Import2Base):
     ### end UITableView related methods
 
     @objc_method
-    def onNext(self) -> None:
-        print("ON NEXT...")
+    def doChkFormOk(self) -> bool:
+        numvalid = 0
+        numpk = 0
+        numaddr = 0
+        
+        ret = True
+        asError = False
+        
+        items = list(self.items)
+        valid_items = list()
+        for x in items:
+            item = _ImportItemify(x)
+            if item.typ == 1: numaddr += 1
+            elif item.typ == 2: numpk += 1
+            if item.typ:
+                if self.forceType == 2 and item.typ == 1:
+                    pass
+                else:
+                    numvalid += 1
+                    valid_items.append(item)
+        utils.nspy_put_byname(self, valid_items, 'valid_items')
+        msg = ""
+        if numvalid < len(items):
+            msg += _("%d valid item(s)"%numvalid) + " (" + _("invalid items will be discarded") + ")."
+        if self.forceType == 1 and numpk:
+            msg += " " + _("This is a wathching-only wallet, so the given private keys will be converted to watching addresses.")
+        elif self.forceType == 2 and numaddr:
+            msg =  _("To import addresses into a spending wallet, you must use their private key.")
+            asError = True
+            ret = False
+        elif numpk and numaddr:
+            msg = _("Cannot specify private keys and addresses in the same wallet. Addresses will result in a watching-only wallet, and private keys in a spending wallet. Remove incompatible items (by swiping them left).")
+            ret = False
+            asError = True
+        elif numpk:
+            if not self.forceType:
+                msg += " " + _("Importing these keys will create a fully capable spending wallet.")
+            else:
+                msg += " " + _("Importing these keys will add addresses and keys to your spending wallet.")
+        elif numaddr:
+            if not self.forceType:
+                msg += " " + _("Importing these addresses will create a watching-only wallet.")
+            else:
+                msg += " " + _("Importing these addresses will add them to your watching-only wallet.")
+        elif not numvalid:
+            msg = _("No valid items remain. Cannot proceed -- go back and try again.")
+            asError = True
+            ret = False
+        if asError:
+            utils.uilabel_replace_attributed_text(lbl=self.errMsg, text = msg)
+            self.errMsgView.setHidden_(False)
+            self.infoView.setHidden_(True)
+        else:
+            utils.uilabel_replace_attributed_text(lbl=self.info, text = msg)
+            self.errMsgView.setHidden_(True)
+            self.infoView.setHidden_(False)
+        utils.uiview_set_enabled(self.nextBut, ret)
+        return ret
+
+    @objc_method
+    def shouldPerformSegueWithIdentifier_sender_(self, identifier, sender) -> bool:
+        # checks here that form is ok, etc
+        return self.doChkFormOk()
     
+    @objc_method
+    def prepareForSegue_sender_(self, segue, sender) -> None:
+        valids = utils.nspy_get_byname(self, 'valid_items')
+        _SetParam(self, 'valid_items', valids)
+        _SetParam(self, 'imported_keystore_type', valids[0].typ)
+
+class ImportSaveWallet(NewWalletVC):
+    
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        if _Params(self).get('imported_keystore_type', None) == 1:
+            self.noPWCheck = True
+        
+    @objc_method
+    def onSave(self) -> None:
+        self.view.endEditing_(True)
+        if self.doChkFormOk():
+            parent = gui.ElectrumGui.gui
+            def ToErrIsHuman(title = "Oops!", message = "Something went wrong! Please email the developers!", onOk = None) -> None:
+                parent.show_error(vc = self, title = title, message = message, onOk = onOk)
+            try:
+                self.saveVars()
+                print("params =", _Params(self))
+                wallet_name = _Params(self)['WalletName']
+                addys = []
+                keys = []
+                wallet_pass = None
+                if _Params(self)['imported_keystore_type'] == 2:
+                    wallet_pass = _Params(self)['WalletPass']
+                    keys = [x.item for x in _Params(self)['valid_items']]
+                elif _Params(self)['imported_keystore_type'] == 1:
+                    addys = [x.item for x in _Params(self)['valid_items']]
+                else:
+                    raise Exception('Can\'t find imported_keystore_type in _Params!')
+                
+                def onFailure(msg : str) -> None:
+                    utils.NSLog("Got error from generate_new_wallet: %s", msg)
+                    ToErrIsHuman()
+                    
+                def doDismiss() -> None:
+                    self.presentingViewController.dismissViewControllerAnimated_completion_(True, None)
+
+                def openNew() -> None:
+                    parent.switch_wallets(wallet_name = wallet_name, wallet_pass = wallet_pass, vc = self, onSuccess=doDismiss,
+                                          onFailure=onFailure, onCancel=doDismiss if not _IsOnBoarding(self) else None)
+                def onSuccess() -> None:
+                    if not _IsOnBoarding(self):
+                        parent.show_message(vc=self, title=_('New Wallet Created'),
+                                            message = _('Your new imported wallet has been successfully created. Would you like to switch to it now?'),
+                                            hasCancel = True, cancelButTitle = _('No'), okButTitle=_('Open New Wallet'),
+                                            onOk = openNew, onCancel = doDismiss)
+                    else:
+                        openNew()
+                
+                parent.generate_new_wallet(vc = self, wallet_name = wallet_name, wallet_pass = wallet_pass,
+                                           message = _("Generating your wallet..."),
+                                           watching_addresses = addys, private_keys = keys, encrypt = True,
+                                           onSuccess=onSuccess,onFailure=onFailure)
+            except:
+                utils.NSLog("Exception in ImportSaveWallet onSave: %s", sys.exc_info()[1])
+                ToErrIsHuman()
+
+
+ImportItem = namedtuple("ImportItem", "item typ info") # typ=0 is invalid, typ=1 is address typ=2 is private key. if valid, info is the Address object for the key and/or address
+def _ImportItemify(item : str) -> ImportItem:
+    item = item.strip()
+    info = None
+    typ = 0
+    if Address.is_valid(item):
+        typ = 1
+        info = Address.from_string(item)
+        item = item.split(':')[-1]
+    elif bitcoin.is_private_key(item):
+        typ = 2
+        info = PublicKey.from_WIF_privkey(item).address
+    return ImportItem(item, typ, info)
+
 ####################
 # Useful Helpers   #
 ####################
