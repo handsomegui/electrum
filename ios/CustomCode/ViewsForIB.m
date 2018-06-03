@@ -10,6 +10,7 @@
 
 #define DEGREES_TO_RADIANS(x) (M_PI * (x) / 180.0)
 
+/*
 static BOOL IS_IPHONE_5(void) {
     static int isiPhone5 = -12345;
 
@@ -17,6 +18,7 @@ static BOOL IS_IPHONE_5(void) {
         isiPhone5 = (int)(( fabs( ( double )[ [ UIScreen mainScreen ] nativeBounds ].size.height - ( double )1136.0 ) < DBL_EPSILON ) && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone);
     return (BOOL)isiPhone5;
 }
+*/
 
 @implementation AddrConvBase
 // properties get autosynthesized since Xcode 4.4
@@ -369,6 +371,9 @@ static BOOL IS_IPHONE_5(void) {
 @end
 
 @implementation Import1Base
+@end
+
+@implementation Import2Base
 @end
 
 @implementation OnBoardingWizardBase

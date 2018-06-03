@@ -838,7 +838,95 @@ class Import1(Import1Base):
         # TODO: stuff
         _SetParam(self, 'words', py_from_ns(self.words()))
         print("params =",_Params(self))
+        
+class Import2(Import2Base):
+    @objc_method
+    def viewDidLoad(self) -> None:
+        send_super(__class__, self, 'viewDidLoad')
+        utils.uilabel_replace_attributed_text(lbl=self.info, font = UIFont.italicSystemFontOfSize_(14.0),
+                                              text = _("..."))
+        utils.uilabel_replace_attributed_text(lbl=self.errMsg, font = UIFont.italicSystemFontOfSize_(14.0), text = "...")
+        
+        self.items = _Params(self).get('words', list())
 
+    #### UITableView delegate/dataSource methods...
+    @objc_method
+    def numberOfSectionsInTableView_(self, tableView) -> int:
+        return 1
+
+    @objc_method
+    def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
+        try:
+            items = py_from_ns(self.items)
+            return len(items) if items else 0
+        except Exception as e:
+            utils.NSLog("Error, exception retrieving items: %s",str(e))
+            return 0
+
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
+        cell = None
+        try:
+            raise Exception('UNIMPLEMENTED')
+        except:
+            utils.NSLog("exception in Import2 tableView_cellForRowAtIndexPath_: %s",str(sys.exc_info()[1]))
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "ACell").autorelease()
+            cell.textLabel.text = "*Error*"
+        return cell
+            
+    
+    @objc_method
+    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath):
+        #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
+        tv.deselectRowAtIndexPath_animated_(indexPath,False)
+    
+    @objc_method
+    def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
+        return UITableViewCellEditingStyleDelete
+
+    @objc_method
+    def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv, editingStyle : int, indexPath) -> None:
+        if editingStyle == UITableViewCellEditingStyleDelete:
+            if True:
+                # TODO: update self.items
+                tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
+
+    @objc_method
+    def tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        ''' This method is called in iOS 11.0+ only .. so we only create this UISwipeActionsConfiguration ObjCClass
+            here rather than in uikit_bindings.py
+        '''
+        try:
+            row = int(indexPath.row) # save param outside objcinstance object and into python for 'handler' closure
+            section = int(indexPath.section)
+            def handler(a : objc_id, v : objc_id, c : objc_id) -> None:
+                result = False
+                try:
+                    ip = NSIndexPath.indexPathForRow_inSection_(row,section)
+                    # Update model here...
+                    result = True
+                except:
+                    traceback.print_exc(file=sys.stderr)
+                ObjCBlock(c)(bool(result)) # inform UIKit if we deleted it or not by calling the block handler callback
+            action = UIContextualAction.contextualActionWithStyle_title_handler_(UIContextualActionStyleDestructive,
+                                                                                 _("Remove"),
+                                                                                 Block(handler))
+            action.image = UIImage.imageNamed_("trashcan_red.png")
+            action.backgroundColor = utils.uicolor_custom('red')
+            return UISwipeActionsConfiguration.configurationWithActions_([action])
+        except:
+            utils.NSLog("Impoert2.tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_, got exception: %s", str(sys.exc_info()[1]))
+            traceback.print_exc(file=sys.stderr)
+        return None
+    ### end UITableView related methods
+
+    @objc_method
+    def onNext(self) -> None:
+        print("ON NEXT...")
+    
+####################
+# Useful Helpers   #
+####################
 def _Params(vc : UIViewController) -> dict():
     nav = vc.navigationController
     p = utils.nspy_get(nav) if isinstance(nav, NewWalletNav) else dict()

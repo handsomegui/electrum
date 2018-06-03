@@ -449,6 +449,20 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onQRBut;
 @end
 
+@interface Import2Base : UIViewController
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, weak) IBOutlet UIView *errMsgView, *infoView;
+@property (nonatomic, weak) IBOutlet UILabel *errMsg, *info;
+@property (nonatomic, weak) IBOutlet UIButton *nextBut;
+
+@property (nonatomic, strong) NSArray<NSString *> *items; ///< used in python as a property but declared here to take advantage of ARC
+@end
+
+@interface Import2 : Import2Base
+// implemented in python newwallet.py
+- (IBAction) onNext;
+@end
+
 @interface OnBoardingWizardBase : UIViewController
 @end
 
