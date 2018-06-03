@@ -788,7 +788,9 @@ class Import1(Import1Base):
         if not self.masterKeyMode:
             from .contacts import cleanup_address_remove_colon
             result = cleanup_address_remove_colon(result)
-        self.tvDel.text = str(self.tvDel.text).strip() + " " + result
+            self.tvDel.text = str(self.tvDel.text).strip() + " " + result # append in this mode
+        else:
+            self.tvDel.text = result.strip() # overwrite in this mode
         self.readerDidCancel_(reader) # just close it once we get data
              
     @objc_method
