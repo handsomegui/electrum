@@ -430,8 +430,6 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UILabel *tit, *blurb;
 @property (nonatomic, weak) IBOutlet UIButton *std, *restore, *imp, *master;
 - (IBAction) dismiss;
-// default impl does nothing -- implemented in python newwallet.py
-- (IBAction) unimplemented;
 @end
 @interface NewWalletMenu : NewWalletMenuBase
 // implemented in python newwallet.py

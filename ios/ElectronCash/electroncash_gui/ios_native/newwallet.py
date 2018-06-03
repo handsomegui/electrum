@@ -254,7 +254,7 @@ class NewWalletSeed1(NewWalletSeedBase):
         sl = py_from_ns(self.seed).split()
         _SetParam(self, 'seed', s)
         _SetParam(self, 'seed_list', sl)
-        print("FYI -- the seed is: ",s)
+        print("FYI -- the seed is: ", s)
         if isinstance(segue.destinationViewController, NewWalletSeed2):
             segue.destinationViewController.seed = s
             segue.destinationViewController.seedList = sl
@@ -314,7 +314,6 @@ class NewWalletSeed2(NewWalletSeedBase):
                     txt = _('Your seed is important!') + ' ' + _('To make sure that you have properly saved your seed, please retype it here.') + ' ' + _('Use the quick suggestions to save time.')
                 else:
                     txt = _('You can restore a wallet that was created by any version of Electron Cash.')
-                #utils.uilabel_replace_attributed_text(lbl, _(d[lbl.ptr.value]), font=UIFont.italicSystemFontOfSize_(14.0))
                 utils.uilabel_replace_attributed_text(lbl, txt, font=UIFont.italicSystemFontOfSize_(14.0))
             else:
                 lbl.setText_withKerning_(_(d[lbl.ptr.value]), utils._kern)
@@ -475,7 +474,6 @@ class NewWalletSeed2(NewWalletSeedBase):
  
     
     def prepareForSegue_sender_(self, segue, sender) -> None:
-        # TODO: stuff
         #print("params=",_Params(self))
         pass
 
@@ -714,10 +712,6 @@ class NewWalletMenu(NewWalletMenuBase):
             self.lineHider.removeFromSuperview()
             self.lineHider = None
     
-    @objc_method
-    def unimplemented(self) -> None:
-        gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
-
 class Import1(Import1Base):
  
     @objc_method
@@ -839,7 +833,6 @@ class Import1(Import1Base):
     
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
-        # TODO: stuff
         if self.masterKeyMode:
             k = keystore.from_master_key(self.tvDel.text)
             _SetParam(self, 'keystore', k)
@@ -899,7 +892,6 @@ class Import2(Import2Base):
             def Get20Addys() -> list():
                 ret = list()
                 for i in range(0,20):
-                    #pubkey, addr = keystore.xpubkey_to_address(k.get_xpubkey(0,i))
                     addr = Address.from_pubkey(k.derive_pubkey(0, i))
                     ret.append(addr.to_ui_string())
                 return ret
@@ -985,11 +977,6 @@ class Import2(Import2Base):
         return 65.0
     
     @objc_method
-    def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
-        #print("DID SELECT ROW CALLED FOR ROW %d"%indexPath.row)
-        tv.deselectRowAtIndexPath_animated_(indexPath,False)
-    
-    @objc_method
     def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
         return UITableViewCellEditingStyleDelete if not self.masterKeyMode else UITableViewCellEditingStyleNone
 
@@ -1005,7 +992,7 @@ class Import2(Import2Base):
     @objc_method
     def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv, editingStyle : int, indexPath) -> None:
         if editingStyle == UITableViewCellEditingStyleDelete:
-            self.removeItemAtIndex_(row)
+            self.removeItemAtIndex_(indexPath.row)
             self.doChkFormOk()
             self.retain()
             utils.call_later(0.4, lambda: self.autorelease().refresh())
@@ -1132,6 +1119,8 @@ class Import2(Import2Base):
             valids = utils.nspy_get_byname(self, 'valid_items')
             _SetParam(self, 'valid_items', valids)
             _SetParam(self, 'imported_keystore_type', valids[0].typ)
+        else:
+            _SetParam(self, 'imported_keystore_type', 1 if _Params(self)['keystore'].is_watching_only() else 2)
 
 class ImportSaveWallet(NewWalletVC):
     
@@ -1152,16 +1141,20 @@ class ImportSaveWallet(NewWalletVC):
                 addys = []
                 keys = []
                 wallet_pass = None
+                ks = _Params(self).get('keystore', None)
                 if _Params(self)['imported_keystore_type'] == 2:
                     wallet_pass = _Params(self)['WalletPass']
-                    keys = [x.item for x in _Params(self)['valid_items']]
+                    if not ks:
+                        keys = [x.item for x in _Params(self)['valid_items']] 
                 elif _Params(self)['imported_keystore_type'] == 1:
-                    addys = [x.item for x in _Params(self)['valid_items']]
+                    if not ks:
+                        addys = [x.item for x in _Params(self)['valid_items']]
                 else:
-                    raise Exception('Can\'t find imported_keystore_type in _Params!')
+                    raise Exception("Can't find imported_keystore_type in _Params!")
                 
                 _WizardGenerateNewWallet(vc = self, wallet_name = wallet_name, wallet_pass = wallet_pass,
                                          message = _("Generating your wallet..."),
+                                         have_keystore = ks,
                                          watching_addresses = addys, private_keys = keys, encrypt = True)
             except:
                 utils.NSLog("Exception in ImportSaveWallet onSave: %s", sys.exc_info()[1])
@@ -1348,14 +1341,6 @@ class OnBoardingWizard(OnBoardingWizardBase):
         return aft
 
 class OnBoardingMenu(NewWalletMenuBase):
-    @objc_method
-    def viewDidLoad(self) -> None:
-        send_super(__class__, self, 'viewDidLoad')
-        pass
-    @objc_method
-    def unimplemented(self) -> None:
-        gui.ElectrumGui.gui.show_error(title="Unimplemented",message="Coming Soon!", vc = self)
-
     @objc_method
     def jumpToMenu_(self, vcToPushIdentifier) -> None:
         vc = PresentAddWalletWizard(dontPresentJustReturnIt = True)

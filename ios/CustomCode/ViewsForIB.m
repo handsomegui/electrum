@@ -10,7 +10,7 @@
 
 #define DEGREES_TO_RADIANS(x) (M_PI * (x) / 180.0)
 
-/*
+
 static BOOL IS_IPHONE_5(void) {
     static int isiPhone5 = -12345;
 
@@ -18,7 +18,7 @@ static BOOL IS_IPHONE_5(void) {
         isiPhone5 = (int)(( fabs( ( double )[ [ UIScreen mainScreen ] nativeBounds ].size.height - ( double )1136.0 ) < DBL_EPSILON ) && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone);
     return (BOOL)isiPhone5;
 }
-*/
+
 
 @implementation AddrConvBase
 // properties get autosynthesized since Xcode 4.4
@@ -345,10 +345,10 @@ static BOOL IS_IPHONE_5(void) {
     //but.titleLabel.textColor = UIColor.blackColor;
     but.tintColor = UIColor.blackColor;
     but.titleLabel.adjustsFontSizeToFitWidth = YES;
-    but.titleLabel.minimumScaleFactor = 0.44;
+    but.titleLabel.minimumScaleFactor = IS_IPHONE_5() ? 0.3 : 0.44;
     but.backgroundColor = UIColor.whiteColor;
     [but setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
-    UIEdgeInsets insets = UIEdgeInsetsMake(5.0, 10.0, 5.0, 10.0);
+    UIEdgeInsets insets = IS_IPHONE_5() ? UIEdgeInsetsMake(2.5, 5.0, 2.5, 5.0) : UIEdgeInsetsMake(5.0, 10.0, 5.0, 10.0);
     but.titleEdgeInsets = insets;
     but.layer.cornerRadius = 4.0;
     but.layer.borderWidth = 2.0;
@@ -375,7 +375,6 @@ static BOOL IS_IPHONE_5(void) {
     self.master.layer.borderColor = UIColor.whiteColor.CGColor;
 }
 - (IBAction) dismiss { [self.presentingViewController dismissViewControllerAnimated:YES completion:nil]; }
-- (IBAction) unimplemented { NSLog(@"UNIMPLEMENTED CALLED"); }
 @end
 
 @implementation Import1Base
