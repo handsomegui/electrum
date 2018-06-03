@@ -1,3 +1,9 @@
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
 from .uikit_bindings import *
 from . import utils
 from . import gui

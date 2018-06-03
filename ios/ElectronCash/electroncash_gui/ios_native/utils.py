@@ -2,7 +2,9 @@
 #
 # Electron Cash - lightweight Bitcoin Cash client
 # Copyright (C) 2012 thomasv@gitorious
-# Copyright (C) 2018 calin.culianu@gmail.com
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -687,7 +689,7 @@ def NSLog(fmt : str, *args) -> int:
 class NSObjCache:
     def __init__(self, maxSize : int = 4, name : str = "Unnamed"):
         self._cache = dict()
-        maxSize = 4 if type(maxSize) not in [float, int] or maxSize < 1 else int(maxSize)
+        maxSize = 4 if type(maxSize) not in [float, int] or maxSize < 1 else int(maxSize) # C-programmer paranoia. ;)
         self._max = maxSize
         self._name = name
         self._last = None
@@ -1082,8 +1084,9 @@ class MyNSObs(NSObject):
 
 class NSDeallocObserver(PySig):
     ''' Provides the ability to observe the destruction of an objective-c object instance, and be notified of said
-        object's destruction on the main thread via our Qt-like 'signal' mechanism. Note sure how useful this really is except
-        for debugging purposes.
+        object's destruction on the main thread via our Qt-like 'signal' mechanism. For an example of this class's usefulness,
+        see the 'register_keyboard_callbacks' function later in this file.
+        
         Note that it is not necessary to keep a reference to this object around as it automatically gets associated with
         internal data structures and auto-removes itself once the signal is emitted. The signal itself has 1 param, the objc_id
         of the watched object. The watched object may or may not still be alive when the signal is emitted, however.'''
@@ -1176,7 +1179,7 @@ _f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
 _f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
 _f4 = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightLight).retain()
 _s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
-_kern = -0.5 # kerning for some of the text labels in some of the views (in points)
+_kern = -0.5 # kerning for some of the text labels in some of the views (in points). Despite having given this an underscore name, other files in this package refer to this symbol. ;)
 def stripAmount(s : str) -> str:
     return s.translate({ord(i):None for i in '+- '}) #strip +/-
 
@@ -1298,7 +1301,8 @@ def register_keyboard_callbacks(view : ObjCInstance, onWillHide = None, onWillSh
     _kbcb_dict[handle] = entry    
     obs.connect(lambda x: unregister_keyboard_callbacks(handle))
     return handle
-
+# unless you call this, the keyboard callback will stay alive until the target view is dealloc'd. At which time all resources
+# WILL be cleaned-up.  This function is provided in case you want to stop observing the keyboard hide/show events early.
 def unregister_keyboard_callbacks(handle : int) -> None:
     entry = None
     if isinstance(handle, int): entry = _kbcb_dict.pop(handle, None)

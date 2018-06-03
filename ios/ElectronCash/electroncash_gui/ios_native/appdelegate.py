@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 #
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
 
 from .uikit_bindings import *
 from . import gui

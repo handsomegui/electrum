@@ -3,7 +3,7 @@
 //  Electron-Cash
 //
 //  Created by calin on 4/7/18.
-//  Copyright © 2018 Calin Culianu. All rights reserved.
+//  Copyright © 2018 Calin Culianu <calin.culiau@gmail.com>. MIT License.
 //
 
 #import "ViewsForIB.h"

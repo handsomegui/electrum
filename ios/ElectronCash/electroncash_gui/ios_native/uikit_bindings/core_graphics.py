@@ -1,3 +1,9 @@
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
 from ctypes import *
 from ctypes import util
 from enum import Enum

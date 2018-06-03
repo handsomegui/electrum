@@ -1,3 +1,9 @@
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
 from electroncash.i18n import _
 from .custom_objc import *
 from .uikit_bindings import *

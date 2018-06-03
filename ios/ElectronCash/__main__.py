@@ -1,4 +1,11 @@
-# This line needs to be here becasue the iOS main.m evaluates this script and looks for a
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
+
+# The below line needs to be here becasue the iOS main.m evaluates this script and looks for a
 # Python class (that is bridged to ObjC) named "PythonAppDelegate", which gets the
 # 'applicationDidFinishLaunchingWithOptions' call, which is really where we start the app.
 import electroncash_gui.ios_native.appdelegate

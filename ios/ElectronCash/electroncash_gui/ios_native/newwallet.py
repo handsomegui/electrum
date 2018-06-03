@@ -1,3 +1,9 @@
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
 from . import utils
 from . import gui
 from electroncash.i18n import _, language
@@ -290,6 +296,7 @@ class NewWalletSeed2(NewWalletSeedBase):
             for vc in vcs:
                 if isinstance(vc, KeyboardVC):
                     self.kvc = vc
+                    break
         if self.kvc:
             self.kvc.textInput = self.seedtv
             def callback() -> None: self.doSuggestions()
@@ -648,7 +655,6 @@ class RestoreWallet2(NewWalletVC):
         if self.doChkFormOk():
             self.saveVars()
             #print("params =",_Params(self))
-            parent = gui.ElectrumGui.gui
             try:
                 # create wallet, etc...
                 wallet_name = _Params(self)['WalletName']
@@ -1253,7 +1259,7 @@ def _Mnem() -> None:
     return _mnem
 
 def _lowMemory(notificaton : objc_id) -> None:
-    # low memory warning -- loop through cache and release all cached images
+    # low memory warning -- kill the _Mnem singleton which has 2048 words in it. Not much savings but it's something.
     ct = 0
     global _mnem
     if _mnem:

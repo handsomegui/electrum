@@ -2,7 +2,10 @@
 #
 # Electron Cash - lightweight Bitcoin Cash client
 # Copyright (C) 2012 thomasv@gitorious
-# Copyright (C) 2018 calin.culianu@gmail.com
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files

@@ -1,3 +1,9 @@
+#
+# This file is:
+#     Copyright (C) 2018 Calin Culianu <calin.culianu@gmail.com>
+#
+# MIT License
+#
 from electroncash.i18n import _, language
 from . import utils
 from . import gui
