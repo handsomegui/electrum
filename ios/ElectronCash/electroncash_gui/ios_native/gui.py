@@ -156,7 +156,7 @@ class ElectrumGui(PrintError):
 
     gui = None
 
-    def __init__(self, config, daemon, plugins):
+    def __init__(self, config):
         ElectrumGui.gui = self
         self.appName = 'Electron-Cash'
         self.appDomain = 'com.c3-soft.ElectronCash'
@@ -175,8 +175,8 @@ class ElectrumGui(PrintError):
         
         #todo: support multiple wallets in 1 UI?
         self.config = config
-        self.daemon = daemon
-        self.plugins = plugins
+        self.daemon = None
+        self.plugins = None
         self.wallet = None
         self.window = None
         self.tabController = None
@@ -283,12 +283,6 @@ class ElectrumGui(PrintError):
         self.window.makeKeyAndVisible()                 
              
         utils.NSLog("UI Created Ok")
-
-        self.register_network_callbacks()
-        
-        # the below call makes sure UI didn't miss any "update" events and forces all components to refresh
-        utils.call_later(1.0, lambda: self.refresh_all())
-
         
     def register_network_callbacks(self):
         # network callbacks
@@ -1103,6 +1097,14 @@ class ElectrumGui(PrintError):
     def start_daemon(self):
         if self.daemon_is_running(): return
         import electroncash.daemon as ed
+        try:
+            # Force remove of lock file so the code below cuts to the chase and starts a new daemon without
+            # uselessly trying to connect to one that doesn't exist anyway.
+            # (We're guaranteed only 1 instance of this app by iOS regardless)
+            os.remove(ed.get_lockfile(self.config))
+            print("Pre-existing 'daemon' lock-file removed!")
+        except:
+            pass
         fd, server = ed.get_fd_or_server(self.config)
         self.daemon = ed.Daemon(self.config, fd, True)
         self.daemon.start()
@@ -1693,8 +1695,6 @@ class ElectrumGui(PrintError):
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
-        self.open_last_wallet()
-
         self.createAndShowUI()
-        
-        self.present_on_boarding_wizard_if_needed()
+
+        self.start_daemon()
