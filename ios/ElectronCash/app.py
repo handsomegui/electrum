@@ -31,9 +31,6 @@ def main():
 
     set_verbosity(config_options.get('verbose'))
 
-    if config_options.get('testnet'):
-        NetworkConstants.set_testnet()
-
     for k,v in config_options.items():
         print("config[%s] = %s"%(str(k),str(v)))
 

@@ -64,12 +64,6 @@ import electroncash.web as web
 class WalletFileNotFound(Exception):
     pass
 
-# from electroncash.wallet import Abstract_Wallet
-
-# a dummy hard coded wallet with a few tx's in its history for testing
-# encrypted with password 'bchbch'
-hardcoded_testing_wallet = bz2.decompress(base64.b64decode(b'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'))
-
 class MyTabBarController(UITabBarController):
     
     didLayout = objc_property()
@@ -205,6 +199,8 @@ class ElectrumGui(PrintError):
         self.prefsNav = None
         self.networkVC = None
         self.networkNav = None
+        
+        self.onboardingWizard = None
         
         self.decimal_point = config.get('decimal_point', 5)
         self.fee_unit = config.get('fee_unit', 0)
@@ -406,17 +402,6 @@ class ElectrumGui(PrintError):
         #    self.dismiss_downloading_notif()
         #    self.show_downloading_notif()
         pass
-
-    
-    def init_network(self):
-        # Show network dialog if config does not exist
-        if self.daemon.network:
-            if self.config.get('auto_connect') is None:
-                #wizard = InstallWizard(self.config, self.app, self.plugins, None)
-                #wizard.init_network(self.daemon.network)
-                #wizard.terminate()
-                print("NEED TO SHOW WIZARD HERE")
-                pass
             
     def on_history(self, b):
         utils.NSLog("ON HISTORY (IsMainThread: %s)",str(NSThread.currentThread.isMainThread))
@@ -507,7 +492,7 @@ class ElectrumGui(PrintError):
         
         if not self.wallet or not self.daemon:
             utils.NSLog("(Returning early.. wallet and/or daemon stopped)")
-            self.walletVC.status = wallets.StatusOffline
+            self.walletsVC.status = wallets.StatusOffline
             return
         
         walletStatus = wallets.StatusOffline
@@ -1092,9 +1077,11 @@ class ElectrumGui(PrintError):
 
     def on_new_daemon(self):
         self.daemon.gui = self
-        self.open_last_wallet()
+        walletOk = self.open_last_wallet()
+        if not walletOk:
+            self.present_on_boarding_wizard_if_needed()
         self.register_network_callbacks()
-        self.refresh_all()
+        if walletOk: self.refresh_all()
         
     def on_low_memory(self) -> None:
         utils.NSLog("GUI: Low memory")
@@ -1329,29 +1316,7 @@ class ElectrumGui(PrintError):
             waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:25] + "...", completion = promptPwLater)
         else:
             DoSwicheroo()
-       
-    def open_last_wallet(self):
-        guiLast = self.config.get('gui_last_wallet')
-        if guiLast:
-            # mogrify the path as Apple changes container path names on us all the time...
-            walletName = os.path.split(guiLast)[1]
-            walletPath = os.path.join(os.path.split(self.config.get_wallet_path())[0],walletName)
-            self.config.set_key('gui_last_wallet', walletPath)
-        self.config.open_last_wallet()
-        path = self.config.get_wallet_path()
-
-
-        # hard code some stuff for testing
-        self.daemon.network.auto_connect = True
-        self.config.set_key('auto_connect', self.daemon.network.auto_connect, True)
-        print("WALLET PATH: %s"%path)
-        #print ("NETWORK: %s"%str(self.daemon.network))
-        w = self.do_wallet_stuff(path, self.config.get('url'))
-        assert w
-        # TODO: put this stuff in the UI
-        self.wallet = w
-        self.ext_txn_check()
-        
+               
     @staticmethod
     def forever_prompt_for_password_on_wallet(path_or_storage, msg = None) -> str:
         storage = WalletStorage(path_or_storage, manual_upgrades=True) if not isinstance(path_or_storage, WalletStorage) else path_or_storage
@@ -1399,45 +1364,56 @@ class ElectrumGui(PrintError):
                 self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc, wallet=wallet))
         return password_dialog.prompt_password_asynch(vc, cb, prompt, title)
 
-    def generate_wallet(self, path):
-        with open(path, "wb") as fdesc:
-            fdesc.write(hardcoded_testing_wallet)
-            fdesc.close()
-            print("Generated hard-coded wallet -- wrote %d bytes"%len(hardcoded_testing_wallet))
-        storage = WalletStorage(path, manual_upgrades=True)
-        if not storage.file_exists():
-            return
-        ElectrumGui.forever_prompt_for_password_on_wallet(storage, "Test wallet password is: bchbch")
-        if storage.requires_split():
-            return
-        if storage.requires_upgrade():
-            return
-        if storage.get_action():
-            return
-        wallet = Wallet(storage)
-        return wallet
+    def open_last_wallet(self) -> bool:
+        guiLast = self.config.get('gui_last_wallet')
+        if guiLast:
+            # mogrify the path as Apple changes container path names on us all the time...
+            walletName = os.path.split(guiLast)[1]
+            walletPath = os.path.join(os.path.split(self.config.get_wallet_path())[0],walletName)
+            self.config.set_key('gui_last_wallet', walletPath)
+            guiLast = walletPath
+            
+        # hard code some stuff for testing
+        self.daemon.network.auto_connect = True
+        self.config.set_key('auto_connect', self.daemon.network.auto_connect, True)
+       
+        path = None
+        
+        if guiLast and os.path.exists(guiLast):
+            path = guiLast
+        if not path:
+            infos = wallets.WalletsMgr.list_wallets()
+            for info in infos:
+                if os.path.exists(info.full_path):
+                    path = info.full_path
+                    break
+                
+        if not path:
+            return False
+        
+        self.wallet = self.do_wallet_open(path)
+        if self.wallet:
+            self.config.set_key('gui_last_wallet', path)
+            self.config.open_last_wallet() # this badly named function just sets the 'default wallet path' to the gui_last_wallet..
+            self.ext_txn_check()
+        
+        return bool(self.wallet)
 
-    def do_wallet_stuff(self, path, uri):
+
+    def do_wallet_open(self, path) -> object: # returns a wallet object on succes, 'None' on failure
         wallet = None
         password = None
         try:
-            password = ElectrumGui.forever_prompt_for_password_on_wallet(path)            
+            name = os.path.split(path)[1]
+            if len(name) > 30:
+                name = name[:14] + "..." + name[-13:]
+            password = ElectrumGui.forever_prompt_for_password_on_wallet(path, msg = "Opening encrypted wallet: '" + name + "'")            
             wallet = self.daemon.load_wallet(path, password)
         except WalletFileNotFound as e:
-            pass # continue below to generate wallet
+            return None 
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
-            return
-        if not wallet:
-            try:
-                wallet = self.generate_wallet(path)
-            except Exception as e:
-                print_error('[do_wallet_stuff] Exception caught', e)
-            if not wallet:
-                print("NO WALLET!!!")
-                sys.exit(1)
-            wallet.start_threads(self.daemon.network)
-            self.daemon.add_wallet(wallet)
+            return None
         return wallet
 
     def sign_tx_with_password(self, tx, callback, password, vc = None):
@@ -1742,22 +1718,27 @@ class ElectrumGui(PrintError):
             self.show_error(_("Electron Cash was unable to parse your transaction"))
             return
 
+    def present_on_boarding_wizard_if_needed(self):
+        if not self.onboardingWizard and not self.wallet and not wallets.WalletsMgr.list_wallets():
+            wiz = None
+            def Completion() -> None:
+                nonlocal wiz
+                if wiz and not self.onboardingWizard:
+                    self.onboardingWizard = wiz
+                    #print("** onboarding wizard =", str(wiz.ptr.value))
+                    obs = utils.NSDeallocObserver(wiz)
+                    def Deallocd(obj : objc_id) -> None:
+                        #print ("** DEALLOC OBSERVER CALLED for",obj.value)
+                        if self.onboardingWizard and obj.value == self.onboardingWizard.ptr.value:
+                            self.onboardingWizard = None
+                            #print ("** DEALLOC OBSERVER REMOVED REF!")
+                    obs.connect(Deallocd)
+            wiz = newwallet.PresentOnBoardingWizard(vc = self.get_presented_viewcontroller(), completion = Block(Completion))
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
-        import hashlib
-        print("HashLib algorithms available: " + str(hashlib.algorithms_available))
-        import platform
-        print ("Platform %s uname: %s"%(platform.platform(),platform.uname()))
-        print ("Bundle Identifier %s"% utils.bundle_identifier)
-
-        try:
-            self.init_network()
-        except:
-            traceback.print_exc(file=sys.stdout)
-            return
-        
         self.open_last_wallet()
 
         self.createAndShowUI()
-        self.ext_txn_check()
+        
+        self.present_on_boarding_wizard_if_needed()
