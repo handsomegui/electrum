@@ -1613,17 +1613,6 @@ class ElectrumGui(PrintError):
         if not isinstance(address, (Address, str)): return
         self.receiveVC.addr = (str(address))
         self.show_receive_modal()
-        
-    def save_tabs_order(self, vcs : list = None) -> None:
-        if not self.tabController or not self.config: return
-        vcs = py_from_ns(self.tabController.viewControllers) if not vcs else vcs
-        order = list()
-        for vc in vcs:
-            for i,tab in enumerate(self.tabs):
-                if vc.ptr.value == tab.ptr.value:
-                    order.append(str(i))
-                    #print("%s = %d"%(vc.title,i))
-        self.config.set_key('tab_order', ','.join(order), True)
             
     def get_history_entry(self, tx_hash) -> tuple:
         ''' returns a history.HistoryEntry namedtuple instance if tx_hash exists in history, or None if not found '''
