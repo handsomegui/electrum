@@ -476,12 +476,29 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface OnBoardingWizardBase : UIViewController
+@property (nonatomic) NSInteger currentPageIndex;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *bottomMarginCS; // on iPhone 5 we set the .constant to 0
 @end
 
 @interface OnBoardingWizard : OnBoardingWizardBase
 // implemented in python in newwallet.py
 @end
-@interface OnBoardingMenu : NewWalletMenuBase
+@interface OnBoardingPageBase : UIViewController
+@property (nonatomic, weak) IBOutlet UIButton *nextBut;
+@property (nonatomic, weak) OnBoardingWizard *parent;
+@property (nonatomic) NSInteger pageIndex;
+@end
+@interface OnBoardingPage : OnBoardingPageBase
+// implemented in python newwallet.py
+- (IBAction) onNext;
+@end
+
+@interface OnBoardingMenuBase : NewWalletMenuBase
+@property (nonatomic, weak) OnBoardingWizard *parent;
+@property (nonatomic) NSInteger pageIndex;
+@end
+
+@interface OnBoardingMenu : OnBoardingMenuBase
 // implemented in python newwallet.py
 - (IBAction) onNewStandardWallet;
 - (IBAction) onRestoreSeed;

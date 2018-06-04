@@ -392,3 +392,8 @@ static BOOL IS_IPHONE_5(void) {
 - (BOOL) shouldAutorotate { return NO; }
 @end
 
+@implementation OnBoardingPageBase
+@end
+@implementation OnBoardingMenuBase
+@end
+

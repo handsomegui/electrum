@@ -1297,6 +1297,8 @@ class OnBoardingWizard(OnBoardingWizardBase):
     @objc_method
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
+        if utils.is_iphone5() or utils.is_iphone4():
+            self.bottomMarginCS.constant = 0
         vcs = self.childViewControllers
         for vc in vcs:
             if isinstance(vc, UIPageViewController):
@@ -1307,11 +1309,14 @@ class OnBoardingWizard(OnBoardingWizardBase):
             if not sb:
                 utils.NSLog("ERROR: SB IS NULL")
                 return
-            vcs = [ sb.instantiateViewControllerWithIdentifier_("On_Boarding_%d" % i) for i in range(1,4) ]
+            vcs = [ sb.instantiateViewControllerWithIdentifier_("On_Boarding_%d" % i) for i in range(1,4) ]                
             vcs.append( sb.instantiateViewControllerWithIdentifier_("On_Boarding_Menu") )
             if not vcs or None in vcs:
                 utils.NSLog("ERROR: Could not find a requisite viewcontroller in %s viewDidLoag method!",str(__class__))
                 return
+            for i,vc in enumerate(vcs):
+                vc.parent = self
+                vc.pageIndex = i
             self.vcs = ns_from_py(vcs)
             self.pvc.setViewControllers_direction_animated_completion_(NSArray.arrayWithObject_(vcs[0]),UIPageViewControllerNavigationDirectionForward,False,None)
         else:
@@ -1327,15 +1332,16 @@ class OnBoardingWizard(OnBoardingWizardBase):
 
     @objc_method
     def presentationIndexForPageViewController_(self, pvc) -> int:
-        return 0
+        return self.currentPageIndex
     
     @objc_method
     def pageViewController_viewControllerBeforeViewController_(self, pvc, vc) -> ObjCInstance:
         b4 = None
         vcs = py_from_ns(self.vcs)
         for i,v in enumerate(vcs):
-            if v == vc and i > 0:
+            if v.ptr.value == vc.ptr.value and i > 0:
                 b4 = vcs[i-1]
+                break
         return b4
             
     
@@ -1344,11 +1350,36 @@ class OnBoardingWizard(OnBoardingWizardBase):
         aft = None
         vcs = py_from_ns(self.vcs)
         for i,v in enumerate(vcs):
-            if v == vc and i+1 < len(vcs):
+            if v.ptr.value == vc.ptr.value and i+1 < len(vcs):
                 aft = vcs[i+1]
+                break
         return aft
+    
+    @objc_method
+    def onNextButton_(self, curidx : int) -> None:
+        nextidx = curidx + 1
+        vcs = py_from_ns(self.vcs)
+        if nextidx < len(vcs):
+            self.currentPageIndex = nextidx
+            self.pvc.setViewControllers_direction_animated_completion_(NSArray.arrayWithObject_(vcs[nextidx]),UIPageViewControllerNavigationDirectionForward,True,None)
 
-class OnBoardingMenu(NewWalletMenuBase):
+    
+class OnBoardingPage(OnBoardingPageBase):
+    @objc_method
+    def viewDidAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
+        if self.parent: self.parent.currentPageIndex = self.pageIndex
+    
+    @objc_method
+    def onNext(self) -> None:
+        if self.parent: self.parent.onNextButton_(self.pageIndex)
+
+class OnBoardingMenu(OnBoardingMenuBase):
+    @objc_method
+    def viewDidAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
+        if self.parent: self.parent.currentPageIndex = self.pageIndex
+        
     @objc_method
     def jumpToMenu_(self, vcToPushIdentifier) -> None:
         vc = PresentAddWalletWizard(dontPresentJustReturnIt = True)
