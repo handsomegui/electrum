@@ -193,7 +193,7 @@ class PrefsVC(UITableViewController):
                 parent.show_change_password(vc = self)
             elif row == 3 and self.hasSeed:
                 def gotPW(pw) -> None:
-                    parent.show_seed_dialog2(pw)
+                    parent.show_seed_dialog(pw)
                 parent.prompt_password_if_needed_asynch(vc=self, callBack = gotPW)
 
     @objc_method

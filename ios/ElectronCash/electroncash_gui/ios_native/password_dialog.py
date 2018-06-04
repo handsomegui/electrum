@@ -242,7 +242,7 @@ def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title 
     retPW = None
     def tfConfigHandler(oid : objc_id) -> None:
         nonlocal tf
-        tf = ObjCInstance(oid)
+        tf = ObjCInstance(oid).retain()
         tf.adjustsFontSizeToFitWidth = True
         tf.minimumFontSize = 9
         tf.placeholder = _("Enter Password")
@@ -253,12 +253,20 @@ def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title 
     def onOK() -> None:
         nonlocal retPW
         nonlocal tf
-        retPW = tf.text if tf is not None else retPW
+        if tf:
+            retPW = tf.text 
+            tf.release()
+            tf = None
+    def onCancel() -> None:
+        nonlocal tf
+        if tf:
+            tf.release()
+            tf = None
     utils.show_alert(
         vc = vc,
         title = title,
         message = prompt,
-        actions = [ [ _("OK"), onOK ], [_("Cancel")] ],
+        actions = [ [ _("OK"), onOK ], [_("Cancel"), onCancel ] ],
         cancel = _("Cancel"),
         localRunLoop = True,
         uiTextFieldHandlers = [tfConfigHandler]

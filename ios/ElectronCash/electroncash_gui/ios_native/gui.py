@@ -1347,7 +1347,7 @@ class ElectrumGui(PrintError):
     def password_dialog(self, msg = None) -> str:
         return ElectrumGui.prompt_password(msg)
     
-    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, wallet = None) -> ObjCInstance:
+    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, wallet = None, onCancel = None) -> ObjCInstance:
         if wallet is None: wallet = self.wallet
         if wallet is None: return None
         if vc is None: vc = self.get_presented_viewcontroller()
@@ -1356,13 +1356,11 @@ class ElectrumGui(PrintError):
             return
         def cb(pw : str) -> None:
             try:
-                if not wallet or not self.wallet: # todo: handle self.wallet being not there?
-                    return # cancel
                 wallet.check_password(pw)
                 callBack(pw)
             except Exception as e:
                 self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc, wallet=wallet))
-        return password_dialog.prompt_password_asynch(vc, cb, prompt, title)
+        return password_dialog.prompt_password_asynch(vc = vc, onOk = cb, prompt = prompt, title = title, onCancel = onCancel)
 
     def open_last_wallet(self) -> bool:
         guiLast = self.config.get('gui_last_wallet')
@@ -1515,36 +1513,8 @@ class ElectrumGui(PrintError):
         pwvc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted(), self.change_password)
         (self.get_presented_viewcontroller() if not vc else vc).presentViewController_animated_completion_(pwvc, True, None)
 
-
-    def protected(func):
-        '''Password request wrapper.  The password is passed to the function
-        as the 'password' named argument.  "None" indicates either an
-        unencrypted wallet, or the user cancelled the password request.
-        An empty input is passed as the empty string.'''
-        def request_password(self, *args, **kwargs):
-            if self.wallet is None: return
-            password = None
-            while self.wallet.has_password():
-                password = self.password_dialog()
-                if password is None:
-                    # User cancelled password input
-                    return
-                try:
-                    self.wallet.check_password(password)
-                    break
-                except Exception as e:
-                    self.show_error(str(e), localRunLoop = True)
-                    continue
-
-            kwargs['password'] = password
-            return func(self, *args, **kwargs)
-        return request_password
-
-    @protected
-    def show_seed_dialog(self, password):
-        self.show_seed_dialog2(password)
         
-    def show_seed_dialog2(self, password, vc = None):
+    def show_seed_dialog(self, password, vc = None):
         if self.wallet is None or self.wallet.storage is None: return
         if not self.wallet.has_seed():
             self.show_message(_('This wallet has no seed'))

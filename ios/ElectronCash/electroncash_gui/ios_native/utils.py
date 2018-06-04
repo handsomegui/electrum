@@ -351,10 +351,15 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
     def onCompletion() -> None:
         #print("On completion called..")
         nonlocal got_callback
+        nonlocal alert
         if not actions: got_callback = True
         if completion is not None:
             #print("Calling completion callback..")
-            completion()
+            sig = signature(completion)
+            if len(sig.parameters) > 0:
+                completion(alert.ptr)
+            else:
+                completion()
     if is_ipad() and alert.preferredStyle == UIAlertControllerStyleActionSheet:
         popover = alert.popoverPresentationController()
         if isinstance(ipadAnchor, UIBarButtonItem):
