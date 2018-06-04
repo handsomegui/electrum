@@ -37,24 +37,24 @@ def main():
     config = SimpleConfig(config_options,read_user_dir_function=get_user_dir)
 
     try:
-        # force remove of lock file as this sometimes causes problems
-        os.remove(os.path.join(config.electrum_path(), 'daemon'))
+        # Force remove of lock file so the code below cuts to the chase and starts a new daemon without
+        # uselessly trying to connect to one that doesn't exist anyway.
+        # (We're guaranteed only 1 instance of this app by iOS regardless)
+        os.remove(daemon.get_lockfile(config))
         print("Pre-existing 'daemon' lock-file removed!")
     except:
         pass
 
     fd, server = daemon.get_fd_or_server(config)
     if fd is not None:
-        plugins = None
         d = daemon.Daemon(config, fd, True)
-        gui = ElectrumGui(config, d, plugins)
+        gui = ElectrumGui(config, d, None)
         d.gui = gui
+        d.start()
         def later() -> None:
-            d.start()
-            #d.init_gui(config, plugins)
             gui.main()
-        call_later(0.1,later)
+        call_later(0.030,later)
     else:
-        result = server.gui(config_options)
+        raise Exception("Could not start daemon, fd was None! FIXME!")
 
     return "Bitcoin Cash FTW!"
