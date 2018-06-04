@@ -1347,19 +1347,19 @@ class ElectrumGui(PrintError):
     def password_dialog(self, msg = None) -> str:
         return ElectrumGui.prompt_password(msg)
     
-    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, wallet = None, onCancel = None) -> ObjCInstance:
-        if wallet is None: wallet = self.wallet
-        if wallet is None: return None
+    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None) -> ObjCInstance:
+        if self.wallet is None: return None
         if vc is None: vc = self.get_presented_viewcontroller()
-        if not wallet.has_password():
+        if not self.wallet.has_password():
             callBack(None)
             return
         def cb(pw : str) -> None:
             try:
-                wallet.check_password(pw)
+                if not self.wallet: return
+                self.wallet.check_password(pw)
                 callBack(pw)
             except Exception as e:
-                self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc, wallet=wallet))
+                self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc))
         return password_dialog.prompt_password_asynch(vc = vc, onOk = cb, prompt = prompt, title = title, onCancel = onCancel)
 
     def open_last_wallet(self) -> bool:
@@ -1695,13 +1695,10 @@ class ElectrumGui(PrintError):
                 nonlocal wiz
                 if wiz and not self.onboardingWizard:
                     self.onboardingWizard = wiz
-                    #print("** onboarding wizard =", str(wiz.ptr.value))
                     obs = utils.NSDeallocObserver(wiz)
                     def Deallocd(obj : objc_id) -> None:
-                        #print ("** DEALLOC OBSERVER CALLED for",obj.value)
                         if self.onboardingWizard and obj.value == self.onboardingWizard.ptr.value:
                             self.onboardingWizard = None
-                            #print ("** DEALLOC OBSERVER REMOVED REF!")
                     obs.connect(Deallocd)
             wiz = newwallet.PresentOnBoardingWizard(vc = self.get_presented_viewcontroller(), completion = Block(Completion))
 
