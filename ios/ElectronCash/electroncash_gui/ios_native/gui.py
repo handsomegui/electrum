@@ -461,11 +461,11 @@ class ElectrumGui(PrintError):
         )
         
     def is_downloading_notif_showing(self):
-        return (self.downloadingNotif.notificationIsShowing and
-                not self.downloadingNotif.notificationIsDismissing)
+        return (self.downloadingNotif
+                and self.downloadingNotif.notificationIsShowing
+                and not self.downloadingNotif.notificationIsDismissing)
             
     def dismiss_downloading_notif(self):
-        if self.downloadingNotif is None: return
         if not self.is_downloading_notif_showing(): return
         dnf = self.downloadingNotif
         self.downloadingNotif = None
@@ -1093,6 +1093,7 @@ class ElectrumGui(PrintError):
         self.daemon.stop()
         self.wallet = None
         self.daemon = None
+        self.dismiss_downloading_notif()
         
     def start_daemon(self):
         if self.daemon_is_running(): return
