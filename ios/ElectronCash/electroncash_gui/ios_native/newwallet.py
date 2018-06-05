@@ -526,6 +526,9 @@ class RestoreWallet1(NewWalletSeed2):
                 utils.call_later(0.2, lambda:self.seedtv.becomeFirstResponder())
         self.bip39.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered,onBip39)
         send_super(__class__, self, 'viewDidLoad')
+        if self.kvc:
+            self.kvc.blockPasting = False
+            self.kvc.blockSelecting = False
     
     @objc_method
     def textFieldDidBeginEditing_(self, tf) -> None:

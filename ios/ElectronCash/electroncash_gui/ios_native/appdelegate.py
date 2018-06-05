@@ -175,7 +175,7 @@ def cleanup_possible_bg_task_stuff() -> (str, callable):
     
 def on_bg_task_expiration() -> None:
     utils.NSLog("Background: Expiration handler called")
-
+    
     daemonStopped = False
     eg = gui.ElectrumGui.gui
     if eg is not None and eg.daemon_is_running():

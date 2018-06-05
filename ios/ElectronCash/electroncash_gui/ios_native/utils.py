@@ -306,6 +306,8 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
                uiTextFieldHandlers : list = None, # if you want to create custom UITextFields in this alert, and the alert'ss type is UIAlertControllerStyleAlert, pass a list of fully annotated callbacks taking an objc_id as arg and returning None, one for each desired text fields you want to create
                ipadAnchor : object = None # A CGRect -- use this on ipad to specify an anchor if using UIAlertControllerStyleActionSheet
                ) -> ObjCInstance:
+    if localRunLoop:
+        NSLog("\n***\n*** WARNING -- 'localRunLoop' on modal dialogs is pretty buggy, as it turns out. Please fix the calling code to not use it!\n***")
     if not NSThread.currentThread.isMainThread:
         raise Exception('utils.show_alert can only be called from the main thread!')
     alert = UIAlertController.alertControllerWithTitle_message_preferredStyle_(title, message, style)

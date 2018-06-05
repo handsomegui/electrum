@@ -274,6 +274,13 @@ def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title 
     return retPW
 
 _extant_pw_dialogs = list()
+def kill_extant_asynch_pw_prompts() -> None:
+    if _extant_pw_dialogs:
+        #print("*** dlgs exist, len =",len(_extant_pw_dialogs))
+        dlgs = _extant_pw_dialogs.copy()
+        for tup in dlgs:
+            tup[0].dismissViewControllerAnimated_completion_(False, Block(tup[1]))
+    
 def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = None, title : str = None, onCancel : Callable = None,
                            onForcedDismissal : Callable = None) -> ObjCInstance:
     title =  _("Enter Password") if not title else title
@@ -316,11 +323,7 @@ def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = No
     def MyCompletion(o : objc_id) -> None:
         _extant_pw_dialogs.append((ObjCInstance(o), MyForcedKill))
 
-    if _extant_pw_dialogs:
-        #print("*** dlgs exist, len =",len(_extant_pw_dialogs))
-        dlgs = _extant_pw_dialogs.copy()
-        for tup in dlgs:
-            tup[0].dismissViewControllerAnimated_completion_(False, Block(tup[1]))
+    kill_extant_asynch_pw_prompts()
 
     alert = utils.show_alert(
         vc = vc,

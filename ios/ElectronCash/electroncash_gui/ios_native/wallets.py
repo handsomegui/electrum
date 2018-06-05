@@ -202,6 +202,15 @@ class WalletsVC(WalletsVCBase):
             # NB: weak ref self.modalDrawerVC will be auto-cleared by obj-c runtime after it is dismissed
             utils.call_later(0.100, self.dismissViewControllerAnimated_completion_,True, None)
             self.modalDrawerVC.closeAnimated_(True)
+            
+    @objc_method
+    def openDrawer(self) -> None:
+        if not self.modalDrawerVC: self.toggleDrawer()
+        
+    @objc_method
+    def closeDrawer(self) -> None:
+        if self.modalDrawerVC: self.toggleDrawer()
+        
         
     @objc_method
     def didChangeSegment_(self, control : ObjCInstance) -> None:
@@ -230,6 +239,8 @@ class WalletsVC(WalletsVCBase):
     # pops up the network setup dialog and also does a little animation on the status label
     @objc_method
     def onTopNavTap(self) -> None:
+        if gui.ElectrumGui.gui.warn_user_if_no_wallet():
+            return
         if self.statusLabel.hasAnimations:
             print("status label animation already active, ignoring spurious second tap....")
             return
@@ -242,10 +253,14 @@ class WalletsVC(WalletsVCBase):
         
     @objc_method
     def onSendBut(self) -> None:
+        if gui.ElectrumGui.gui.warn_user_if_no_wallet():
+            return
         gui.ElectrumGui.gui.show_send_modal()
 
     @objc_method
     def onReceiveBut(self) -> None:
+        if gui.ElectrumGui.gui.warn_user_if_no_wallet():
+            return
         gui.ElectrumGui.gui.show_receive_modal()
         
     @objc_method

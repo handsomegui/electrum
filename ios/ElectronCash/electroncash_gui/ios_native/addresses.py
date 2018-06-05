@@ -127,6 +127,8 @@ class AddressDetail(AddressDetailBase):
             self.needsRefresh = True
             return
         entry = _Get(self.domain)
+        if not entry:
+            return # wallet may have been closed...
  
          # kern the tits! ;)
         tits = [self.balanceTit, self.numTxTit, self.statusTit, self.descTit]

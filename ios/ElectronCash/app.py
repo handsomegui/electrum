@@ -28,6 +28,7 @@ def main():
     gui = ElectrumGui(config)
     def later() -> None:
         gui.main()
+    # this deferred call allows for that loading animation to play at least a little bit
     call_later(0.030,later)
 
     return "Bitcoin Cash FTW!"

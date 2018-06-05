@@ -99,7 +99,7 @@ class MyTabBarController(UITabBarController):
             if not isinstance(pvc, UIAlertController):
                 return pvc.shouldAutorotate()
         return send_super(__class__, self, 'shouldAutorotate', restype=c_bool)
-
+    
 
 class GuiHelper(NSObject):
     
@@ -152,6 +152,11 @@ class GuiHelper(NSObject):
     @objc_method
     def tabBarController_didEndCustomizingViewControllers_changed_(self, tabController, viewControllers, changed : bool) -> None:
         return
+
+    @objc_method
+    def tabBarController_shouldSelectViewController_(self, vc) -> bool:
+        if not isinstance(vc, wallets.WalletsNav):
+            return not ElectrumGui.gui.warn_user_if_no_wallet()
 
 
 # Manages the GUI. Part of the ElectronCash API so you can't rename this class easily.
@@ -1078,11 +1083,38 @@ class ElectrumGui(PrintError):
 
     def on_new_daemon(self):
         self.daemon.gui = self
-        walletOk = self.open_last_wallet()
-        if not walletOk:
-            self.present_on_boarding_wizard_if_needed()
+        # hard code some stuff for testing
+        self.daemon.network.auto_connect = True
+        self.config.set_key('auto_connect', self.daemon.network.auto_connect, True)
+        self.open_last_wallet()
         self.register_network_callbacks()
-        if walletOk: self.refresh_all()
+        
+    def on_wallet_opened(self):
+        if self.wallet:
+            if self.onboardingWizard and not self.onboardingWizard.isBeingDismissed():
+                self.onboardingWizard.presentingViewController.dismissViewControllerAnimated_completion_(False, None)
+            self.config.set_key('gui_last_wallet', self.wallet.storage.path)
+            self.config.open_last_wallet() # this badly named function just sets the 'default wallet path' to the gui_last_wallet..
+            self.refresh_all()
+            self.ext_txn_check()
+            
+    def on_open_last_wallet_fail(self):
+        if not self.present_on_boarding_wizard_if_needed():
+            self.warn_user_if_no_wallet()
+            
+    def warn_user_if_no_wallet(self) -> bool:
+        if not self.wallet:
+            def showDrawer() -> None:
+                self.walletsVC.openDrawer()
+            self.tabController.selectedIndex = 0
+            self.walletsNav.popToRootViewControllerAnimated_(False)
+            self.walletsVC.setAmount_andUnits_unconf_(_('No Wallet'), '', '')
+            self.show_message(title = _("No Wallet Is Open"),
+                              message = _("To proceed, please select a wallet to open.") + " " + _("You can also create a new wallet by selecting the 'Add new wallet' option."), onOk = showDrawer)
+            return True
+        return False
+
+
         
     def on_low_memory(self) -> None:
         utils.NSLog("GUI: Low memory")
@@ -1093,6 +1125,15 @@ class ElectrumGui(PrintError):
         
     def stop_daemon(self):
         if not self.daemon_is_running(): return
+        password_dialog.kill_extant_asynch_pw_prompts()
+        if self.tabController:
+            pres = self.tabController.presentedViewController
+            if pres and not pres.isBeingDismissed(): self.tabController.dismissViewControllerAnimated_completion_(False, None)
+            vcs = self.tabController.viewControllers or list()
+            for vc in vcs:
+                if isinstance(vc, UINavigationController):
+                    vc.popToRootViewControllerAnimated_(False)
+            if vcs: self.tabController.selectedIndex = 0
         self.unregister_network_callbacks()
         self.empty_caches(doEmit=False)
         if self.wallet and self.wallet.storage:
@@ -1284,8 +1325,7 @@ class ElectrumGui(PrintError):
                     self.daemon.stop_wallet(self.wallet.storage.path)
                 self.wallet = wallet
                 self.daemon.add_wallet(self.wallet)
-                self.config.save_last_wallet(self.wallet)
-                self.refresh_all()
+                self.on_wallet_opened()
                 onSuccess()
             except:
                 utils.NSLog("Exception in opening wallet: %s",str(sys.exc_info()[1]))
@@ -1320,59 +1360,50 @@ class ElectrumGui(PrintError):
                 else:
                     prompt = _("This wallet is encrypted with a password, please provide it to proceed:")
                     title = _("Password Required")
-                    password_dialog.prompt_password_asynch(vc=waitDlg, onOk=onOk, prompt=prompt, title=title, onCancel=myOnCancel)
+                    password_dialog.prompt_password_asynch(vc=waitDlg, onOk=onOk, prompt=prompt, title=title, onCancel=myOnCancel,
+                                                           onForcedDismissal = myOnCancel)
             def promptPwLater() -> None:
-                utils.call_later(0.2, promptPW)
+                utils.call_later(0.1, promptPW)
             waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:25] + "...", completion = promptPwLater)
         else:
             DoSwicheroo()
-               
-    @staticmethod
-    def forever_prompt_for_password_on_wallet(path_or_storage, msg = None) -> str:
-        storage = WalletStorage(path_or_storage, manual_upgrades=True) if not isinstance(path_or_storage, WalletStorage) else path_or_storage
-        if not storage.file_exists():
-            raise WalletFileNotFound('Wallet File Not Found')
-        pw_ok = False
-        password = None
-        while not pw_ok and storage.is_encrypted():
-            password = ElectrumGui.prompt_password(msg)
-            if not password:
-                ElectrumGui.gui.show_error(message=_("A password is required to open this wallet"), title=_('Password Required'), localRunLoop = True)
-                continue
-            try:
-                storage.decrypt(password)
-            except:
-                ElectrumGui.gui.show_error(message=_("The password was incorrect for this encrypted wallet, please try again."),
-                                           title=_('Password Incorrect'), localRunLoop = True)
-                continue
-            pw_ok = True
-        return password
-
-    @staticmethod
-    def prompt_password(prmpt = None, dummy=0):
-        if ElectrumGui.gui:
-            pw = password_dialog.prompt_password_local_runloop(vc=ElectrumGui.gui.get_presented_viewcontroller(), prompt=prmpt)
-            return pw
     
-    def password_dialog(self, msg = None) -> str:
-        return ElectrumGui.prompt_password(msg)
-    
-    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None, onForcedDismissal = None) -> ObjCInstance:
-        if self.wallet is None: return None
+    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None, onForcedDismissal = None,
+                                         usingStorage : Any = None) -> ObjCInstance:
         if vc is None: vc = self.get_presented_viewcontroller()
-        if not self.wallet.has_password():
-            callBack(None)
-            return
-        def cb(pw : str) -> None:
-            try:
-                if not self.wallet: return
-                self.wallet.check_password(pw)
-                callBack(pw)
-            except Exception as e:
-                self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc))
-        return password_dialog.prompt_password_asynch(vc = vc, onOk = cb, prompt = prompt, title = title, onCancel = onCancel, onForcedDismissal = onForcedDismissal)
+        def DoPromptPW(my_callback) -> ObjCInstance:
+            return password_dialog.prompt_password_asynch(vc = vc, onOk = my_callback, prompt = prompt, title = title, onCancel = onCancel, onForcedDismissal = onForcedDismissal)            
+        if usingStorage:
+            storage = WalletStorage(usingStorage, manual_upgrades=True) if not isinstance(usingStorage, WalletStorage) else usingStorage
+            if not isinstance(storage, WalletStorage):
+                raise ValueError('usingStorage parameter needs to be a WalletStorage instance or a string path!')
+            if not storage.file_exists():  
+                raise WalletFileNotFound('Wallet File Not Found')
+            if not storage.is_encrypted():
+                callBack(None)
+                return None
+            def cb(pw : str) -> None:
+                try:
+                    storage.decrypt(pw)
+                    callBack(pw)
+                except Exception as e:
+                    self.show_error(str(e), onOk = lambda: DoPromptPW(cb), vc = vc)
+            return DoPromptPW(cb)
+        else:
+            if self.wallet is None: return None
+            if not self.wallet.has_password():
+                callBack(None)
+                return None
+            def cb(pw : str) -> None:
+                try:
+                    if not self.wallet: return
+                    self.wallet.check_password(pw)
+                    callBack(pw)
+                except Exception as e:
+                    self.show_error(str(e), onOk = lambda: DoPromptPW(cb), vc = vc)
+            return DoPromptPW(cb)
 
-    def open_last_wallet(self) -> bool:
+    def open_last_wallet(self) -> None:
         guiLast = self.config.get('gui_last_wallet')
         if guiLast:
             # mogrify the path as Apple changes container path names on us all the time...
@@ -1380,11 +1411,7 @@ class ElectrumGui(PrintError):
             walletPath = os.path.join(os.path.split(self.config.get_wallet_path())[0],walletName)
             self.config.set_key('gui_last_wallet', walletPath)
             guiLast = walletPath
-            
-        # hard code some stuff for testing
-        self.daemon.network.auto_connect = True
-        self.config.set_key('auto_connect', self.daemon.network.auto_connect, True)
-       
+                   
         path = None
         
         if guiLast and os.path.exists(guiLast):
@@ -1396,33 +1423,36 @@ class ElectrumGui(PrintError):
                     path = info.full_path
                     break
                 
-        if not path:
-            return False
-        
-        self.wallet = self.do_wallet_open(path)
-        if self.wallet:
-            self.config.set_key('gui_last_wallet', path)
-            self.config.open_last_wallet() # this badly named function just sets the 'default wallet path' to the gui_last_wallet..
-            self.ext_txn_check()
-        
-        return bool(self.wallet)
+        if not path or not os.path.exists(path):
+            self.on_open_last_wallet_fail()
+        else:      
+            self.do_wallet_open(path)
 
 
-    def do_wallet_open(self, path) -> object: # returns a wallet object on succes, 'None' on failure
-        wallet = None
-        password = None
-        try:
-            name = os.path.split(path)[1]
-            if len(name) > 30:
-                name = name[:14] + "..." + name[-13:]
-            password = ElectrumGui.forever_prompt_for_password_on_wallet(path, msg = "Opening encrypted wallet: '" + name + "'")            
-            wallet = self.daemon.load_wallet(path, password)
-        except WalletFileNotFound as e:
-            return None 
-        except Exception as e:
-            traceback.print_exc(file=sys.stdout)
-            return None
-        return wallet
+    def do_wallet_open(self, path) -> None: 
+        def cancelled() -> None:
+            self.on_open_last_wallet_fail()
+        def gotpw(password) -> None:
+            if not self.daemon or self.wallet:
+                return
+            try:
+                self.wallet = self.daemon.load_wallet(path, password)
+                self.on_wallet_opened()
+            except:
+                traceback.print_exc(file=sys.stdout)
+                self.show_error(str(sys.exc_info()[1]), onOk = lambda: self.on_open_last_wallet_fail())
+        def forciblyDismissed() -> None:
+            #self.on_open_last_wallet_fail()
+            # the assumption here is it was dimmissed because they exited app, then it backgrounded, then they came back.
+            # ... we'll let it slide
+            pass
+        
+        name = os.path.split(path)[1]
+        if len(name) > 30:
+            name = name[:14] + "..." + name[-13:]
+        msg = "Opening encrypted wallet: '" + name + "'"
+        self.prompt_password_if_needed_asynch(callBack = gotpw, prompt = msg, onCancel = cancelled, onForcedDismissal = forciblyDismissed,
+                                              usingStorage = path)
 
     def sign_tx_with_password(self, tx, callback, password, vc = None):
         '''Sign the transaction in a separate thread.  When done, calls
@@ -1687,8 +1717,10 @@ class ElectrumGui(PrintError):
             self.show_error(_("Electron Cash was unable to parse your transaction"))
             return
 
-    def present_on_boarding_wizard_if_needed(self):
-        if not self.onboardingWizard and not self.wallet and not wallets.WalletsMgr.list_wallets():
+    def present_on_boarding_wizard_if_needed(self) -> ObjCInstance:
+        if ( (not self.onboardingWizard or self.onboardingWizard.isBeingDismissed())
+            and not self.wallet and not wallets.WalletsMgr.list_wallets() ):
+            
             wiz = None
             def Completion() -> None:
                 nonlocal wiz
@@ -1699,7 +1731,11 @@ class ElectrumGui(PrintError):
                         if self.onboardingWizard and obj.value == self.onboardingWizard.ptr.value:
                             self.onboardingWizard = None
                     obs.connect(Deallocd)
-            wiz = newwallet.PresentOnBoardingWizard(vc = self.get_presented_viewcontroller(), completion = Block(Completion))
+            if self.tabController and self.tabController.presentedViewController and not self.tabController.presentedViewController.isBeingDismissed():
+                self.tabController.dismissViewControllerAnimated_completion_(False, None)
+            wiz = newwallet.PresentOnBoardingWizard(vc = self.tabController, completion = Block(Completion))
+            return wiz
+        return None
 
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
