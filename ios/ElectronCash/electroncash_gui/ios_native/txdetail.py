@@ -619,21 +619,23 @@ class TxDetail(TxDetailBase):
         entry = utils.nspy_get_byname(self, 'tx_entry')
         tx = entry.tx
 
-        if wallet.has_password():
-            password = parent.password_dialog(_("Enter your password to proceed"))
-            if not password:
-                return
 
-        def sign_done(success) -> None:
+        def DoSign(password : str) -> None:
             nonlocal entry
-            if success:
-                tx_hash, *dummy = wallet.get_tx_info(tx)
-                entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
-                utils.nspy_put_byname(self, entry, 'tx_entry')
-                setup_transaction_detail_view(self) # recreate ui
-            #else:
-            #    parent.show_error(_("An Unknown Error Occurred"))
-        parent.sign_tx_with_password(tx, sign_done, password)
+            def sign_done(success) -> None:
+                nonlocal entry
+                if success:
+                    tx_hash, *dummy = wallet.get_tx_info(tx)
+                    entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
+                    utils.nspy_put_byname(self, entry, 'tx_entry')
+                    setup_transaction_detail_view(self) # recreate ui
+                #else:
+                #    parent.show_error(_("An Unknown Error Occurred"))
+            parent.sign_tx_with_password(tx, sign_done, password)
+            
+
+        parent.prompt_password_if_needed_asynch(callBack = DoSign, prompt = _("Enter your password to proceed"), vc = self)
+
 
     @objc_method
     def onBroadcast(self) -> None:

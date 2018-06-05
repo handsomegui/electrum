@@ -350,8 +350,7 @@ def show_alert(vc : ObjCInstance, # the viewcontroller to present the alert view
         ct+=1
     def onCompletion() -> None:
         #print("On completion called..")
-        nonlocal got_callback
-        nonlocal alert
+        nonlocal got_callback, alert
         if not actions: got_callback = True
         if completion is not None:
             #print("Calling completion callback..")

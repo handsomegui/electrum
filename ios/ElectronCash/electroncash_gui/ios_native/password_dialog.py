@@ -273,14 +273,16 @@ def prompt_password_local_runloop(vc : ObjCInstance, prompt : str = None, title 
     )
     return retPW
 
-def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = None, title : str = None, onCancel : Callable = None) -> ObjCInstance:
+_extant_pw_dialogs = list()
+def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = None, title : str = None, onCancel : Callable = None,
+                           onForcedDismissal : Callable = None) -> ObjCInstance:
     title =  _("Enter Password") if not title else title
     prompt = _("Enter your password to proceed") if not prompt else prompt
     tf = None
     retPW = None
     def tfConfigHandler(oid : objc_id) -> None:
         nonlocal tf
-        tf = ObjCInstance(oid)
+        tf = ObjCInstance(oid).retain()
         tf.adjustsFontSizeToFitWidth = True
         tf.minimumFontSize = 9
         tf.placeholder = _("Enter Password")
@@ -288,10 +290,37 @@ def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = No
         tf.borderStyle = UITextBorderStyleBezel
         tf.clearButtonMode = UITextFieldViewModeWhileEditing
         tf.secureTextEntry = True
+    alert = None
+    def Cleanup() -> None:
+        nonlocal alert, tf
+        for i, tup in enumerate(_extant_pw_dialogs):
+            if tup[0].ptr.value == alert.ptr.value:
+                _extant_pw_dialogs.pop(i)
+                break
+        tf.release()
+        tf = None
+        #print("*** alert cleaned up",alert.ptr.value, " dlgs len =", len(_extant_pw_dialogs))
+        alert = None
     def MyOnOk() -> None:
-        if callable(onOk): onOk(tf.text)
+        nonlocal tf
+        txt = tf.text
+        Cleanup()
+        if callable(onOk): onOk(txt)
     def MyOnCancel() -> None:
+        nonlocal tf
+        Cleanup()
         if callable(onCancel): onCancel()
+    def MyForcedKill() -> None:
+        Cleanup()
+        if callable(onForcedDismissal): onForcedDismissal()
+    def MyCompletion(o : objc_id) -> None:
+        _extant_pw_dialogs.append((ObjCInstance(o), MyForcedKill))
+
+    if _extant_pw_dialogs:
+        #print("*** dlgs exist, len =",len(_extant_pw_dialogs))
+        dlgs = _extant_pw_dialogs.copy()
+        for tup in dlgs:
+            tup[0].dismissViewControllerAnimated_completion_(False, Block(tup[1]))
 
     alert = utils.show_alert(
         vc = vc,
@@ -300,6 +329,8 @@ def prompt_password_asynch(vc : ObjCInstance, onOk : Callable, prompt : str = No
         actions = [ [ _("OK"), MyOnOk ], [_("Cancel"), MyOnCancel ] ],
         cancel = _("Cancel"),
         localRunLoop = False,
-        uiTextFieldHandlers = [tfConfigHandler]
+        uiTextFieldHandlers = [tfConfigHandler],
+        completion = MyCompletion
     )
+    
     return alert

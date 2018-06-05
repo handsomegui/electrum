@@ -759,6 +759,19 @@ class SendVC(SendBase):
 
         confirm_rate = 2 * config().max_fee_rate()
 
+
+        def DoSign(password : str) -> None:
+            def sign_done(success) -> None:
+                if success:
+                    if not tx.is_complete():
+                        self.showTransaction_desc_(tx.serialize(), tx_desc)
+                        self.clear()
+                    else:
+                        parent().broadcast_transaction(tx, tx_desc)
+                #else:
+                #    parent().show_error(_("An Unknown Error Occurred"))
+            parent().sign_tx_with_password(tx, sign_done, password)
+            
         # IN THE FUTURE IF WE WANT TO APPEND SOMETHING IN THE MSG ABOUT THE FEE, CODE IS COMMENTED OUT:
         #if fee > confirm_rate * tx.estimated_size() / 1000:
         #    msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
@@ -766,24 +779,10 @@ class SendVC(SendBase):
         if wallet().has_password():
             msg.append("")
             msg.append(_("Enter your password to proceed"))
-            password = parent().password_dialog('\n'.join(msg))
-            if not password:
-                return
+            parent().prompt_password_if_needed_asynch(callBack = DoSign, prompt = '\n'.join(msg), vc = self)
         else:
             msg.append(_('Proceed?'))
-            if not parent().question('\n'.join(msg), _("Confirm Send")):
-                return
-
-        def sign_done(success) -> None:
-            if success:
-                if not tx.is_complete():
-                    self.showTransaction_desc_(tx.serialize(), tx_desc)
-                    self.clear()
-                else:
-                    parent().broadcast_transaction(tx, tx_desc)
-            #else:
-            #    parent().show_error(_("An Unknown Error Occurred"))
-        parent().sign_tx_with_password(tx, sign_done, password)
+            parent().question(message = '\n'.join(msg), title = _("Confirm Send"), onOk = lambda: DoSign(None), vc = self)
 
 
 def get_coins(sendvc : ObjCInstance) -> list:

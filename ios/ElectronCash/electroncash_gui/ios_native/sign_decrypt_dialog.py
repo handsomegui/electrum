@@ -241,7 +241,7 @@ class SignDecryptVC(UIViewController):
             signaturetv.text = base64.b64encode(signed).decode('ascii')
             parent().show_message(_("The signature for the provided message has been pasted into the signature text box."),title=_("Success"))
 
-        parent().prompt_password_if_needed_asynch(onPw)
+        parent().prompt_password_if_needed_asynch(onPw, vc = self)
     
     @objc_method
     def doVerify(self) -> None:
@@ -322,7 +322,7 @@ class SignDecryptVC(UIViewController):
                 return
             self.view.viewWithTag_(210).text = plaintext
             parent().show_message(_("The message has been successfully decrypted"), title=_("Success"))
-        parent().prompt_password_if_needed_asynch(onPw) 
+        parent().prompt_password_if_needed_asynch(onPw, vc = self) 
 
 def Create_SignVerify_VC(address, pubkey = None) -> ObjCInstance:
     vc = SignDecryptVC.alloc()

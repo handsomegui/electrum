@@ -360,12 +360,15 @@ class ReceiveVC(UIViewController):
         req = parent().wallet.make_payment_request(theAddr, amount, message, expiration)
         print(req)
         parent().wallet.add_payment_request(req, parent().config)
-        parent().sign_payment_request(theAddr)
-        parent().wallet.storage.write() # commit it to disk
-        parent().refresh_components('address','receive')
-        # force disable save button
-        utils.uiview_set_enabled(ui['saveBut'],
-                                 (amount is not None) or (message != ""))
+        def OnDone() -> None:
+            if not parent().wallet: return
+            parent().wallet.storage.write() # commit it to disk
+            parent().refresh_components('address','receive')
+            # force disable save button
+            utils.uiview_set_enabled(ui['saveBut'],
+                                     (amount is not None) or (message != ""))
+            
+        parent().sign_payment_request(addr = theAddr, onSuccess = OnDone, vc = self)
         
 
 

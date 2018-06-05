@@ -35,6 +35,7 @@ import time
 import threading
 from decimal import Decimal
 from functools import partial
+from typing import Callable, Any
 try:
     from .uikit_bindings import *
 except Exception as e:
@@ -85,7 +86,8 @@ class MyTabBarController(UITabBarController):
         if pvc:
             while pvc.presentedViewController:
                 pvc = pvc.presentedViewController
-            return pvc.supportedInterfaceOrientations()
+            if not isinstance(pvc, UIAlertController):
+                return pvc.supportedInterfaceOrientations()
         return send_super(__class__, self, 'supportedInterfaceOrientations', restype=c_int)
     
     @objc_method
@@ -94,7 +96,8 @@ class MyTabBarController(UITabBarController):
         if pvc:
             while pvc.presentedViewController:
                 pvc = pvc.presentedViewController
-            return pvc.shouldAutorotate()
+            if not isinstance(pvc, UIAlertController):
+                return pvc.shouldAutorotate()
         return send_super(__class__, self, 'shouldAutorotate', restype=c_bool)
 
 
@@ -873,8 +876,10 @@ class ElectrumGui(PrintError):
     
     # full stop question for user -- appropriate for send tx dialog
     def question(self, message, title = _("Question"), yesno = False, onOk = None, vc = None, destructive = False, okButTitle = None) -> bool:
-        ret = False
+        ret = None
         localRunLoop = True if onOk is None else False
+        if localRunLoop:
+            utils.NSLog("*** WARNING: It's been shown that local run loops are buggy on iOS. You are using one with an ElectrumGui.question() call.  Please fix this.")
         def local_onOk() -> None:
             nonlocal ret
             ret = True
@@ -886,7 +891,7 @@ class ElectrumGui(PrintError):
             extrakwargs['okButTitle'] = okButTitle
         self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs, vc = vc, destructive = destructive)
         return ret
-    
+        
     # can be called from any thread, always runs in main thread
     def show_message(self, message, title = _("Information"), onOk = None, localRunLoop = False, hasCancel = False,
                      cancelButTitle = _('Cancel'), okButTitle = _('OK'), vc = None, destructive = False, onCancel = None):
@@ -930,10 +935,12 @@ class ElectrumGui(PrintError):
         #    self.payment_request_error_signal.emit()
         utils.NSLog("On PR: %s -- UNIMPLEMENTED.. IMPLEMENT ME!",str(request))
     
-    def sign_payment_request(self, addr):
+    def sign_payment_request(self, addr : Address, onSuccess : Callable[[],None] = None, onFailure : Callable[[],None] = None, vc : ObjCInstance = None):
         ''' No-op for now -- needs to be IMPLEMENTED -- requires the alias functionality '''
         assert isinstance(addr, Address)
-        if not self.wallet: return
+        if not self.wallet:
+            if callable(onFailure): onFailure()
+            return
         alias = self.config.get('alias')
         alias_privkey = None
         if alias and self.alias_info:
@@ -941,17 +948,17 @@ class ElectrumGui(PrintError):
             if alias_addr:
                 if self.wallet.is_mine(alias_addr):
                     msg = _('This payment request will be signed.') + '\n' + _('Please enter your password')
-                    password = self.password_dialog(msg)
-                    if password:
-                        try:
-                            self.wallet.sign_payment_request(addr, alias, alias_addr, password)
-                        except Exception as e:
-                            self.show_error(str(e))
-                            return
-                    else:
-                        return
-                else:
-                    return
+                    def DoSign(password) -> None:
+                        if password:
+                            try:
+                                self.wallet.sign_payment_request(addr, alias, alias_addr, password)
+                                if callable(onSuccess): onSuccess()
+                            except Exception as e:
+                                if callable(onFailure): onFailure()
+                                self.show_error(str(e), vc = vc)
+                    self.prompt_password_if_needed_asynch(callBack = DoSign, prompt = msg, vc = vc, onCancel = onFailure, onForcedDismissal = onFailure)                        
+        else:       
+            if callable(onSuccess): onSuccess()
 
     def pay_to_URI(self, URI, errFunc : callable = None):
         utils.NSLog("PayTo URI: %s", str(URI))
@@ -1350,7 +1357,7 @@ class ElectrumGui(PrintError):
     def password_dialog(self, msg = None) -> str:
         return ElectrumGui.prompt_password(msg)
     
-    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None) -> ObjCInstance:
+    def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None, onForcedDismissal = None) -> ObjCInstance:
         if self.wallet is None: return None
         if vc is None: vc = self.get_presented_viewcontroller()
         if not self.wallet.has_password():
@@ -1363,7 +1370,7 @@ class ElectrumGui(PrintError):
                 callBack(pw)
             except Exception as e:
                 self.show_error(str(e), onOk = lambda: self.prompt_password_if_needed_asynch(callBack=callBack, prompt=prompt, title=title, vc=vc))
-        return password_dialog.prompt_password_asynch(vc = vc, onOk = cb, prompt = prompt, title = title, onCancel = onCancel)
+        return password_dialog.prompt_password_asynch(vc = vc, onOk = cb, prompt = prompt, title = title, onCancel = onCancel, onForcedDismissal = onForcedDismissal)
 
     def open_last_wallet(self) -> bool:
         guiLast = self.config.get('gui_last_wallet')
