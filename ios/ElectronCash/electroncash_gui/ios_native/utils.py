@@ -233,7 +233,9 @@ def show_share_actions(vc : ObjCInstance,
                        excludedActivityTypes = None,
                        completion: Callable[[],None] = None, # optional completion function that gets called when alert is presented
                        ipadAnchor : object = None,
-                       animated : bool = True) -> ObjCInstance:
+                       animated : bool = True,
+                       finishedCompletion: Callable[[], str] = None # optional completion function that gets called when alert is finished. the string passed is the UIActivityType the user selected, or None if the user cancelled the activity
+                       ) -> ObjCInstance:
     items = []
     if fileName:
         items.append(NSURL.fileURLWithPath_(fileName))
@@ -270,7 +272,33 @@ def show_share_actions(vc : ObjCInstance,
         if completion is not None:
             #print("Calling completion callback..")
             completion()
+    def ActivityCompletion(s : objc_id, completed : bool, arr : objc_id, err : objc_id) -> None:
+        activity = py_from_ns(ObjCInstance(s)) if completed else None
+        def DoUserCompl() -> None:
+            if callable(finishedCompletion):
+                finishedCompletion(activity)
+        print('activity =',activity)
+        if err and err.value:
+            err = ObjCInstance(err)
+            show_alert(vc = vc, title = "Error", message = str(err), actions = [ [_('OK'), DoUserCompl] ])
+        else:
+            DoUserCompl()
+        if activity is None: return
+        if activity in (py_from_ns(UIActivityTypeCopyToPasteboard)):
+            show_notification(message = _("File contents copied to clipboard"))
+        elif activity in ('com.apple.CloudDocsUI.AddToiCloudDrive', py_from_ns(UIActivityTypeAirDrop)):
+            show_notification(message = _("File saved successfully"))
+        elif activity in (py_from_ns(UIActivityTypeMessage),py_from_ns(UIActivityTypeMail)):
+            show_notification(message = _("File sent successfully"))
+        elif activity in (py_from_ns(UIActivityTypePrint)):
+            show_notification(message = _("File set to printer"))
+        else:
+            show_notification(message = _("Exported successfully"))
+        
+        
+    avc.completionWithItemsHandler = Block(ActivityCompletion)
     vc.presentViewController_animated_completion_(avc,animated,onCompletion)
+    return avc
     
 ###################################################
 ### Show modal alert
