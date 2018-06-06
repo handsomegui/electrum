@@ -460,10 +460,11 @@ static long UIButtonBlockKey = 0xb10cb10c;
 }
 
 - (void) setLinkText:(NSString *)text {
+    if (!_normalColor) self.normalColor = self.textColor;
     NSAttributedString *ats = [[NSAttributedString alloc] initWithString:text
                                                               attributes:@{
                                                                            NSFontAttributeName : self.font,
-                                                                NSForegroundColorAttributeName : self.textColor,
+                                                                NSForegroundColorAttributeName : _normalColor,
                                                                  NSUnderlineStyleAttributeName : @(NSUnderlineStyleSingle)
                                                                            }];
     self.attributedText = ats;
@@ -480,9 +481,10 @@ static long UIButtonBlockKey = 0xb10cb10c;
     
     if (_duration <= 0.01) _duration = defaultDuration;
     lastLink = self;
-    if (!_highlightedColor) _highlightedColor = UIColor.whiteColor;
+    if (!_normalColor) self.normalColor = self.textColor;
+    if (!_highlightedColor) self.highlightedColor = UIColor.whiteColor;
     if (_linkWillAnimate) _linkWillAnimate(self);
-    [self textColorAnimationFromColor:self.textColor toColor:_highlightedColor duration:_duration reverses:YES completion:nil];
+    [self textColorAnimationFromColor:_normalColor toColor:_highlightedColor duration:_duration reverses:YES completion:nil];
     __weak LinkLabel *weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_duration/2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         if (weakSelf.linkTarget && lastLink == weakSelf) weakSelf.linkTarget(weakSelf);
