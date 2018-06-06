@@ -479,7 +479,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
             #dateLbl.text = str(date)
             dateLbl.attributedText = utils.makeFancyDateAttrString(str(date))
         elif exp_n:
-            dateTit.setText_withKerning_(_("Expected confirmation time"), utils._kern)
+            dateTit.setText_withKerning_(_("Expected conf."), utils._kern)
             dateLbl.text = '%d blocks'%(exp_n) if exp_n > 0 else _('unknown (low fee)')
         vc.noBlkXplo = False
         dateTit.alpha = 1.0
