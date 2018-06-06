@@ -96,8 +96,11 @@
 
 
 @interface TxDetailBase : UIViewController
+@property (nonatomic, weak) IBOutlet UIView *contentView;
 @property (nonatomic, weak) IBOutlet UILabel *txTit;
 @property (nonatomic, weak) IBOutlet UILabel *txHash;
+@property (nonatomic, weak) IBOutlet UIView *noTxHashView;
+@property (nonatomic, weak) IBOutlet UILabel *noTxHashLbl;
 @property (nonatomic, weak) IBOutlet UIButton *cpyBut;
 @property (nonatomic, weak) IBOutlet UIButton *qrBut;
 //# Description:
@@ -127,11 +130,19 @@
 //# Outputs
 @property (nonatomic, weak) IBOutlet UITableView *outputsTV;
 
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *inputsTVHeightCS, *outputsTVHeightCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *inputsTVHeightCS, *outputsTVHeightCS, *contentViewHeightCS;
+@property (nonatomic, strong) IBOutlet NSLayoutConstraint *statusTopCSRelated, *statusTopCSUnrelated;
 @property (nonatomic) CGFloat maxTVHeight;
+@property (nonatomic, weak) IBOutlet UIView *bottomView;
+@property (nonatomic, weak) IBOutlet UIButton *bottomBut;
 
+@end
+
+@interface TxDetail : TxDetailBase
 - (IBAction) onCpyBut:(id)sender; // overridden in TxDetail (python)
 - (IBAction) onQRBut:(id)sender; // overridden in TxDetail (python)
+- (IBAction) onSign;
+- (IBAction) onBroadcast;
 @end
 
 @interface TxInputsOutputsTVCBase : NSObject

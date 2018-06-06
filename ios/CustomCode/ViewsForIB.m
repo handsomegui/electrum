@@ -46,8 +46,6 @@ static BOOL IS_IPHONE_5(void) {
 
 @implementation TxDetailBase
 // properties auto-synthesized
-- (IBAction) onCpyBut:(id)sender {} // overridden in TxDetail (python)
-- (IBAction) onQRBut:(id)sender {} // overridden in TxDetail (python)
 @end
 
 @implementation TxInputsOutputsTVCBase

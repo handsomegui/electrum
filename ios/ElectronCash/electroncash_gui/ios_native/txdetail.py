@@ -342,7 +342,6 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     wallet = parent.wallet
     base_unit = parent.base_unit()
     format_amount = parent.format_amount
-    #print("conf", conf,"label",label,"v_str",v_str,"date",date,"ts",ts,"status",status)
     if not wallet:
         utils.NSLog("TxDetail: Wallet not open.. aborting early (tx_hash=%s)",tx_hash)
         return        
@@ -356,8 +355,6 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     size = tx.estimated_size()
     can_sign = not tx.is_complete() and wallet and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
     
-    #print("conf2",conf,"status_",status_,"label_",label,"amount",amount,"timestamp",timestamp,"exp_n",exp_n)
-
     wasNew = False
     if not vc.viewIfLoaded:
         NSBundle.mainBundle.loadNibNamed_owner_options_("TxDetail",vc,None)
@@ -402,31 +399,40 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     txTit.text = _("Transaction ID:").translate({ord(':') : None})
     tx_hash_str = tx_hash if tx_hash is not None and tx_hash != "None" and tx_hash != "Unknown" and tx_hash != _("Unknown") else _('Unknown')
     rbbs = []
+    vc.bottomView.setHidden_(True)
+    vc.bottomBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None) # clear previous events
     if can_sign:
         vc.noBlkXplo = True
-        rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Sign"), UIBarButtonItemStylePlain, vc, SEL(b'onSign')).autorelease())
+        vc.bottomView.setHidden_(False)
+        def fun() -> None: vc.onSign()
+        vc.bottomBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, fun)
+        vc.bottomBut.setTitle_forState_(_('Sign'), UIControlStateNormal)
         if not img:
             img = StatusImages[-1]
     if can_broadcast:
         vc.noBlkXplo = True
-        rbbs.append(UIBarButtonItem.alloc().initWithTitle_style_target_action_(_("Broadcast"), UIBarButtonItemStylePlain, vc, SEL(b'onBroadcast')).autorelease())
+        vc.bottomView.setHidden_(False)
+        def fun() -> None: vc.onBroadcast()
+        vc.bottomBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, None) # clear previous events
+        vc.bottomBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, fun)
+        vc.bottomBut.setTitle_forState_(_('Broadcast'), UIControlStateNormal)
         if not img:
             img = StatusImages[-2]
-        
-    if tx_hash == _("Unknown") or tx_hash is None: #unsigned tx
-        linkAttributes = {
-            NSForegroundColorAttributeName : utils.uicolor_custom('dark'),
-            NSUnderlineStyleAttributeName : NSUnderlineStyleNone       
-        }
-        txHash.attributedText = NSAttributedString.alloc().initWithString_attributes_(tx_hash_str, linkAttributes).autorelease()
+            
+    if tx_hash_str == _("Unknown") or tx_hash is None: #unsigned tx
         copyBut.setHidden_(True)
         qrBut.setHidden_(True)
-        vc.notsigned = True
+        txHash.setHidden_(True)
         txHash.userInteractionEnabled = False
+        vc.noTxHashView.setHidden_(False)
+        vc.noTxHashLbl.text = _("You need to sign this transaction in order for it to get a transaction ID.") if can_sign else _("This transaction is not signed and thus lacks a transaction ID.")
+        vc.notsigned = True
         rbbs.append(UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_actions"), UIBarButtonItemStyleBordered, vc, SEL(b'onShareSave:')).autorelease())
     else:
         copyBut.setHidden_(False)
         qrBut.setHidden_(False)
+        txHash.setHidden_(False)
+        vc.noTxHashView.setHidden_(True)
         vc.notsigned = False
         txHash.linkText = tx_hash_str
         txHash.userInteractionEnabled = True
@@ -436,17 +442,16 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         txHash.linkTarget = Block(onTxLinkTap)
         rbbs.append(UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_actions"), UIBarButtonItemStyleBordered, vc, SEL(b'onTxLink:')).autorelease())
 
+    if amount is None: # unrelated to this wallet.. hide the description textfield.. also affects messaging below.. see viewDidLayoutSubviews
+        vc.unrelated = True
+    else:
+        vc.unrelated = False        
+
     vc.navigationItem.rightBarButtonItems = rbbs 
 
     descTit.text = _("Description") 
     descTf.text = label
     descTf.placeholder = _("Tap to add a description")
-    #if amount is not None and amount < 0:
-    #    descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,0.2,0.2,0.040)
-    #else:
-    #    descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,1.0,0.040)
-    #descTf.adjustsFontSizeToFitWidth = True
-    #descTf.minimumFontSize = 8.0
     descTf.clearButtonMode = UITextFieldViewModeWhileEditing
     utils.uitf_redo_attrs(descTf)
 
@@ -487,7 +492,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         dateLbl.alpha = 0.5
  
     myAmtStr = ''
-    if amount is None:
+    if vc.unrelated:
         amtTit.setText_withKerning_(_("Amount"), utils._kern)
         amtLbl.text = _("Transaction unrelated to your wallet")
     elif amount > 0:
@@ -534,8 +539,8 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         lockLbl.setHidden_(True)
 
     # auto-adjust height of table views        
-    vc.inputsTVHeightCS.constant = min(28 + _TxInputsOutputsCellHeight*len(tx.inputs()), vc.maxTVHeight)
-    vc.outputsTVHeightCS.constant = min(28 + _TxInputsOutputsCellHeight*len(tx.outputs()), vc.maxTVHeight)
+    vc.inputsTVHeightCS.constant = min(_TxInputsOutputsHeaderHeight + _TxInputsOutputsCellHeight*len(tx.inputs()), vc.maxTVHeight)
+    vc.outputsTVHeightCS.constant = min(_TxInputsOutputsHeaderHeight + _TxInputsOutputsCellHeight*len(tx.outputs()), vc.maxTVHeight)
 
     # refreshes the tableview with data
     if wasNew:
@@ -544,17 +549,21 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     else:
         inputsTV.reloadData()
         outputsTV.reloadData()
+
         
 class TxDetail(TxDetailBase):
     notsigned = objc_property() # by default is false.. if true, offer different buttons/options
+    unrelated = objc_property() # by default false, if set to true, hide the desc tf and other layout niceties
     noBlkXplo = objc_property()
     cbTimer = objc_property()
+    # Various other properties, weak and strong, are in ViewsForIB.h in Obj-C declared for TxDetailbase
 
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
             self.notsigned = False
+            self.unrelated = False
             self.noBlkXplo = False
             self.title = _("Transaction") + " " + _("Details")
             bb = UIBarButtonItem.new().autorelease()
@@ -570,6 +579,7 @@ class TxDetail(TxDetailBase):
         self.title = None
         self.view = None
         self.notsigned = None
+        self.unrelated = None
         self.noBlkXplo = None
         if self.cbTimer: self.cbTimer.invalidate()
         self.cbTimer = None
@@ -599,9 +609,23 @@ class TxDetail(TxDetailBase):
     def viewWillDisappear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
 
+        
+    @objc_method
+    def viewDidLayoutSubviews(self) -> None:
+        send_super(__class__, self, 'viewDidLayoutSubviews')
+        # mogrify layout depending on whether this tx is ours or not. if not ours, hide the descTit and descTf and move up the layout
+        unrelated = bool(self.unrelated)
+        self.statusTopCSRelated.setActive_(not unrelated)
+        self.statusTopCSUnrelated.setActive_(unrelated)
+        self.descTit.setHidden_(unrelated)
+        self.descTf.setHidden_(unrelated)
+        f = self.outputsTV.frame
+        # peg layout size based on dynamic contents. Wish there was a way to do this with autolayout but my brain at the moment and this seems easier.
+        self.contentViewHeightCS.constant = f.origin.y + f.size.height + 100
+        self.contentView.layoutIfNeeded()
+
     @objc_method
     def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
-        #print("hit return, value is {}".format(tf.text))
         tf.resignFirstResponder()
         return True
     
@@ -625,8 +649,6 @@ class TxDetail(TxDetailBase):
 
     @objc_method
     def onQRBut_(self, but) -> None:
-        #utils.show_notification(message="QR button unimplemented -- coming soon!", duration=2.0, color=(.9,0,0,1.0))
-        
         entry = utils.nspy_get_byname(self, 'tx_entry')
 
         qrvc = utils.present_qrcode_vc_for_data(vc=self,
@@ -745,6 +767,8 @@ class TxDetail(TxDetailBase):
             if self.viewIfLoaded is None:
                 self.cbTimer = None
                 return
+            # immediately hide the broadcast button
+            self.bottomView.setHidden_(True)
             tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet.get_tx_info(tx)
             if conf is None:
                 print("conf was none; calling broadcastDone again in 250 ms...")
@@ -762,6 +786,7 @@ class TxDetail(TxDetailBase):
             setup_transaction_detail_view(self)
             
         parent.broadcast_transaction(tx, self.descTf.text, broadcastDone)
+
     
 def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = None, tx = None, asModalNav = False) -> ObjCInstance:
     txvc = TxDetail.alloc()
