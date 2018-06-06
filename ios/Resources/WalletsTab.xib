@@ -14,7 +14,7 @@
         <navigationController title="Wallets" id="I1r-GR-R05" customClass="WalletsNav">
             <tabBarItem key="tabBarItem" title="Wallets" image="tab_wallets.png" id="mSo-HW-HDn"/>
             <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
-            <navigationBar key="navigationBar" contentMode="scaleToFill" barStyle="black" translucent="NO" id="6um-IK-2g2">
+            <navigationBar key="navigationBar" contentMode="scaleToFill" barStyle="black" translucent="NO" backIndicatorImage="Back_Chevron_White.png" backIndicatorTransitionMaskImage="Back_Chevron_White.png" id="6um-IK-2g2">
                 <rect key="frame" x="0.0" y="-44" width="375" height="44"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <color key="backgroundColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
@@ -449,6 +449,7 @@
         </tapGestureRecognizer>
     </objects>
     <resources>
+        <image name="Back_Chevron_White.png" width="7" height="13"/>
         <image name="chevron_00000.png" width="44" height="44"/>
         <image name="empty_table_icon.png" width="62" height="36"/>
         <image name="tab_wallets.png" width="27" height="23"/>

@@ -1192,6 +1192,7 @@ def stripAmount(s : str) -> str:
 def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCInstance:
     ''' Make the ending MM:SS of the date field be 'light' text as per Max's UI spec '''
     if font is None: font = _f4
+    if datestr: datestr = datestr.translate({ord('-') : '.'}) # replace hyphens in date with '.' chars as per Max's recommendations
     ats = NSMutableAttributedString.alloc().initWithString_(datestr).autorelease()
     l = len(datestr)
     ix = datestr.rfind(' ', 0, l)

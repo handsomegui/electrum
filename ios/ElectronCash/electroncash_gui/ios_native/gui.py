@@ -267,9 +267,13 @@ class ElectrumGui(PrintError):
 
         self.tabs = [utils.tintify(x) for x in [nav1, nav2, nav3, nav4, nav5]]
         self.rootVCs = dict()
+        bii = self.walletsNav.navigationBar.backIndicatorImage if self.walletsNav and self.walletsNav.navigationBar else None
         for i,nav in enumerate(self.tabs):
             vc = nav.viewControllers[0]
             nav.tabBarItem.tag = i
+            if bii:
+                nav.navigationBar.backIndicatorImage = bii
+                nav.navigationBar.backIndicatorTransitionMaskImage = bii
             nav.viewControllers[0].tabBarItem.tag = i
             self.rootVCs[nav.ptr.value] = vc
 
