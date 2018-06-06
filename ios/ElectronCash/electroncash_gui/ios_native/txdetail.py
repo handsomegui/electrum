@@ -17,6 +17,9 @@ from electroncash.util import timestamp_to_datetime
 import json, sys
 from . import coins
 
+_TxInputsOutputsCellHeight = 85.0
+_TxInputsOutputsHeaderHeight = 22.0
+
 # ViewController used for the TxDetail view's "Inputs" and "Outputs" tables.. not exposed.. managed internally
 class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
     
@@ -41,6 +44,10 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
             
             if self.tagin == self.tagout or inputTV.ptr.value == outputTV.ptr.value:
                 raise ValueError("The input and output table views must be different and have different tags!")
+            
+            nib = UINib.nibWithNibName_bundle_("TxDetailInOutCell", None)
+            inputTV.registerNib_forCellReuseIdentifier_(nib, "TxDetailInOutCell")
+            outputTV.registerNib_forCellReuseIdentifier_(nib, "TxDetailInOutCell")
             
             inputTV.delegate = self
             outputTV.delegate = self
@@ -93,6 +100,14 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
         else:
             hdr = UIView.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
         return hdr
+    
+    @objc_method
+    def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
+        return _TxInputsOutputsCellHeight
+    
+    @objc_method
+    def tableView_heightForHeaderInSection_(self, tv, section : int) -> float:
+        return _TxInputsOutputsHeaderHeight
             
     @objc_method
     def tableView_numberOfRowsInSection_(self, tv : ObjCInstance, section : int) -> int:
@@ -106,19 +121,19 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath):
         #todo: - allow for label editing (popup menu?)
-        identifier = "%s_%s"%(str(__class__) , str(indexPath.section))
+        identifier = "TxDetailInOutCell"
         cell = tv.dequeueReusableCellWithIdentifier_(identifier)
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
         
         def format_amount(amt):
-            return parent.format_amount(amt, whitespaces = True)
+            return parent.format_amount(amt, whitespaces = False)
         
         def fx():
             return parent.daemon.fx if parent.daemon and parent.daemon.fx and parent.daemon.fx.show_history() else None
 
-        if cell is None:
-            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, identifier).autorelease()
+        base_unit = parent.base_unit()
+
         try:
             tx = utils.nspy_get(self)
         
@@ -133,17 +148,17 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
             else:
                 raise ValueError("tv tag %d is neither input (%d) or output (%d) tag!"%(int(tv.tag),int(self.tagin),int(self.tagout)))
             
-            colorExt = UIColor.colorWithRed_green_blue_alpha_(1.0,1.0,1.0,0.0)
-            colorChg = utils.uicolor_custom('change address')  # UIColor.colorWithRed_green_blue_alpha_(1.0,0.9,0.3,0.3)
-            colorMine = UIColor.colorWithRed_green_blue_alpha_(0.0,1.0,0.0,0.1)
 
-            #cell.backgroundColor = colorExt
+            cell.address.text = ""
+            cell.addressType.text = ""
+            cell.detail.text = ""
+
             addr = None
             
             if isInput:
                 if x['type'] == 'coinbase':
-                    cell.textLabel.text = "coinbase"
-                    cell.detailTextLabel.text = ""
+                    cell.addressType.text = "coinbase"
+                    cell.address.text = "coinbase"
                 else:
                     prevout_hash = x.get('prevout_hash')
                     prevout_n = x.get('prevout_n')
@@ -157,57 +172,36 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                         addr_text = _('unknown')
                     else:
                         addr_text = addr.to_ui_string()
-                    cell.textLabel.text = addr_text
+                    cell.address.text = addr_text
                     if x.get('value') is not None:
                         v_in = x['value']
-                        mytxt += format_amount(v_in)
+                        mytxt += format_amount(v_in) + ' ' + base_unit
                         if fx(): mytxt += ' (' + fx().historical_value_str(v_in,timestamp_to_datetime(self.ts)) + " " + fx().get_currency() + ')'
-                    cell.detailTextLabel.text = mytxt
+                    cell.detail.text = mytxt.strip()
             else:
-                colorMine = UIColor.colorWithRed_green_blue_alpha_(1.0,0.0,1.0,0.1)
                 addr, v = x
-                #cursor.insertText(addr.to_ui_string(), text_format(addr))
-                cell.textLabel.text = addr.to_ui_string()
-                cell.detailTextLabel.text = ""
+                cell.address.text = addr.to_ui_string()
                 if v is not None:
-                    cell.detailTextLabel.text = format_amount(v) + ((' (' + fx().historical_value_str(v,timestamp_to_datetime(self.ts)) + " " + fx().get_currency() + ')') if fx() else '')
+                    cell.detail.text = (format_amount(v) + " " + base_unit +  ((' (' + fx().historical_value_str(v,timestamp_to_datetime(self.ts)) + " " + fx().get_currency() + ')') if fx() else '')).strip()
 
-            #cell.textLabel.adjustsFontSizeToFitWidth = True
-            #cell.textLabel.minimumScaleFactor = 0.85
             
-            cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
-            cell.textLabel.textColor = utils.uicolor_custom('dark')
-            cell.detailTextLabel.textColor = utils.uicolor_custom('dark')
 
-            #if isinstance(addr, Address) and wallet.is_mine(addr):
-            #    if wallet.is_change(addr):
-            #        cell.backgroundColor = colorChg
-            #    else:
-            #        cell.backgroundColor = colorMine
-            xtra = ''
+            typ = ''
             if isinstance(addr, Address):
                 if wallet.is_mine(addr):
                     if wallet.is_change(addr):
-                        xtra = "  My Change"
+                        typ = _("My Change Address")
                     else:
-                        xtra = "  My Address"
+                        typ = _("My Receiving Address")
                 else:
-                    xtra = "  [External Addr.]"
-            if xtra:
-                ats = NSMutableAttributedString.alloc().initWithAttributedString_(cell.textLabel.attributedText).autorelease()
-                attrs = { NSForegroundColorAttributeName : utils.uicolor_custom('light'),
-                          NSFontAttributeName : UIFont.systemFontOfSize_weight_(12.0, UIFontWeightMedium),
-                          NSKernAttributeName : utils._kern }
-                ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(xtra,attrs).autorelease())
-                cell.textLabel.attributedText = ats
-                
+                    typ = _("External Address")
+            cell.addressType.text = typ                
             cell.accessoryType = UITableViewCellAccessoryNone #UITableViewCellAccessoryDisclosureIndicator#UITableViewCellAccessoryDetailDisclosureButton#UITableViewCellAccessoryDetailButton #
         except Exception as e:
             print("exception in %s: %s"%(__class__.name,str(e)))
-            cell.textLabel.attributedText = None
-            cell.textLabel.text = "None found"
-            cell.detailTextLabel.attributedText = None
-            cell.detailTextLabel.text = None
+            cell.addressType.text = ""
+            cell.address.text = "Not found"
+            cell.detail.text = ""
             cell.accessoryType = UITableViewCellAccessoryNone
         return cell
     
@@ -225,6 +219,8 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
         tx = utils.nspy_get(self)
         isInput = tv.tag == self.tagin
         x = tx.inputs()[indexPath.row] if isInput else tx.get_outputs()[indexPath.row]
+        if isInput and x.get('type', None) == 'coinbase':
+            return
         vc = self.txDetailVC
         title = _("Options")
         message = _("Transaction Input {}").format(indexPath.row) if isInput else _("Transaction Output {}").format(indexPath.row)
@@ -538,8 +534,8 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         lockLbl.setHidden_(True)
 
     # auto-adjust height of table views        
-    vc.inputsTVHeightCS.constant = min(28 + 44*len(tx.inputs()), vc.maxTVHeight)
-    vc.outputsTVHeightCS.constant = min(28 + 44*len(tx.outputs()), vc.maxTVHeight)
+    vc.inputsTVHeightCS.constant = min(28 + _TxInputsOutputsCellHeight*len(tx.inputs()), vc.maxTVHeight)
+    vc.outputsTVHeightCS.constant = min(28 + _TxInputsOutputsCellHeight*len(tx.outputs()), vc.maxTVHeight)
 
     # refreshes the tableview with data
     if wasNew:
@@ -583,6 +579,8 @@ class TxDetail(TxDetailBase):
     
     @objc_method
     def loadView(self) -> None:
+        self.edgesForExtendedLayout = 0
+        self.extendedLayoutIncludesOpaqueBars = False
         setup_transaction_detail_view(self)
             
     @objc_method

@@ -509,4 +509,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onMasterKey;
 @end
 
+@interface TxDetailInOutCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UILabel *addressType, *address, *detail;
+@end
 #endif /* ViewsForIB_h */

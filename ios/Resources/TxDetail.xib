@@ -43,7 +43,7 @@
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
                 <view tag="1" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="3WW-S2-Z6u" userLabel="Content View">
-                    <rect key="frame" x="0.0" y="0.0" width="375" height="750"/>
+                    <rect key="frame" x="0.0" y="0.0" width="375" height="850"/>
                     <subviews>
                         <label opaque="NO" userInteractionEnabled="NO" tag="100" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Transaction ID:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WrI-h8-zxW">
                             <rect key="frame" x="15" y="25" width="345" height="18"/>
@@ -215,20 +215,15 @@
                             <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                             <nil key="highlightedColor"/>
                         </label>
-                        <tableView clipsSubviews="YES" tag="1000" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="UEi-8S-wuv" userLabel="Inputs Table View">
+                        <tableView clipsSubviews="YES" tag="1000" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" separatorStyle="default" rowHeight="85" sectionHeaderHeight="22" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="UEi-8S-wuv" userLabel="Inputs Table View">
                             <rect key="frame" x="15" y="401" width="345" height="200"/>
                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="200" id="PXd-tz-fT5"/>
                             </constraints>
                             <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
-                            <userDefinedRuntimeAttributes>
-                                <userDefinedRuntimeAttribute type="number" keyPath="maxTVHeight">
-                                    <integer key="value" value="200"/>
-                                </userDefinedRuntimeAttribute>
-                            </userDefinedRuntimeAttributes>
                         </tableView>
-                        <tableView clipsSubviews="YES" tag="1100" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="cAi-tk-ewi" userLabel="Outputs Table View">
+                        <tableView clipsSubviews="YES" tag="1100" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" separatorStyle="default" rowHeight="85" sectionHeaderHeight="22" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="cAi-tk-ewi" userLabel="Outputs Table View">
                             <rect key="frame" x="15" y="626" width="345" height="200"/>
                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <constraints>
@@ -306,7 +301,7 @@
                         <constraint firstItem="UEi-8S-wuv" firstAttribute="leading" secondItem="3WW-S2-Z6u" secondAttribute="leading" constant="15" id="v7M-2a-FTn"/>
                         <constraint firstAttribute="trailing" secondItem="m8F-J1-RxG" secondAttribute="trailing" constant="15" id="wk8-p3-JMY"/>
                         <constraint firstItem="haP-rl-uV0" firstAttribute="width" secondItem="rfQ-PC-KHL" secondAttribute="width" id="wwi-iZ-IvU"/>
-                        <constraint firstAttribute="height" constant="750" id="xmf-8V-Ksb"/>
+                        <constraint firstAttribute="height" constant="850" id="xmf-8V-Ksb"/>
                         <constraint firstAttribute="trailing" secondItem="Z2N-ff-77r" secondAttribute="trailing" constant="15" id="xrE-31-Iyk"/>
                         <constraint firstItem="rfQ-PC-KHL" firstAttribute="leading" secondItem="3WW-S2-Z6u" secondAttribute="leading" constant="15" id="zEy-PZ-dBY"/>
                     </constraints>

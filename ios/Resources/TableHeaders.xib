@@ -37,11 +37,11 @@
             <point key="canvasLocation" x="33.5" y="95"/>
         </view>
         <view tag="11000" contentMode="scaleToFill" id="NzE-Um-2tg" userLabel="TXInputsOutputs">
-            <rect key="frame" x="0.0" y="0.0" width="375" height="28"/>
+            <rect key="frame" x="0.0" y="0.0" width="375" height="22"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
             <subviews>
                 <label opaque="NO" userInteractionEnabled="NO" tag="1" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Inputs(1)" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="I8E-D1-A1o">
-                    <rect key="frame" x="0.0" y="5" width="375" height="18"/>
+                    <rect key="frame" x="0.0" y="2" width="375" height="18"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="18" id="K3g-mH-Ng1"/>
                     </constraints>
@@ -50,7 +50,7 @@
                     <nil key="highlightedColor"/>
                 </label>
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="AVf-Oj-hFs" userLabel="GrayLine">
-                    <rect key="frame" x="0.0" y="27" width="375" height="1"/>
+                    <rect key="frame" x="0.0" y="21" width="375" height="1"/>
                     <color key="backgroundColor" red="0.85882352941176465" green="0.85882352941176465" blue="0.85882352941176465" alpha="1" colorSpace="deviceRGB"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="1" id="5V1-xA-kuk"/>

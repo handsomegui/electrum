@@ -397,3 +397,6 @@ static BOOL IS_IPHONE_5(void) {
 @implementation OnBoardingMenuBase
 @end
 
+@implementation TxDetailInOutCell
+@end
+
