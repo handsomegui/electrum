@@ -329,15 +329,15 @@
                                         <constraint firstAttribute="height" constant="24" id="cVE-y3-pkg"/>
                                     </constraints>
                                 </view>
-                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="zCo-Wb-ZLh" userLabel="LSpacer">
-                                    <rect key="frame" x="0.0" y="0.0" width="54" height="24"/>
+                                <view contentMode="scaleToFill" horizontalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="zCo-Wb-ZLh" userLabel="LSpacer">
+                                    <rect key="frame" x="0.0" y="0.0" width="60.5" height="24"/>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                     <constraints>
                                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="2" id="Tk0-sF-YSe"/>
                                     </constraints>
                                 </view>
                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="All set and good to go." lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="atn-VB-xdN">
-                                    <rect key="frame" x="120" y="5.5" width="130.5" height="14.5"/>
+                                    <rect key="frame" x="113.5" y="5.5" width="130.5" height="14.5"/>
                                     <constraints>
                                         <constraint firstAttribute="height" relation="greaterThanOrEqual" id="g8f-J8-rnC"/>
                                         <constraint firstAttribute="width" relation="greaterThanOrEqual" id="hhM-W6-Wj1"/>
@@ -347,11 +347,11 @@
                                     <nil key="highlightedColor"/>
                                 </label>
                                 <label opaque="NO" clipsSubviews="YES" contentMode="left" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="Online" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="lYw-Ew-yYB">
-                                    <rect key="frame" x="54" y="2" width="56" height="21"/>
+                                    <rect key="frame" x="60.5" y="2" width="42.5" height="21"/>
                                     <color key="backgroundColor" red="0.73333333333333328" green="1" blue="0.23137254901960785" alpha="1" colorSpace="deviceRGB"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="21" id="Fuy-HI-CWn"/>
-                                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="56" id="yxE-fJ-x0y"/>
+                                        <constraint firstAttribute="width" constant="42.5" id="mzi-62-gHr"/>
                                     </constraints>
                                     <fontDescription key="fontDescription" type="system" weight="medium" pointSize="14"/>
                                     <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
@@ -362,8 +362,8 @@
                                         </userDefinedRuntimeAttribute>
                                     </userDefinedRuntimeAttributes>
                                 </label>
-                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="s5a-Kp-FHa" userLabel="RSpacer">
-                                    <rect key="frame" x="250.5" y="0.0" width="54" height="24"/>
+                                <view contentMode="scaleToFill" horizontalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="s5a-Kp-FHa" userLabel="RSpacer">
+                                    <rect key="frame" x="244" y="0.0" width="60.5" height="24"/>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 </view>
                             </subviews>
@@ -399,6 +399,7 @@
                         <outlet property="sendBut" destination="rlV-nI-e8g" id="GEu-Yz-kyX"/>
                         <outlet property="statusBlurb" destination="atn-VB-xdN" id="GJh-hZ-2ps"/>
                         <outlet property="statusLabel" destination="lYw-Ew-yYB" id="Y5R-MU-vsd"/>
+                        <outlet property="statusLabelWidthCS" destination="mzi-62-gHr" id="Vqd-qd-xfU"/>
                         <outlet property="txsHelper" destination="qSh-mO-1cK" id="ab9-o5-bHD"/>
                         <outlet property="walletAmount" destination="BuO-xT-ft9" id="Wtm-NL-3w2"/>
                         <outlet property="walletName" destination="Kex-Zb-fxf" id="IeL-PF-vYh"/>

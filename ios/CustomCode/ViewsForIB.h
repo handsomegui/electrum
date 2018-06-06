@@ -167,6 +167,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic,assign) WalletsStatusMode status;
 @property (nonatomic,weak) IBOutlet UILabel *statusLabel;
 @property (nonatomic,weak) IBOutlet UILabel *statusBlurb;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *statusLabelWidthCS;
 
 #pragma mark Top Nav Bar related
 @property (nonatomic, weak) IBOutlet UINavigationBar *navBar;

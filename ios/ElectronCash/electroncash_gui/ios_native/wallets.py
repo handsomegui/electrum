@@ -71,7 +71,7 @@ class WalletsVC(WalletsVCBase):
         self.segControl.autoAdjustSelectionIndicatorWidth = False
         # Can't set this property from IB, so we do it here programmatically to create the stroke around the receive button
         self.receiveBut.layer.borderColor = self.sendBut.backgroundColor.CGColor
-
+        
         gui.ElectrumGui.gui.sigHistory.connect(lambda: self.refresh(), self)
         gui.ElectrumGui.gui.sigRequests.connect(lambda: self.refresh(), self)
         gui.ElectrumGui.gui.sigWallets.connect(lambda: self.refresh(), self)
@@ -146,6 +146,9 @@ class WalletsVC(WalletsVCBase):
         else: # mode == StatusOffline        
             self.statusBlurb.text = _("Cannot send/receive new transactions.")
             self.statusLabel.text = _("Offline")
+            
+        s = self.statusLabel.attributedText.size()
+        self.statusLabelWidthCS.constant = s.width + self.statusLabel.layer.cornerRadius*2.0 # this magic forces the status label 'pill' to be properly padded on either side no matter what text it contians
             
         self.statusBlurb.sizeToFit()
         
