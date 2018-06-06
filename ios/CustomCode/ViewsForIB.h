@@ -127,6 +127,9 @@
 //# Outputs
 @property (nonatomic, weak) IBOutlet UITableView *outputsTV;
 
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *inputsTVHeightCS, *outputsTVHeightCS;
+@property (nonatomic) CGFloat maxTVHeight;
+
 - (IBAction) onCpyBut:(id)sender; // overridden in TxDetail (python)
 - (IBAction) onQRBut:(id)sender; // overridden in TxDetail (python)
 @end

@@ -50,27 +50,49 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
             from rubicon.objc.runtime import libobjc            
             libobjc.objc_setAssociatedObject(inputTV.ptr, self.ptr, self.ptr, 0x301)
             libobjc.objc_setAssociatedObject(outputTV.ptr, self.ptr, self.ptr, 0x301)
+
+            def refresh() -> None:
+                inputTV.reloadData()
+                outputTV.reloadData()
+            
+            gui.ElectrumGui.gui.cash_addr_sig.connect(lambda x: refresh(), self)
         return self
     
     @objc_method
     def dealloc(self) -> None:
         print("TxInputsOutputsTVC dealloc")
+        gui.ElectrumGui.gui.cash_addr_sig.disconnect(self)
         self.tagin = None
         self.tagout = None
         self.ts = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
+        
     
     @objc_method
     def numberOfSectionsInTableView_(self, tv) -> int:
         return 1
     
     @objc_method
-    def tableView_titleForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
-        tx = utils.nspy_get(self)
-        if tv.tag == self.tagin: return _("Inputs") + " (%d) "%len(tx.inputs())
-        elif tv.tag == self.tagout: return _("Outputs") + " (%d) "%len(tx.outputs())
-        return "*ERROR*"
+    def tableView_viewForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TableHeaders", None, None)
+        hdr = None
+        for o in objs:
+            if isinstance(o, UIView) and o.tag == 11000:
+                hdr = o
+                break
+        if hdr:
+            lbl = hdr.viewWithTag_(1)
+            tx = utils.nspy_get(self)
+            try:
+                if tv.tag == self.tagin: lbl.text = _("Inputs") + (" (%d) "%len(tx.inputs()))
+                elif tv.tag == self.tagout: lbl.text = _("Outputs") + (" (%d) "%len(tx.outputs()))
+            except:
+                utils.NSLog("Exception in viewForHeaderInSection in TX In/Out TVC: %s", str(sys.exc_info()[1]))
+                lbl.text = "(In/Out)"
+        else:
+            hdr = UIView.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
+        return hdr
             
     @objc_method
     def tableView_numberOfRowsInSection_(self, tv : ObjCInstance, section : int) -> int:
@@ -115,7 +137,7 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
             colorChg = utils.uicolor_custom('change address')  # UIColor.colorWithRed_green_blue_alpha_(1.0,0.9,0.3,0.3)
             colorMine = UIColor.colorWithRed_green_blue_alpha_(0.0,1.0,0.0,0.1)
 
-            cell.backgroundColor = colorExt
+            #cell.backgroundColor = colorExt
             addr = None
             
             if isInput:
@@ -150,20 +172,40 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                 if v is not None:
                     cell.detailTextLabel.text = format_amount(v) + ((' (' + fx().historical_value_str(v,timestamp_to_datetime(self.ts)) + " " + fx().get_currency() + ')') if fx() else '')
 
-            cell.textLabel.adjustsFontSizeToFitWidth = True
-            cell.textLabel.minimumScaleFactor = 0.85
+            #cell.textLabel.adjustsFontSizeToFitWidth = True
+            #cell.textLabel.minimumScaleFactor = 0.85
+            
+            cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
+            cell.textLabel.textColor = utils.uicolor_custom('dark')
+            cell.detailTextLabel.textColor = utils.uicolor_custom('dark')
 
-            if isinstance(addr, Address) and wallet.is_mine(addr):
-                if wallet.is_change(addr):
-                    cell.backgroundColor = colorChg
+            #if isinstance(addr, Address) and wallet.is_mine(addr):
+            #    if wallet.is_change(addr):
+            #        cell.backgroundColor = colorChg
+            #    else:
+            #        cell.backgroundColor = colorMine
+            xtra = ''
+            if isinstance(addr, Address):
+                if wallet.is_mine(addr):
+                    if wallet.is_change(addr):
+                        xtra = "  My Change"
+                    else:
+                        xtra = "  My Address"
                 else:
-                    cell.backgroundColor = colorMine
+                    xtra = "  [External Addr.]"
+            if xtra:
+                ats = NSMutableAttributedString.alloc().initWithAttributedString_(cell.textLabel.attributedText).autorelease()
+                attrs = { NSForegroundColorAttributeName : utils.uicolor_custom('light'),
+                          NSFontAttributeName : UIFont.systemFontOfSize_weight_(12.0, UIFontWeightMedium),
+                          NSKernAttributeName : utils._kern }
+                ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(xtra,attrs).autorelease())
+                cell.textLabel.attributedText = ats
                 
             cell.accessoryType = UITableViewCellAccessoryNone #UITableViewCellAccessoryDisclosureIndicator#UITableViewCellAccessoryDetailDisclosureButton#UITableViewCellAccessoryDetailButton #
         except Exception as e:
             print("exception in %s: %s"%(__class__.name,str(e)))
             cell.textLabel.attributedText = None
-            cell.textLabel.text = "*Error*"
+            cell.textLabel.text = "None found"
             cell.detailTextLabel.attributedText = None
             cell.detailTextLabel.text = None
             cell.accessoryType = UITableViewCellAccessoryNone
@@ -305,13 +347,18 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     base_unit = parent.base_unit()
     format_amount = parent.format_amount
     #print("conf", conf,"label",label,"v_str",v_str,"date",date,"ts",ts,"status",status)
+    if not wallet:
+        utils.NSLog("TxDetail: Wallet not open.. aborting early (tx_hash=%s)",tx_hash)
+        return        
     if tx is None:
         tx = wallet.transactions.get(tx_hash, None)
         if tx is not None: tx.deserialize()
-    if tx is None: raise ValueError("Cannot find tx for hash: %s"%tx_hash)
+    if tx is None:
+        utils.NSLog("*** ERROR: Cannot find tx for hash: %s",tx_hash)
+        return
     tx_hash, status_, label_, can_broadcast, amount, fee, height, conf, timestamp, exp_n = wallet.get_tx_info(tx)
     size = tx.estimated_size()
-    can_sign = not tx.is_complete() and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
+    can_sign = not tx.is_complete() and wallet and wallet.can_sign(tx) #and (wallet.can_sign(tx) # or bool(self.main_window.tx_external_keypairs))
     
     #print("conf2",conf,"status_",status_,"label_",label,"amount",amount,"timestamp",timestamp,"exp_n",exp_n)
 
@@ -319,6 +366,8 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     if not vc.viewIfLoaded:
         NSBundle.mainBundle.loadNibNamed_owner_options_("TxDetail",vc,None)
         wasNew = True
+        if vc.maxTVHeight < 1.0:
+            vc.maxTVHeight = vc.inputsTVHeightCS.constant
     
     # grab all the views
     # Transaction ID:
@@ -354,7 +403,7 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     outputsTV = vc.outputsTV
     
     # Setup data for all the stuff
-    txTit.text = _("Transaction ID:")
+    txTit.text = _("Transaction ID:").translate({ord(':') : None})
     tx_hash_str = tx_hash if tx_hash is not None and tx_hash != "None" and tx_hash != "Unknown" and tx_hash != _("Unknown") else _('Unknown')
     rbbs = []
     if can_sign:
@@ -369,40 +418,43 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
             img = StatusImages[-2]
         
     if tx_hash == _("Unknown") or tx_hash is None: #unsigned tx
-        txHash.text = tx_hash_str
+        linkAttributes = {
+            NSForegroundColorAttributeName : utils.uicolor_custom('dark'),
+            NSUnderlineStyleAttributeName : NSUnderlineStyleNone       
+        }
+        txHash.attributedText = NSAttributedString.alloc().initWithString_attributes_(tx_hash_str, linkAttributes).autorelease()
         copyBut.setHidden_(True)
         qrBut.setHidden_(True)
         vc.notsigned = True
         txHash.userInteractionEnabled = False
-        rbbs.append(UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAction, vc, SEL(b'onShareSave:')).autorelease())
+        rbbs.append(UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_actions"), UIBarButtonItemStyleBordered, vc, SEL(b'onShareSave:')).autorelease())
     else:
         copyBut.setHidden_(False)
         qrBut.setHidden_(False)
         vc.notsigned = False
-        linkAttributes = {
-            NSForegroundColorAttributeName : UIColor.colorWithRed_green_blue_alpha_(0.05,0.4,0.65,1.0),
-            NSUnderlineStyleAttributeName : NSUnderlineStyleSingle              
-        }
-        txHash.attributedText = NSAttributedString.alloc().initWithString_attributes_(tx_hash_str, linkAttributes).autorelease()
+        txHash.linkText = tx_hash_str
         txHash.userInteractionEnabled = True
-        if not txHash.gestureRecognizers:
-            txHash.addGestureRecognizer_(UITapGestureRecognizer.alloc().initWithTarget_action_(vc,SEL(b'onTxLink:')).autorelease())
-        rbbs.append(UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemAction, vc, SEL(b'onTxLink:')).autorelease())
+        
+        def onTxLinkTap(ll : objc_id) -> None:
+            vc.onTxLink_(ObjCInstance(ll).gr)
+        txHash.linkTarget = Block(onTxLinkTap)
+        rbbs.append(UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_actions"), UIBarButtonItemStyleBordered, vc, SEL(b'onTxLink:')).autorelease())
 
     vc.navigationItem.rightBarButtonItems = rbbs 
 
-    descTit.text = _("Description") + ":"
+    descTit.text = _("Description") 
     descTf.text = label
     descTf.placeholder = _("Tap to add a description")
-    if amount is not None and amount < 0:
-        descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,0.2,0.2,0.040)
-    else:
-        descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,1.0,0.040)
-    descTf.adjustsFontSizeToFitWidth = True
-    descTf.minimumFontSize = 8.0
+    #if amount is not None and amount < 0:
+    #    descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(1.0,0.2,0.2,0.040)
+    #else:
+    #    descTf.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,1.0,0.040)
+    #descTf.adjustsFontSizeToFitWidth = True
+    #descTf.minimumFontSize = 8.0
     descTf.clearButtonMode = UITextFieldViewModeWhileEditing
+    utils.uitf_redo_attrs(descTf)
 
-    statusTit.text = _("Status:")
+    statusTit.setText_withKerning_(_("Status:").translate({ord(':') : None}), utils._kern)
     if not img:
         #try and auto-determine the appropriate image if it has some confirmations and img is still null
         try:
@@ -422,49 +474,72 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
     
     if timestamp or exp_n:
         if timestamp:
-            dateTit.text = _("Date") + ":"
-            dateLbl.text = str(date)
+            dateTit.setText_withKerning_(_("Date"), utils._kern)
+            #dateLbl.text = str(date)
+            dateLbl.attributedText = utils.makeFancyDateAttrString(str(date))
         elif exp_n:
-            dateTit.text = _("Expected confirmation time") + ':'
+            dateTit.setText_withKerning_(_("Expected confirmation time"), utils._kern)
             dateLbl.text = '%d blocks'%(exp_n) if exp_n > 0 else _('unknown (low fee)')
         vc.noBlkXplo = False
         dateTit.alpha = 1.0
         dateLbl.alpha = 1.0
     else:
         # wtf? what to do here? 
-        dateTit.text = _("Date") + ":"
+        dateTit.setText_withKerning_(_("Date"), utils._kern) 
         dateLbl.text = ""
         dateTit.alpha = 0.5
         dateLbl.alpha = 0.5
  
+    myAmtStr = ''
     if amount is None:
-        amtTit.text = _("Amount") + ":"
+        amtTit.setText_withKerning_(_("Amount"), utils._kern)
         amtLbl.text = _("Transaction unrelated to your wallet")
     elif amount > 0:
-        amtTit.text = _("Amount received:")
-        amtLbl.text = ('%s %s%s'%(format_amount(amount),base_unit,
-                                  (" (" + fiat_amount_str + " " + ccy + ")") if fiat_amount_str else '',
-                                  ))
+        amtTit.setText_withKerning_(_("Amount received:").translate({ord(':') : None}), utils._kern)
+        myAmtStr = ('%s %s%s'%(format_amount(amount),base_unit,
+                               (" " + fiat_amount_str + " " + ccy + "") if fiat_amount_str else '',
+                               ))
     else:
-        amtTit.text = _("Amount sent:") 
-        amtLbl.text = ('%s %s%s'%(format_amount(-amount),base_unit,
-                                  (" (" + fiat_amount_str.replace('-','') + " " + ccy + ")") if fiat_amount_str else '',
-                                  ))
-
-    sizeTit.text = _("Size:")
+        amtTit.setText_withKerning_( _("Amount sent:").translate({ord(':') : None}), utils._kern )
+        myAmtStr = ('%s %s%s'%(format_amount(-amount),base_unit,
+                               (" " + fiat_amount_str.replace('-','') + " " + ccy + "") if fiat_amount_str else '',
+                               ))
+    if myAmtStr:
+        l = myAmtStr.split()
+        am = l[0]
+        unt = ' ' + l[1] if len(l) else ''
+        rest = ' ' + ' '.join(l[2:]) if len(l) > 2 else ''
+        ats = NSMutableAttributedString.alloc().initWithString_attributes_(am, {NSFontAttributeName : UIFont.systemFontOfSize_weight_(16.0, UIFontWeightBold)}).autorelease()
+        if unt:
+            ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(unt, {NSFontAttributeName : UIFont.systemFontOfSize_weight_(16.0, UIFontWeightBold)}).autorelease())            
+        if rest:
+            ats.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_(rest, {NSFontAttributeName : UIFont.systemFontOfSize_weight_(14.0, UIFontWeightRegular)}).autorelease())
+        amtLbl.attributedText = ats
+        
+    sizeTit.setText_withKerning_( _("Size:").translate({ord(':') : None}), utils._kern )
     if size:
         sizeLbl.text = ('%d bytes' % (size))
     else:
         sizeLbl.text = _("Unknown")
 
-    feeTit.text = _("Fee") + ':'
+    feeTit.setText_withKerning_( _("Fee"), utils._kern )
     fee_str = '%s' % (format_amount(fee) + ' ' + base_unit if fee is not None else _('unknown'))
     if fee is not None:
         fee_str += '  ( %s ) '%  parent.format_fee_rate(fee/size*1000)
     feeLbl.text = fee_str
     
+    lockTit.setText_withKerning_(_("Locktime"), utils._kern)
     if tx.locktime > 0:
         lockLbl.text = str(tx.locktime)
+        lockTit.setHidden_(False)
+        lockLbl.setHidden_(False)
+    else:
+        lockTit.setHidden_(True)
+        lockLbl.setHidden_(True)
+
+    # auto-adjust height of table views        
+    vc.inputsTVHeightCS.constant = min(28 + 44*len(tx.inputs()), vc.maxTVHeight)
+    vc.outputsTVHeightCS.constant = min(28 + 44*len(tx.outputs()), vc.maxTVHeight)
 
     # refreshes the tableview with data
     if wasNew:
@@ -543,6 +618,7 @@ class TxDetail(TxDetailBase):
         if tx_hash is not None:
             gui.ElectrumGui.gui.on_label_edited(tx_hash, new_label)
         utils.get_callback(self, 'on_label')(new_label)
+        utils.uitf_redo_attrs(tf)
 
     @objc_method
     def onCpyBut_(self, but) -> None:
@@ -566,22 +642,39 @@ class TxDetail(TxDetailBase):
         ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
         if not parent.wallet: return
         tx = utils.nspy_get_byname(self, 'tx_entry').tx
-        name = 'signed_%s.txt' % (tx.txid()[0:8]) if tx.is_complete() else 'unsigned.txt'
-        fileName = utils.get_tmp_dir() + '/' + name
-        text = None
-        if fileName:
-            tx_dict = tx.as_dict()
-            input_values = [x.get('value') for x in tx.inputs()]
-            tx_dict['input_values'] = input_values
-            with open(fileName, "w+") as f:
-                text = json.dumps(tx_dict, indent=4) + '\n'
-                f.write(text)
-            utils.NSLog("wrote tx - %d bytes to file: %s",len(text),fileName)
-            text = None #No text.. 
-        else:
-            parent.show_error("Could not save transaction temp file")
-            return           
-        utils.show_share_actions(vc = self, fileName = fileName, text = text, ipadAnchor = ipadAnchor)
+        waitDlg = None
+        def Dismiss(compl, animated = True) -> None:
+            nonlocal waitDlg
+            if waitDlg:
+                waitDlg.dismissViewControllerAnimated_completion_(animated, compl)
+                waitDlg = None
+                
+        def DoIt() -> None:
+            try:
+                name = 'signed_%s.txt' % (tx.txid()[0:8]) if tx.is_complete() else 'unsigned.txt'
+                fileName = utils.get_tmp_dir() + '/' + name
+                text = None
+                if fileName:
+                    tx_dict = tx.as_dict()
+                    input_values = [x.get('value') for x in tx.inputs()]
+                    tx_dict['input_values'] = input_values
+                    with open(fileName, "w+") as f:
+                        text = json.dumps(tx_dict, indent=4) + '\n'
+                        f.write(text)
+                    utils.NSLog("wrote tx - %d bytes to file: %s",len(text),fileName)
+                    text = None #No text..
+                    def MyCompl() -> None:
+                        utils.show_share_actions(vc = self, fileName = fileName, text = text, ipadAnchor = ipadAnchor)
+                    Dismiss(MyCompl)
+                else:
+                    def MyCompl() -> None: parent.show_error("Could not save transaction temp file")
+                    Dismiss(MyCompl, False)
+            except:
+                err = str(sys.exc_info()[1])
+                def MyCompl() -> None: parent.show_error(err)
+                Dismiss(MyCompl, False)
+                utils.NSLog("Got exception generating TX text file: %s", err)
+        waitDlg = utils.show_please_wait(vc = self, message = _("Calculating Tx Details..."), completion = DoIt)
         
     @objc_method
     def onTxLink_(self, sender : ObjCInstance) -> None:

@@ -1601,6 +1601,8 @@ class ElectrumGui(PrintError):
         if self.sendVC: return
         self.sendVC = send.SendVC.alloc().init().autorelease()
         self.sendNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.sendVC).autorelease())
+        self.sendNav.navigationBar.backIndicatorImage = self.walletsNav.navigationBar.backIndicatorImage
+        self.sendNav.navigationBar.backIndicatorTransitionMaskImage = self.walletsNav.navigationBar.backIndicatorTransitionMaskImage
         self.add_navigation_bar_close_to_modal_vc(self.sendVC, leftSide = True)
         def doCleanup(oid : objc_id) -> None:
             self.sendVC = None
@@ -1646,6 +1648,8 @@ class ElectrumGui(PrintError):
         # Receive modal
         self.receiveVC = receive.ReceiveVC.alloc().init().autorelease()
         self.receiveNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.receiveVC).autorelease())
+        self.receiveNav.navigationBar.backIndicatorImage = self.walletsNav.navigationBar.backIndicatorImage
+        self.receiveNav.navigationBar.backIndicatorTransitionMaskImage = self.walletsNav.navigationBar.backIndicatorTransitionMaskImage
         self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True)
         def doCleanup(oid : objc_id) -> None:
             self.receiveVC = None

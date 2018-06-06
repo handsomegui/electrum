@@ -207,6 +207,9 @@ class TxHistoryHelper(TxHistoryHelperBase):
             # data with the child instance via our "nspy_put" mechanism.
             vc = UIViewController.new().autorelease()
             vc.title = _("All Transactions")
+            bb = UIBarButtonItem.new().autorelease()
+            bb.title = _("Back")
+            vc.navigationItem.backBarButtonItem = bb
             vc.view = UITableView.alloc().initWithFrame_style_(self.vc.view.frame, UITableViewStylePlain).autorelease()
             vc.view.separatorInset = UIEdgeInsetsZero
             helper = NewTxHistoryHelper(tv = vc.view, vc = self.vc, domain = _GetDomain(self))

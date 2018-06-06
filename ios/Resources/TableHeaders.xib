@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14109" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14113" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -35,6 +35,42 @@
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
             <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
             <point key="canvasLocation" x="33.5" y="95"/>
+        </view>
+        <view tag="11000" contentMode="scaleToFill" id="NzE-Um-2tg" userLabel="TXInputsOutputs">
+            <rect key="frame" x="0.0" y="0.0" width="375" height="28"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <subviews>
+                <label opaque="NO" userInteractionEnabled="NO" tag="1" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Inputs(1)" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="I8E-D1-A1o">
+                    <rect key="frame" x="0.0" y="5" width="375" height="18"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="18" id="K3g-mH-Ng1"/>
+                    </constraints>
+                    <fontDescription key="fontDescription" type="boldSystem" pointSize="16"/>
+                    <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
+                    <nil key="highlightedColor"/>
+                </label>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="AVf-Oj-hFs" userLabel="GrayLine">
+                    <rect key="frame" x="0.0" y="27" width="375" height="1"/>
+                    <color key="backgroundColor" red="0.85882352941176465" green="0.85882352941176465" blue="0.85882352941176465" alpha="1" colorSpace="deviceRGB"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="1" id="5V1-xA-kuk"/>
+                    </constraints>
+                </view>
+            </subviews>
+            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <constraints>
+                <constraint firstAttribute="trailing" secondItem="I8E-D1-A1o" secondAttribute="trailing" id="1g4-kq-T2s"/>
+                <constraint firstItem="I8E-D1-A1o" firstAttribute="leading" secondItem="NzE-Um-2tg" secondAttribute="leading" id="Bbq-rI-Zlc"/>
+                <constraint firstItem="AVf-Oj-hFs" firstAttribute="leading" secondItem="NzE-Um-2tg" secondAttribute="leading" id="QyT-iN-U5E"/>
+                <constraint firstAttribute="trailing" secondItem="AVf-Oj-hFs" secondAttribute="trailing" id="k4q-Zl-eb4"/>
+                <constraint firstItem="I8E-D1-A1o" firstAttribute="centerY" secondItem="NzE-Um-2tg" secondAttribute="centerY" id="soP-9h-YGS"/>
+                <constraint firstItem="AVf-Oj-hFs" firstAttribute="bottom" secondItem="qqw-r3-CE1" secondAttribute="bottom" id="ufp-e3-xPm"/>
+            </constraints>
+            <nil key="simulatedTopBarMetrics"/>
+            <nil key="simulatedBottomBarMetrics"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <viewLayoutGuide key="safeArea" id="qqw-r3-CE1"/>
+            <point key="canvasLocation" x="33.5" y="-78"/>
         </view>
     </objects>
 </document>

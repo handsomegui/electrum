@@ -104,6 +104,7 @@ typedef void(^ActionBlock)(UIControl *);
 @end
 
 @interface LinkLabel : UILabel
+@property (nonatomic, readonly, weak) UIGestureRecognizer *gr; // the tap gesture recognizer for the link
 @property (nonatomic, copy) NSString *linkText; // set this instead of .text or .attributedText to generate an underlined label that is clickable. Be sure to set .textColor to something blue-ish
 @property (nonatomic, copy) void(^linkWillAnimate)(LinkLabel *); // called right before the link animation begins
 @property (nonatomic, copy) void(^linkTarget)(LinkLabel *); // the action for the link
