@@ -71,10 +71,12 @@ class ReceiveVC(UIViewController):
             ['1 week', 7*24*60*60],
         ]
         self.title = _("Receive")
-        self.tabBarItem.image = UIImage.imageNamed_("tab_receive.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
         self.fxIsEnabled = None
         self.addr = None
         self.lastQRData = ""
+        bb = UIBarButtonItem.new().autorelease()
+        bb.title = _("Back")
+        self.navigationItem.backBarButtonItem = bb
         parent().sigRequests.connect(lambda:self.refresh(), self)
         return self
     

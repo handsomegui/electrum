@@ -60,7 +60,6 @@ class SendVC(SendBase):
     def init(self):
         self = ObjCInstance(send_super(__class__, self, 'init'))
         self.title = _("Send")
-        self.tabBarItem.image = UIImage.imageNamed_("tab_send.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
         self.qrScanErr = False
         self.amountSats = None # None ok on this one       
         self.feeSats = None  # None ok on this one too
@@ -71,6 +70,9 @@ class SendVC(SendBase):
         self.dismissOnAppear = False
         
         self.navigationItem.leftItemsSupplementBackButton = True
+        bb = UIBarButtonItem.new().autorelease()
+        bb.title = _("Back")
+        self.navigationItem.backBarButtonItem = bb
                 
         return self
     
@@ -222,7 +224,7 @@ class SendVC(SendBase):
         self.navigationItem.rightBarButtonItems = [barButSend, barButPreview]
         extra = self.navigationItem.leftBarButtonItems if self.navigationItem.leftBarButtonItems else []
         self.navigationItem.leftBarButtonItems = [*extra, self.clearBut]
-        
+       
         
     @objc_method
     def viewDidLoad(self) -> None:

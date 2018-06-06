@@ -96,7 +96,11 @@ class ContactsVC(ContactsVCBase):
             self.addBut = buts[0]
             #self.doneBut = buts[1]
             self.navigationItem.rightBarButtonItems = buts
-        
+ 
+        bb = UIBarButtonItem.new().autorelease()
+        bb.title = _("Back")
+        self.navigationItem.backBarButtonItem = bb
+       
     @objc_method
     def dealloc(self) -> None:
         # do cleanup stuff here
@@ -589,7 +593,9 @@ class ContactDetailVC(ContactDetailVCBase):
         self.title = _("Contact Info")
         self.navigationItem.rightBarButtonItem = UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_options"), UIBarButtonItemStylePlain, self, SEL(b'onOptions')).autorelease()
         self.payToBut.text = _("Pay to")
-
+        bb = UIBarButtonItem.new().autorelease()
+        bb.title = _("Back")
+        self.navigationItem.backBarButtonItem = bb
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:

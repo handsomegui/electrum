@@ -63,6 +63,9 @@ class PrefsVC(UITableViewController):
         self.warnButtonColor = UIColor.colorWithRed_green_blue_alpha_(0.8,0.0,0.0,1.0)
         self.updateCurrencies()
         self.updateExchanges()
+        bb = UIBarButtonItem.new().autorelease()
+        bb.title = _("Back")
+        self.navigationItem.backBarButtonItem = bb
         gui.ElectrumGui.gui.sigPrefs.connect(lambda:self.refresh(), self)
         return self
     

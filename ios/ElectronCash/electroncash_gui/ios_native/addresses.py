@@ -57,6 +57,10 @@ class AddressDetail(AddressDetailBase):
             gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self)
             gui.ElectrumGui.gui.sigHistory.connect(lambda:self.refresh(), self)
 
+            bb = UIBarButtonItem.new().autorelease()
+            bb.title = _("Back")
+            self.navigationItem.backBarButtonItem = bb
+
         return self
     
     @objc_method
@@ -306,7 +310,12 @@ class AddressesVC(AddressesVCBase):
             if self.mode == ModePicker:
                 def onRefreshCtl() -> None:
                     self.refresh()
+                self.refreshControl = UIRefreshControl.new().autorelease()
                 self.refreshControl.handleControlEvent_withBlock_(UIControlEventValueChanged, onRefreshCtl)
+                
+            bb = UIBarButtonItem.new().autorelease()
+            bb.title = _("Back")
+            self.navigationItem.backBarButtonItem = bb
      
             gui.ElectrumGui.gui.sigAddresses.connect(lambda:self.refresh(), self)
        

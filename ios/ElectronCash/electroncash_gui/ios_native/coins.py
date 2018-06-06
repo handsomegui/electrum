@@ -31,6 +31,9 @@ class CoinsDetail(CoinsDetailBase):
             self.title = _("Coin Info")
             self.optionsBarBut = UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_("barbut_options"), UIBarButtonItemStylePlain, self, SEL(b'onOptions')).autorelease()
             self.navigationItem.rightBarButtonItem = self.optionsBarBut
+            bb = UIBarButtonItem.new().autorelease()
+            bb.title = _("Back")
+            self.navigationItem.backBarButtonItem = bb
             gui.ElectrumGui.gui.sigCoins.connect(lambda: self.refresh(), self)
             gui.ElectrumGui.gui.cash_addr_sig.connect(lambda: self.refresh(), self)
         return self
@@ -228,6 +231,9 @@ class CoinsTableVC(UITableViewController):
         self.spendBut.enabled = False
         self.clearBut.enabled = False
         self.navigationItem.rightBarButtonItems = buts
+        bb = UIBarButtonItem.new().autorelease()
+        bb.title = _("Back")
+        self.navigationItem.backBarButtonItem = bb
         
         gui.ElectrumGui.gui.sigCoins.connect(lambda: self.refresh(), self)
 

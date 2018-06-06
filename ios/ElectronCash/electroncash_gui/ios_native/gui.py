@@ -136,7 +136,7 @@ class GuiHelper(NSObject):
             
     @objc_method
     def createAndBindRefreshControl(self) -> ObjCInstance:
-        rc = UIRefreshControl.alloc().init().autorelease()
+        rc = UIRefreshControl.new().autorelease()
         self.bindRefreshControl_(rc)
         return rc
             

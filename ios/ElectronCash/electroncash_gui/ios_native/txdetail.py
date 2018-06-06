@@ -486,6 +486,10 @@ class TxDetail(TxDetailBase):
             self.notsigned = False
             self.noBlkXplo = False
             self.title = _("Transaction") + " " + _("Details")
+            bb = UIBarButtonItem.new().autorelease()
+            bb.title = _("Back")
+            self.navigationItem.backBarButtonItem = bb
+
 
         return self
     
