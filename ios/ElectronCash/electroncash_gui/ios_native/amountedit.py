@@ -32,6 +32,8 @@ class BTCAmountEdit(UITextField):
     isInt = objc_property()
     isShortcut = objc_property()
     modified = objc_property()
+    unitLabel = objc_property()
+    fixedUnitLabelWidth = objc_property()
 
     @objc_method
     def init(self) -> ObjCInstance:
@@ -53,6 +55,8 @@ class BTCAmountEdit(UITextField):
         self.isInt = None
         self.isShortcut = None
         self.modified = None
+        self.unitLabel = None
+        self.fixedUnitLabelWidth = None
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
 
@@ -76,7 +80,74 @@ class BTCAmountEdit(UITextField):
         self.isShortcut = False
         self.modified = False
         #self.help_palette = QPalette()
+        
+    @objc_method
+    def setUseUnitLabel_(self, b : bool) -> None:
+        if b:
+            f = CGRectMake(0,0,50,20)
+            self.unitLabel = UILabel.alloc().initWithFrame_(f).autorelease()
+            self.unitLabel.numberOfLines = 0
+            self.unitLabel.adjustsFontSizeToFitWidth = True
+            self.unitLabel.minimumScaleFactor = 0.1
+            self.unitLabel.lineBreakMode = NSLineBreakByTruncatingTail
+            self.unitLabel.textAlignment = NSTextAlignmentRight
+            self.unitLabel.tag = 1
+            spacer = UIView.alloc().initWithFrame_(CGRectMake(60,0,10,20)).autorelease()
+            spacer.tag = 2
+            sup = UIView.alloc().initWithFrame_(CGRectMake(0,0,60,20)).autorelease()
+            sup.addSubview_(spacer)
+            sup.addSubview_(self.unitLabel)
+            sup.backgroundColor = UIColor.clearColor
+            spacer.backgroundColor = UIColor.clearColor
+            self.autosizeUnitLabel()
+            self.rightView = sup
+            self.rightViewMode = UITextFieldViewModeAlways
+        else:
+            self.unitLabel = None
+            self.rightView = None
+            self.rightViewMode = UITextFieldViewModeNever
 
+    @objc_method
+    def hasUnitLabel(self) -> bool:
+        return bool(self.unitLabel)
+    
+    @objc_method
+    def autosizeUnitLabel(self) -> None:
+        if self.unitLabel:
+            self.unitLabel.font = self.font
+            self.unitLabel.text = self.baseUnit()
+            if not isinstance(self.fixedUnitLabelWidth, (float, int, NSNumber)):
+                # unit label has dynamic size based on content, with a 10 pix padding
+                f = self.unitLabel.frame
+                f.size = self.unitLabel.attributedText.size()
+                self.unitLabel.frame = f
+                supf = f
+                supf.size.width += 10.0 # 10 pix padding on right
+                self.unitLabel.superview().frame = supf
+                spacf = CGRectMake(f.size.width,0.0,10.0,f.size.height)
+                self.unitLabel.superview().viewWithTag_(2).frame = spacf
+            else:
+                # unit label has a fixed size, with a 10 pix padding
+                w = py_from_ns(self.fixedUnitLabelWidth)
+                sup = self.unitLabel.superview()
+                spac = sup.viewWithTag_(2)
+                sz = self.unitLabel.attributedText.size()
+                sz.width = w
+                f = CGRectMake(0,0,w-10,sz.height)
+                self.unitLabel.frame = f
+                spac.frame = CGRectMake(f.size.width, 0, 10.0, sz.height)
+                sup.frame = CGRectMake(0,0,w,sz.height)
+            
+    @objc_method
+    def setFont_(self, font) -> None:
+        send_super(__class__, self, 'setFont:', font.ptr, argtypes=[objc_id])
+        self.autosizeUnitLabel()
+        
+    @objc_method
+    def setText_(self, text : ObjCInstance) -> None:
+        send_super(__class__, self, 'setText:', ns_from_py(text).ptr, argtypes=[objc_id])
+        self.autosizeUnitLabel()
+    
     @objc_method
     def setFrozen_(self, b : bool) -> None:
         #self.setReadOnly(b)

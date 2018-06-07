@@ -153,6 +153,8 @@ class SendVC(SendBase):
         def onEdit(t : ObjCInstance) -> None:
             self.isMax = False
         utils.add_callback(btcedit, 'edited', onEdit)
+        btcedit.setUseUnitLabel_(True)
+        btcedit.fixedUnitLabelWidth = 50.0
         
         # Amount (Fiat) label
         # Input Fiat text field
@@ -169,6 +171,8 @@ class SendVC(SendBase):
         def onEditFiat(t : ObjCInstance) -> None:
             self.isMax = False
         utils.add_callback(fiatedit, 'edited', onEditFiat)
+        fiatedit.setUseUnitLabel_(True)
+        fiatedit.fixedUnitLabelWidth = 50.0
         
         self.descTit.text = _("Description")     
         
@@ -188,6 +192,7 @@ class SendVC(SendBase):
             if t.isModified(): self.updateFee()
             else: self.chkOk()
         utils.add_callback(fee_e, 'textChanged', onManualFee)
+        fee_e.setUseUnitLabel_(False)
 
         # Error Label
         self.message.text = _("")
@@ -241,9 +246,9 @@ class SendVC(SendBase):
         # redo amount label if prefs changed
         lbl = self.amtTit
         tedit = self.amt
-        lbl.text = (_("Amount") + (" ({})")).format(tedit.baseUnit())
+        lbl.text = _("Amount") 
         # Placeholder for amount
-        tedit.placeholder = (_("Input amount") + " ({})").format(tedit.baseUnit())
+        tedit.placeholder = _("Input amount")
         wasModified = tedit.isModified()
         tedit.setAmount_(self.amountSats) # in case unit changed in prefs
         tedit.modified = wasModified
@@ -274,11 +279,11 @@ class SendVC(SendBase):
         fiatlbl = self.fiatTit
         fiatlbl.setHidden_(not doFX)
         if doFX:
-            fiatlbl.text = _("Amount") + (" ({})").format(ccy)
+            fiatlbl.text = _("Fiat") #+ " " + _("Amount") 
         fiatte = self.fiat
         fiatte.setHidden_(not doFX)
         if doFX:
-            fiatte.placeholder = _("Input amount") + (" ({})").format(ccy)
+            fiatte.placeholder = _("Input amount") 
         feelbl = self.feeTit
         c = self.csFeeTop
         if c is not None:

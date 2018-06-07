@@ -102,6 +102,11 @@ NSCenterTextAlignment = 1
 NSJustifiedTextAlignment = 3
 NSNaturalTextAlignment = 4
 
+NSTextAlignmentLeft = NSLeftTextAlignment
+NSTextAlignmentRight = NSRightTextAlignment
+NSTextAlignmentCenter = NSCenterTextAlignment
+NSTextAlignmentJustified = NSJustifiedTextAlignment
+NSTextAlignmentNatural = NSNaturalTextAlignment
 
 # UIControl.h
 
@@ -799,3 +804,4 @@ UIPageViewControllerNavigationDirectionReverse = 1
 UIPageViewControllerTransitionStylePageCurl = 0 #, // Navigate between views via a page curl transition.
 UIPageViewControllerTransitionStyleScroll = 1   #// Navigate between views by scrolling.
 
+NSNumber = ObjCClass('NSNumber')
