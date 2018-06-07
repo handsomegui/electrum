@@ -36,6 +36,11 @@ class FeeSlider(UISlider):
     def commonInit(self) -> None:
         self.dyn = False
         self.addTarget_action_forControlEvents_(self, SEL(b'onMoved'), UIControlEventValueChanged)
+        self.setMinimumTrackImage_forState_(UIImage.imageNamed_("slider_track_left").resizableImageWithCapInsets_resizingMode_(UIEdgeInsetsZero, UIImageResizingModeStretch),
+                                            UIControlStateNormal)
+        self.setMaximumTrackImage_forState_(UIImage.imageNamed_("slider_track_right").resizableImageWithCapInsets_resizingMode_(UIEdgeInsetsZero, UIImageResizingModeStretch),
+                                            UIControlStateNormal)
+        self.setThumbImage_forState_(UIImage.imageNamed_("slider_knob"), UIControlStateNormal)
         self.reset()
     
     @objc_method

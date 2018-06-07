@@ -157,6 +157,10 @@ UIImageRenderingModeAutomatic = 0          # Use the default rendering mode for 
 UIImageRenderingModeAlwaysOriginal = 1     # Always draw the original image, without treating it as a template
 UIImageRenderingModeAlwaysTemplate = 2     # Always draw the image as a template image, ignoring its color information
 
+# UIImageResizingMode enum
+UIImageResizingModeTile = 0
+UIImageResizingModeStretch = 1
+
 
 # UIImageView.h
 UIImageView = ObjCClass('UIImageView')
