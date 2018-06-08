@@ -294,6 +294,7 @@ class NetworkDialogVC(UIViewController):
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__,self,'viewWillAppear:', c_bool(animated), argtypes=[c_bool])
         self.refresh()
+        self.kbas = utils.register_keyboard_autoscroll(self.view)
 
     @objc_method
     def viewWillDisappear_(self, animated : bool) -> None:
@@ -308,7 +309,6 @@ class NetworkDialogVC(UIViewController):
         self.view.flashScrollIndicators()
         self.connectedTV.flashScrollIndicators()
         self.peersTV.flashScrollIndicators()
-        self.kbas = utils.register_keyboard_autoscroll(self.view)
     
     @objc_method
     def numberOfSectionsInTableView_(self, tv) -> int:

@@ -251,7 +251,6 @@ class SendVC(SendBase):
             self.presentingViewController.dismissViewControllerAnimated_completion_(animated, None)
             return
         
-        if self.kbas: utils.unregister_keyboard_autoscroll(int(self.kbas))
         self.kbas = utils.register_keyboard_autoscroll(self.view.viewWithTag_(54321))        
 
         # redo amount label if prefs changed
@@ -625,6 +624,7 @@ class SendVC(SendBase):
         
         freeze_fee = (fee_e.isModified()
                       and (fee_e.text or fee_e.isFirstResponder))
+
         #print("freeze_fee=%s"%str(freeze_fee))
         amount = '!' if self.isMax else amount_e.getAmount()
         if amount is None:
@@ -640,6 +640,8 @@ class SendVC(SendBase):
                 outputs = [(_type, addr, amount)]
             try:
                 tx = wallet().make_unsigned_transaction(get_coins(self), outputs, config(), fee)
+                if tx and freeze_fee and fee and tx.estimated_size():
+                    self.feeLbl.text = _("Manual fee") + ": " + parent().format_fee_rate((fee*1e3) / tx.estimated_size())
             except NotEnoughFunds:
                 self.notEnoughFunds = True
                 if not freeze_fee:
