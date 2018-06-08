@@ -113,4 +113,6 @@ typedef void(^ActionBlock)(UIControl *);
 @property (nonatomic) CGFloat duration; // the duration of the link animation.  defaults to 0.3 seconds
 @end
 
-
+@interface UIResponder (FirstResponder)
++ (id) currentFirstResponder;
+@end

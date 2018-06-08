@@ -398,3 +398,6 @@ static BOOL IS_IPHONE_5(void) {
 @implementation TxDetailInOutCell
 @end
 
+@implementation SpendFromCell
+@end
+

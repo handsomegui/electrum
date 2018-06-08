@@ -81,7 +81,7 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
         return 1
     
     @objc_method
-    def tableView_viewForHeaderInSection_(self, tv : ObjCInstance,section : int) -> ObjCInstance:
+    def tableView_viewForHeaderInSection_(self, tv : ObjCInstance, section : int) -> ObjCInstance:
         objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TableHeaders", None, None)
         hdr = None
         for o in objs:

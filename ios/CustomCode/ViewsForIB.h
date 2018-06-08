@@ -14,6 +14,7 @@
 #import "UIKitExtras.h"
 #import "CCActivityIndicator/CCActivityIndicator.h"
 #import "KeyboardVC/KeyboardVC.h"
+#import "ECTextViewDelegate/ECTextViewDelegate.h"
 
 
 @interface AddrConvBase : UIViewController
@@ -66,25 +67,23 @@
 @property (nonatomic, weak) IBOutlet UIButton *qrBut;
 @property (nonatomic, weak) IBOutlet UIButton *contactBut;
 @property (nonatomic, weak) IBOutlet UILabel *descTit;
-@property (nonatomic, weak) IBOutlet UITextField *desc;
+@property (nonatomic, weak) IBOutlet UITextView *desc;
 @property (nonatomic, weak) IBOutlet UILabel *amtTit;
 @property (nonatomic, weak) IBOutlet BTCAmountEdit *amt;
 @property (nonatomic, weak) IBOutlet UIButton *maxBut;
-@property (nonatomic, weak) IBOutlet UILabel *fiatTit;
 @property (nonatomic, weak) IBOutlet FiatAmountEdit *fiat;
 @property (nonatomic, weak) IBOutlet UILabel *feeTit;
 @property (nonatomic, weak) IBOutlet UISlider *feeSlider;
 @property (nonatomic, weak) IBOutlet UILabel *feeLbl;
 @property (nonatomic, weak) IBOutlet BTCAmountEdit *feeTf;
-@property (nonatomic, weak) IBOutlet UILabel *feeTfLbl;
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *clearBut;
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *previewBut;
 @property (nonatomic, weak) IBOutlet UIButton *sendBut; // actually a subview of a UIBarButtonItem
 @property (nonatomic, weak) IBOutlet UILabel *message;
-@property (nonatomic, weak) IBOutlet UILabel *spendFromTit;
-@property (nonatomic, weak) IBOutlet UIButton *clearSFBut;
-@property (nonatomic, weak) IBOutlet UITextView *spendFrom;
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop, *csTvHeight, *csPayToTop;
+@property (nonatomic, weak) IBOutlet UITableView *tv;
+@property (nonatomic, weak) IBOutlet UIView *bottomView, *messageView;
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
 
 -(IBAction)onQRBut:(id)sender; // implemented in python send.py
 -(IBAction)onContactBut:(id)sender; // implemented in python send.py
@@ -320,8 +319,6 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *topCS, *midCS;
 @end
 
-@class ECTextViewDelegate;
-
 @interface AddressDetailBase : UIViewController
 @property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
 @property (nonatomic, weak) UIBarButtonItem *optionsBarBut;
@@ -523,5 +520,9 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 
 @interface TxDetailInOutCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UILabel *addressType, *address, *detail;
+@end
+
+@interface SpendFromCell : UITableViewCell
+@property (nonatomic, weak) IBOutlet UILabel *num, *address, *input, *amount;
 @end
 #endif /* ViewsForIB_h */

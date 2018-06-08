@@ -100,12 +100,12 @@ class BTCAmountEdit(UITextField):
             sup.backgroundColor = UIColor.clearColor
             spacer.backgroundColor = UIColor.clearColor
             self.autosizeUnitLabel()
-            self.rightView = sup
-            self.rightViewMode = UITextFieldViewModeAlways
+            self.leftView = sup
+            self.leftViewMode = UITextFieldViewModeAlways
         else:
             self.unitLabel = None
-            self.rightView = None
-            self.rightViewMode = UITextFieldViewModeNever
+            self.leftView = None
+            self.leftViewMode = UITextFieldViewModeNever
 
     @objc_method
     def hasUnitLabel(self) -> bool:
@@ -116,6 +116,7 @@ class BTCAmountEdit(UITextField):
         if self.unitLabel:
             self.unitLabel.font = self.font
             self.unitLabel.text = self.baseUnit()
+            self.unitLabel.textColor = self.textColor
             if not isinstance(self.fixedUnitLabelWidth, (float, int, NSNumber)):
                 # unit label has dynamic size based on content, with a 10 pix padding
                 f = self.unitLabel.frame
@@ -137,7 +138,41 @@ class BTCAmountEdit(UITextField):
                 self.unitLabel.frame = f
                 spac.frame = CGRectMake(f.size.width, 0, 10.0, sz.height)
                 sup.frame = CGRectMake(0,0,w,sz.height)
-            
+
+    @objc_method
+    def leftViewRectForBounds_(self, bounds : CGRect) -> CGRect:
+        r = send_super(__class__, self, 'leftViewRectForBounds:', bounds, argtypes=[CGRect], restype=CGRect)
+        if self.unitLabel:
+            sz = self.unitLabel.superview().bounds.size
+            return CGRectOffset(r, bounds.size.width - sz.width, 0)
+        return r
+    
+    @objc_method
+    def clearButtonRectForBounds_(self, bounds : CGRect) -> CGRect:
+        r =  send_super(__class__, self, 'clearButtonRectForBounds:', bounds, argtypes=[CGRect], restype=CGRect)   
+        if self.unitLabel:
+            sz = self.unitLabel.superview().bounds.size
+            return CGRectOffset(r, -sz.width, 0)
+        return r
+
+    @objc_method
+    def editingRectForBounds_(self, bounds : CGRect) -> CGRect:
+        r = bounds
+        r.origin.x = 0
+        if self.unitLabel:
+            sz = self.unitLabel.superview().bounds.size
+            r.size.width -= (20 + sz.width)
+        return r
+        
+    @objc_method
+    def textRectForBounds_(self, bounds : CGRect) -> CGRect:
+        rect = bounds
+        rect.origin.x = 0
+        if self.unitLabel:
+            sz = self.unitLabel.superview().bounds.size
+            rect.size.width -= (20 + sz.width)
+        return rect
+    
     @objc_method
     def setFont_(self, font) -> None:
         send_super(__class__, self, 'setFont:', font.ptr, argtypes=[objc_id])

@@ -34,7 +34,7 @@
             <nil key="simulatedBottomBarMetrics"/>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
             <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
-            <point key="canvasLocation" x="33.5" y="95"/>
+            <point key="canvasLocation" x="34" y="12"/>
         </view>
         <view tag="11000" contentMode="scaleToFill" id="NzE-Um-2tg" userLabel="TXInputsOutputs">
             <rect key="frame" x="0.0" y="0.0" width="375" height="22"/>
@@ -71,6 +71,43 @@
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
             <viewLayoutGuide key="safeArea" id="qqw-r3-CE1"/>
             <point key="canvasLocation" x="33.5" y="-78"/>
+        </view>
+        <view tag="12000" contentMode="scaleToFill" id="rL8-eT-smX" userLabel="SpendFrom">
+            <rect key="frame" x="0.0" y="0.0" width="375" height="25"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <label opaque="NO" userInteractionEnabled="NO" tag="1" contentMode="left" verticalHuggingPriority="251" text="Spend From" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="cRu-m7-YMc">
+                    <rect key="frame" x="0.0" y="0.0" width="305" height="20"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="20" id="PTm-dQ-XGn"/>
+                    </constraints>
+                    <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                    <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                    <nil key="highlightedColor"/>
+                </label>
+                <button opaque="NO" tag="2" contentMode="scaleToFill" horizontalHuggingPriority="750" contentHorizontalAlignment="right" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="lOb-XS-aOF">
+                    <rect key="frame" x="305" y="0.0" width="70" height="20"/>
+                    <constraints>
+                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="70" id="1me-Tw-jWT"/>
+                    </constraints>
+                    <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                    <state key="normal" title="Clear"/>
+                </button>
+            </subviews>
+            <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <constraints>
+                <constraint firstItem="fbS-YY-cdz" firstAttribute="trailing" secondItem="lOb-XS-aOF" secondAttribute="trailing" id="58L-mZ-pjZ"/>
+                <constraint firstItem="lOb-XS-aOF" firstAttribute="leading" secondItem="cRu-m7-YMc" secondAttribute="trailing" id="5xV-yf-392"/>
+                <constraint firstItem="lOb-XS-aOF" firstAttribute="height" secondItem="cRu-m7-YMc" secondAttribute="height" id="7cj-c5-tHB"/>
+                <constraint firstItem="cRu-m7-YMc" firstAttribute="top" secondItem="fbS-YY-cdz" secondAttribute="top" id="9qY-72-5uv"/>
+                <constraint firstItem="cRu-m7-YMc" firstAttribute="leading" secondItem="fbS-YY-cdz" secondAttribute="leading" id="diu-Dg-y9U"/>
+                <constraint firstItem="lOb-XS-aOF" firstAttribute="centerY" secondItem="cRu-m7-YMc" secondAttribute="centerY" id="xBs-gP-gGY"/>
+            </constraints>
+            <nil key="simulatedTopBarMetrics"/>
+            <nil key="simulatedBottomBarMetrics"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <viewLayoutGuide key="safeArea" id="fbS-YY-cdz"/>
+            <point key="canvasLocation" x="34" y="106"/>
         </view>
     </objects>
 </document>

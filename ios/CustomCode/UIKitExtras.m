@@ -491,3 +491,18 @@ static long UIButtonBlockKey = 0xb10cb10c;
     });
 }
 @end
+
+@implementation UIResponder (FirstResponder)
+static __weak id currentFirstResponder;
++ (id) currentFirstResponder {
+    currentFirstResponder = nil;
+    // the below trick, of sending an action to nil, will send it to the first responder.
+    //see: https://stackoverflow.com/questions/1823317/get-the-current-first-responder-without-using-a-private-api?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+    [[UIApplication sharedApplication] sendAction:@selector(findFirstResponder:) to:nil from:nil forEvent:nil];
+    return currentFirstResponder;
+}
+
+- (void) findFirstResponder:(id)sender {
+    currentFirstResponder = self;
+}
+@end

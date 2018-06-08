@@ -44,3 +44,7 @@ coregraphics.CGRectContainsRect.restype = c_bool
 coregraphics.CGRectContainsRect.argtypes = [CGRect, CGRect]
 
 CGRectContainsPoint = coregraphics.CGRectContainsPoint
+
+coregraphics.CGRectOffset.restype = CGRect
+coregraphics.CGRectOffset.argtypes = [CGRect, c_double, c_double]
+CGRectOffset = coregraphics.CGRectOffset

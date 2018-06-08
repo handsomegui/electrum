@@ -14,18 +14,15 @@ from electroncash.util import timestamp_to_datetime, NotEnoughFunds, ExcessiveFe
 from electroncash.transaction import Transaction
 from electroncash.i18n import _
 from .custom_objc import *
-import time
-import html
 from .uikit_bindings import *
 from electroncash.networks import NetworkConstants
 from electroncash.address import Address, ScriptOutput
 from electroncash import bitcoin
-import re
-from decimal import Decimal
 from .feeslider import FeeSlider
 from .amountedit import BTCAmountEdit
-import traceback
 from electroncash.plugins import run_hook
+import time, html, re, sys, traceback
+from decimal import Decimal
 
 RE_ALIAS = '^(.*?)\s*\<([1-9A-Za-z]{26,})\>$'
         
@@ -44,6 +41,11 @@ def fx():
         return p.daemon.fx
     return None
   
+_CellIdentifier = "SpendFromCell"
+_TableHeaderHeight = 25
+_TableCellHeight = 20
+_TableHeightRows = 4.45
+
 class SendVC(SendBase):
     qr = objc_property()
     qrvc = objc_property()
@@ -55,6 +57,7 @@ class SendVC(SendBase):
     excessiveFee = objc_property()
     timer = objc_property()
     dismissOnAppear = objc_property()
+    kbas = objc_property()
     
     @objc_method
     def init(self):
@@ -68,6 +71,7 @@ class SendVC(SendBase):
         self.excessiveFee = False
         self.timer = None
         self.dismissOnAppear = False
+        self.kbas = None
         
         self.navigationItem.leftItemsSupplementBackButton = True
         bb = UIBarButtonItem.new().autorelease()
@@ -90,6 +94,7 @@ class SendVC(SendBase):
         if self.timer: self.timer.invalidate()  # kill a timer if it hasn't fired yet
         self.timer = None
         self.excessiveFee = None
+        self.kbas = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
 
@@ -131,23 +136,25 @@ class SendVC(SendBase):
         assert objs is not None and len(objs)
         
         # Apply translations and other stuff to UI text...
-        self.payToTit.text = _("Pay to")
+        self.payToTit.setText_withKerning_(_("Pay to"), utils._kern)
                 
         # Input amount text field
         btcedit = self.amt
         fiatedit = self.fiat
-        font = btcedit.font
-        font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
-        btcedit.font = font
         def onAmount(t : ObjCInstance) -> None:
             #print("On Amount %s, %s satoshis"%(str(t.text),str(t.getAmount())))
             self.amountSats = t.getAmount()
+            fiatModified = False
             if fx() and fx().is_enabled():
                 rate = fx().exchange_rate()
                 if rate:
                     amtfiat = int(round(float((Decimal(self.amountSats) * Decimal(100.0) * Decimal(rate)) / Decimal(1e8)))) if self.amountSats is not None else None
+                    fiatModified = fiatedit.isModified()
                     fiatedit.setAmount_(amtfiat)
-            if t.isModified():  self.updateFee()
+                    utils.uitf_redo_attrs(fiatedit)
+            if fiatModified or t.isModified():
+                #print ("updating fee...")
+                self.updateFee()
             else: self.chkOk()
         utils.add_callback(btcedit, 'textChanged', onAmount)
         def onEdit(t : ObjCInstance) -> None:
@@ -158,15 +165,15 @@ class SendVC(SendBase):
         
         # Amount (Fiat) label
         # Input Fiat text field
-        fiatedit.font = font
         def onAmountFiat(t : ObjCInstance) -> None:
-            #print("On Amount %s, %s %s"%(str(t.text),str(t.getAmount()),str(t.baseUnit())))
+            #print("On Fiat Amount %s, %s %s"%(str(t.text),str(t.getAmount()),str(t.baseUnit())))
             if not t.isModified() or not fx() or not fx().is_enabled():
                 return
             rate = fx().exchange_rate()
             if not rate: return
             amtSats = int(round(float( (Decimal(t.getAmount())*Decimal(1e6)) / Decimal(rate) ))) if t.getAmount() is not None else None
             btcedit.setAmount_(amtSats)
+            utils.uitf_redo_attrs(btcedit)
         utils.add_callback(fiatedit, 'textChanged', onAmountFiat)
         def onEditFiat(t : ObjCInstance) -> None:
             self.isMax = False
@@ -174,16 +181,15 @@ class SendVC(SendBase):
         fiatedit.setUseUnitLabel_(True)
         fiatedit.fixedUnitLabelWidth = 50.0
         
-        self.descTit.text = _("Description")     
+        self.descTit.setText_withKerning_( _("Description"), utils._kern )     
         
         but = self.maxBut
         but.setTitle_forState_(_("Max"), UIControlStateNormal)
                 
         # Fee Label
-        self.feeTit.text = _("Fee")
+        self.feeTit.setText_withKerning_( _("Fee"), utils._kern )
 
         tedit = self.feeTf
-        tedit.font = font
         fee_e = tedit
         tedit.placeholder = _("Fee manual edit")
         def onManualFee(t : ObjCInstance) -> None:
@@ -192,17 +198,18 @@ class SendVC(SendBase):
             if t.isModified(): self.updateFee()
             else: self.chkOk()
         utils.add_callback(fee_e, 'textChanged', onManualFee)
-        fee_e.setUseUnitLabel_(False)
+        fee_e.setUseUnitLabel_(True)
+        fee_e.fixedUnitLabelWidth = 50.0
 
         # Error Label
         self.message.text = _("")
 
-        tedit = self.desc
-        tedit.placeholder = _("Description of the transaction (not mandatory).")
+        self.descDel.placeholderFont = UIFont.italicSystemFontOfSize_(14.0)
+        self.descDel.tv = self.desc
+        self.descDel.text = ""
+        self.descDel.placeholderText = _("Description of the transaction (not mandatory).")
    
         feelbl = self.feeLbl
-        feefont = feelbl.font
-        feelbl.font = UIFont.monospacedDigitSystemFontOfSize_weight_(feefont.pointSize, UIFontWeightRegular)
         slider = self.feeSlider
         def sliderCB(dyn : bool, pos : int, fee_rate : int) -> None:
             txt = " ".join(str(slider.getToolTip(pos,fee_rate)).split("\n"))
@@ -221,18 +228,19 @@ class SendVC(SendBase):
         # set up navigation bar items...
         self.clearBut.title = _("Clear")
         but = self.sendBut
-        barButSend = UIBarButtonItem.alloc().initWithCustomView_(but).autorelease()
         but.setTitle_forState_(_("Send"), UIControlStateNormal)
         barButPreview = self.previewBut
         barButPreview.title = _("Preview")
 
-        self.navigationItem.rightBarButtonItems = [barButSend, barButPreview]
+        self.navigationItem.rightBarButtonItems = [barButPreview]
         extra = self.navigationItem.leftBarButtonItems if self.navigationItem.leftBarButtonItems else []
         self.navigationItem.leftBarButtonItems = [*extra, self.clearBut]
        
         
     @objc_method
     def viewDidLoad(self) -> None:
+        uinib = UINib.nibWithNibName_bundle_("SpendFromCell", None)
+        self.tv.registerNib_forCellReuseIdentifier_(uinib, _CellIdentifier)
         self.clearAllExceptSpendFrom()
 
     @objc_method
@@ -242,11 +250,14 @@ class SendVC(SendBase):
         if self.dismissOnAppear and self.presentingViewController and not self.isBeingDismissed():
             self.presentingViewController.dismissViewControllerAnimated_completion_(animated, None)
             return
+        
+        if self.kbas: utils.unregister_keyboard_autoscroll(int(self.kbas))
+        self.kbas = utils.register_keyboard_autoscroll(self.view.viewWithTag_(54321))        
 
         # redo amount label if prefs changed
         lbl = self.amtTit
         tedit = self.amt
-        lbl.text = _("Amount") 
+        lbl.setText_withKerning_( _("Amount") , utils._kern )
         # Placeholder for amount
         tedit.placeholder = _("Input amount")
         wasModified = tedit.isModified()
@@ -260,34 +271,25 @@ class SendVC(SendBase):
         wasModified = tedit.isModified()
         tedit.setAmount_(self.feeSats)
         tedit.modified = wasModified
-        # fee manual edit unit
-        lbl = self.feeTfLbl
-        lbl.text = (parent().base_unit())
         # set manual fee edit to be enabled/disabled based on prefs settings
         if parent().prefs_get_show_fee():
             tedit.userInteractionEnabled = True
             tedit.alpha = 1.0
-            lbl.alpha = 1.0
         else:
             tedit.userInteractionEnabled = False
             tedit.alpha = .5
-            lbl.alpha = .5
 
         # set fiat lbl/tedit based on prefs settings
         doFX = fx() and fx().is_enabled()
         ccy = fx().get_currency() if doFX else None
-        fiatlbl = self.fiatTit
-        fiatlbl.setHidden_(not doFX)
-        if doFX:
-            fiatlbl.text = _("Fiat") #+ " " + _("Amount") 
         fiatte = self.fiat
         fiatte.setHidden_(not doFX)
         if doFX:
-            fiatte.placeholder = _("Input amount") 
+            fiatte.placeholder = _("Fiat amount") 
         feelbl = self.feeTit
         c = self.csFeeTop
         if c is not None:
-            c.constant = 60.0 if doFX else 24.0
+            c.constant = 25.0 if doFX else -28.0
 
         parent().cash_addr_sig.connect(lambda: self.reformatSpendFrom(), self)
         self.reformatSpendFrom()
@@ -298,6 +300,10 @@ class SendVC(SendBase):
                 self.payTo.text = pay_to            
             utils.nspy_pop_byname(self, 'pay_to')
 
+        utils.uitf_redo_attrs(self.payTo)
+        utils.uitf_redo_attrs(self.amt)
+        utils.uitf_redo_attrs(self.fiat)
+        utils.uitf_redo_attrs(self.feeTf)
         self.chkOk()
 
 
@@ -306,33 +312,15 @@ class SendVC(SendBase):
         send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
         parent().show_warning_if_watching_only(vc = self,
                                                onOk = lambda: self.presentingViewController.dismissViewControllerAnimated_completion_(True, None))
+        if not self.tv.isHidden(): self.tv.flashScrollIndicators()
 
     @objc_method
     def reformatSpendFrom(self) -> None:
         # Do the "spend from" stuff
+        self.tv.reloadData()
         coins = utils.nspy_get_byname(self, 'spend_from')
         if utils.nspy_get_byname(self, '_last_spend_from') == coins:
             return
-        lbl = self.spendFromTit
-        lbl.text = _("Spend From")
-        tv = self.spendFrom
-        but = self.clearSFBut
-        lbl.setHidden_(not bool(coins))
-        tv.setHidden_(not bool(coins))
-        but.setHidden_(not bool(coins))
-        if coins:
-            font = tv.font
-            tv.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
-            def format(x):
-                h = x['prevout_hash']
-                return '- {}...{}:{:d}  {}'.format(h[0:10], h[-10:],
-                                                 x['prevout_n'], x['address'])
-            txt = ""
-            for c in coins:
-                txt += format(c) + '  ' + parent().format_amount(c['value']) + '\n'
-            tv.text = txt
-        else:
-            tv.text = ""
         utils.nspy_put_byname(self, coins, '_last_spend_from')
         self.updateFee()
         
@@ -346,6 +334,10 @@ class SendVC(SendBase):
         tedit = self.amt
         self.amountSats = tedit.getAmount()
         parent().cash_addr_sig.disconnect(self)
+        
+        if self.kbas:
+            utils.unregister_keyboard_autoscroll(int(self.kbas))
+            self.kbas = None
         
 
     @objc_method
@@ -370,20 +362,7 @@ class SendVC(SendBase):
         utils.add_callback(vc, 'on_pay_to', onPayTo)
         if self.payTo and self.payTo.text:
             utils.nspy_put_byname(vc, self.payTo.text, 'preselected')
-        self.presentViewController_animated_completion_(nav, True, None)
-
-
-    @objc_method
-    def textFieldDidBeginEditing_(self, tf) -> None:
-        sv = self.view
-        self.message.text = ""
-        if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
-            # try and center the text fields on the screen.. this is an ugly HACK.
-            # todo: fixme!
-            frame = tf.frame
-            frame.origin.y += 150
-            sv.scrollRectToVisible_animated_(frame, True)
- 
+        self.presentViewController_animated_completion_(nav, True, None) 
 
     @objc_method
     def textFieldShouldEndEditing_(self, tf : ObjCInstance) -> bool:
@@ -392,6 +371,7 @@ class SendVC(SendBase):
             tf.text = tf.text.strip() # strip leading/training spaces in description and address text fields
         if tf.tag in [115]: # the other ones auto-call chkOk anyway.. todo: make addr line edit be a special validating class
             self.chkOk()
+        utils.uitf_redo_attrs(tf)
         return True
         
     @objc_method
@@ -407,9 +387,8 @@ class SendVC(SendBase):
         tf.text = str(address) if address is not None else tf.text
         tf.resignFirstResponder() # just in case
         # label
-        tf = self.desc
-        tf.text = str(message) if message is not None else tf.text
-        tf.resignFirstResponder()
+        self.descDel.text = str(message) if message is not None else tf.text
+        self.desc.resignFirstResponder()
         # amount
         if amount == "!":
             self.spendMax()
@@ -423,14 +402,29 @@ class SendVC(SendBase):
     
     @objc_method
     def chkOk(self) -> bool:
+        
+        coins = utils.nspy_get_byname(self, 'spend_from') 
+        if coins:
+            h = _TableCellHeight*min(len(coins),_TableHeightRows) + _TableHeaderHeight
+            self.tv.setHidden_(False)
+            self.csTvHeight.constant = h
+            self.csPayToTop.constant = 25.0
+        else:
+            self.tv.setHidden_(True)
+            self.csTvHeight.constant = 0
+            self.csPayToTop.constant = 0
+        
+        
         retVal = False
         errLbl = self.message
         addrTf = self.payTo
         sendBut = self.sendBut
         previewBut = self.previewBut
         amountTf = self.amt
+        errView = self.messageView
         
         sendBut.enabled = False
+        utils.uiview_set_enabled(sendBut, False)
         previewBut.enabled = False
         errLbl.text = ""
         
@@ -456,11 +450,15 @@ class SendVC(SendBase):
                 raise Exception("SilentException") # silent error when amount or fee isn't yet specified
             
             previewBut.enabled = True #False # for now, unimplemented.. #True
-            sendBut.enabled = True if parent().wallet is not None and not parent().wallet.is_watching_only() else False
+            en = True if parent().wallet is not None and not parent().wallet.is_watching_only() else False
+            sendBut.enabled = en
+            utils.uiview_set_enabled(sendBut, en)
             retVal = True
         except Exception as e:
             #print("Exception :" + str(e))
             pass
+
+        errView.setHidden_(not bool(len(errLbl.text.strip())))
         
         return retVal
     
@@ -482,8 +480,7 @@ class SendVC(SendBase):
         tf = self.amt
         tf.setAmount_(None)
         # label
-        tf = self.desc
-        tf.text = ""
+        self.descDel.text = ""
         # slider
         slider = self.feeSlider
         slider.setValue_animated_(slider.minimumValue,True)
@@ -667,13 +664,9 @@ class SendVC(SendBase):
 
     @objc_method
     def onPreviewSendBut_(self, but) -> None:
+        self.view.endEditing_(True)
         isPreview = but.ptr.value == self.previewBut.ptr.value
-        #print ("Clicked %s"%("Preview" if isPreview else "Send"))
-        def func() -> None:
-            self.doSend_(isPreview)
-        # this is an ugly hack to work around a bug in iOS UIKit related to modal dialogs that have a local eventloop
-        # (such as out password/confirm dialog in doSend()).  See this issue: https://forums.developer.apple.com/thread/91874
-        utils.call_later(0.01,func)
+        self.doSend_(isPreview)
         
     @objc_method
     def showTransaction_desc_(self, txraw, desc) -> None:
@@ -691,7 +684,7 @@ class SendVC(SendBase):
         #HistoryEntry = namedtuple("HistoryEntry", "tx tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
         entry = HistoryEntry(tx,tx_hash,status_str,str(desc),self.amt.text,"",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,None)
         def newLabel(l):
-            self.desc.text = l
+            self.descDel.text = l
             
         self.navigationController.pushViewController_animated_(txdetail.CreateTxDetailWithEntry(entry, on_label = newLabel), True)
         
@@ -791,6 +784,132 @@ class SendVC(SendBase):
             msg.append(_('Proceed?'))
             parent().question(message = '\n'.join(msg), title = _("Confirm Send"), onOk = lambda: DoSign(None), vc = self)
 
+    #### UITableView delegate/dataSource methods...
+    @objc_method
+    def numberOfSectionsInTableView_(self, tableView) -> int:
+        return 1
+
+    @objc_method
+    def tableView_numberOfRowsInSection_(self, tableView, section : int) -> int:
+        try:
+            coins = utils.nspy_get_byname(self, 'spend_from') or list()
+            return len(coins)
+        except Exception as e:
+            utils.NSLog("Error, exception retrieving spend_from coins: %s",str(e))
+            return 0
+
+    @objc_method
+    def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
+        cell = None
+        try:
+            coins = utils.nspy_get_byname(self, 'spend_from') or list()
+            cell = tableView.dequeueReusableCellWithIdentifier_(_CellIdentifier)
+            if cell is None: raise Exception("Dafuq UIKit?!")
+            coin = coins[indexPath.row]
+            cell.num.text = str(indexPath.row+1) + "."
+            '''
+            def fmt(x):
+                h = x['prevout_hash']
+                a = x['address'].to_ui_string()
+                #maxlen = 18
+                #if len(a) > maxlen:
+                #    a = a[0:maxlen//2-1] + '...' + a[-(maxlen//2-1):]
+                return '{}...{}:{:d}  {}'.format(h[0:5], h[-5:], x['prevout_n'], a)
+            '''
+            cell.input.text = coin['prevout_hash'] + ':' + str(coin['prevout_n'])
+            cell.address.text = coin['address'].to_ui_string()
+            cell.amount.text = parent().format_amount(coin['value']).strip()
+        except:
+            utils.NSLog("exception in Send tableView_cellForRowAtIndexPath_: %s",str(sys.exc_info()[1]))
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "ACell").autorelease()
+            cell.textLabel.text = " "
+        return cell
+            
+    @objc_method
+    def tableView_heightForRowAtIndexPath_(self, tv, indexPath) -> float:
+        return _TableCellHeight
+    
+    @objc_method
+    def tableView_heightForHeaderInSection_(self, tableView, section) -> float:
+        return _TableHeaderHeight
+    
+    @objc_method
+    def tableView_viewForHeaderInSection_(self, tv : ObjCInstance, section : int) -> ObjCInstance:
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("TableHeaders", None, None)
+        hdr = None
+        for o in objs:
+            if isinstance(o, UIView) and o.tag == 12000:
+                hdr = o
+                break
+        if hdr:
+            lbl = hdr.viewWithTag_(1)
+            coins = utils.nspy_get_byname(self, 'spend_from') or list()
+            lbl.setText_withKerning_( _("Spend From") + " (" + str(len(coins)) + ")" , utils._kern )
+            but = hdr.viewWithTag_(2)
+            def clearfun(dummy : objc_id) -> None: self.clearSpendFrom()
+            but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, clearfun)
+        else:
+            hdr = UIView.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()
+        return hdr
+        
+    
+    @objc_method
+    def tableView_editingStyleForRowAtIndexPath_(self, tv, indexPath) -> int:
+        return UITableViewCellEditingStyleDelete
+
+    @objc_method
+    def removeSpendFromAtIndex_(self, index : int) -> None:
+        coins = utils.nspy_get_byname(self, 'spend_from')
+        try:
+            coins.pop(index)
+        except:
+            utils.NSLog("Send: Failed to pop item at index %d", index)
+        utils.nspy_put_byname(self, coins, 'spend_from')
+
+    @objc_method
+    def spendFromWasDeleted(self) -> None:
+        self.tv.reloadData()
+        self.updateFee()
+
+    @objc_method
+    def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv, editingStyle : int, indexPath) -> None:
+        if editingStyle == UITableViewCellEditingStyleDelete:
+            self.removeSpendFromAtIndex_(indexPath.row)
+            self.retain()
+            utils.call_later(0.4, lambda: self.autorelease().spendFromWasDeleted())
+            tv.deleteRowsAtIndexPaths_withRowAnimation_([indexPath],UITableViewRowAnimationFade)
+
+    @objc_method
+    def tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
+        ''' This method is called in iOS 11.0+ only .. so we only create this UISwipeActionsConfiguration ObjCClass
+            here rather than in uikit_bindings.py
+        '''
+        
+        try:
+            row = int(indexPath.row) # save param outside objcinstance object and into python for 'handler' closure
+            section = int(indexPath.section)
+            def handler(a : objc_id, v : objc_id, c : objc_id) -> None:
+                result = False
+                try:
+                    self.removeSpendFromAtIndex_(row)
+                    self.retain()
+                    utils.call_later(0.4, lambda: self.autorelease().spendFromWasDeleted())
+                    result = True
+                except:
+                    traceback.print_exc(file=sys.stderr)
+                ObjCBlock(c)(bool(result)) # inform UIKit if we deleted it or not by calling the block handler callback
+            action = UIContextualAction.contextualActionWithStyle_title_handler_(UIContextualActionStyleDestructive,
+                                                                                 _("Remove"),
+                                                                                 Block(handler))
+            action.image = UIImage.imageNamed_("trashcan_red.png")
+            action.backgroundColor = utils.uicolor_custom('red')
+            return UISwipeActionsConfiguration.configurationWithActions_([action])
+        except:
+            utils.NSLog("Send.tableView_trailingSwipeActionsConfigurationForRowAtIndexPath_, got exception: %s", str(sys.exc_info()[1]))
+            traceback.print_exc(file=sys.stderr)
+        return None
+    ### end UITableView related methods
+
 
 def get_coins(sendvc : ObjCInstance) -> list:
     coins = utils.nspy_get_byname(sendvc, 'spend_from')
@@ -801,7 +920,7 @@ def read_send_form(send : ObjCInstance) -> tuple:
     #if self.payment_request and self.payment_request.has_expired():
     #    parent().show_error(_('Payment request has expired'))
     #    return
-    label = send.desc.text
+    label = send.descDel.text
     addr_e = send.payTo
     fee_e = send.feeTf
     outputs = []
