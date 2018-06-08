@@ -350,8 +350,9 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
         identifier = "WalletsDrawerCell"
         cell = tableView.dequeueReusableCellWithIdentifier_(identifier)
+        row = indexPath.row
         try:
-            info = _Get()[indexPath.row]
+            info = _Get()[row]
         except:
             info = WalletsMgr.Info('Error', 0, 'INVALID')
         if cell is None:
@@ -363,6 +364,28 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
         iv = cell.viewWithTag_(1)
         name = cell.viewWithTag_(2)
         size = cell.viewWithTag_(3)
+        but = cell.viewWithTag_(4)
+        but2 = cell.viewWithTag_(5)
+        if not gui.ElectrumGui.gui.wallet:
+            #no wallet, disallow context menu
+            but.setHidden_(True)
+            but2.setHidden_(True)
+        else:
+            but.setHidden_(False)
+            but2.setHidden_(False)
+            def onBut(b : objc_id) -> None:
+                if info.size:
+                    def DoIt() -> None:
+                        self.autorelease()
+                        if self and self.ptr.value and self.viewIfLoaded and self.viewIfLoaded.window:                    
+                            _ShowOptionsForWalletAtIndex(vc = self, index = row, ipadAnchor = cell.convertRect_toView_(cell.bounds, self.view))
+                    but.retain().setHighlighted_(True)
+                    utils.call_later(0.3, lambda: but.autorelease().setHighlighted_(False))
+                    self.retain()
+                    utils.call_later(0.1, DoIt)
+            blk = Block(onBut)
+            but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, blk)
+            but2.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, blk)
         if not self.bluchk:
             self.bluchk = iv.image
         chkd = info.name == _Get('current')
@@ -489,3 +512,109 @@ class WalletsMgr(utils.DataMgr):
         path = self.wallets_dir()
         return os.path.exists(os.path.join(path, w))
 
+
+def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor : CGRect) -> ObjCInstance:
+    import os, sys
+    try:
+        info = _Get()[index]
+    except:
+        utils.NSLog("_ShowOptionsForWalletAtIndex got exception: %s",str(sys.exc_info()[1]))
+    if info.size <= 0: return
+    isCurrent = info.name == _Get('current')
+    parent = gui.ElectrumGui.gui
+    if not parent.wallet: return # disallow context menu when no wallet is open
+    tf = None
+    prefill = ''
+    placeholder = ''
+    def Release() -> None:
+        nonlocal tf
+        if tf:
+            tf.release()
+            tf = None
+    def TfHandler(t : objc_id) -> None:
+        nonlocal tf
+        tf = ObjCInstance(t).retain()
+        tf.clearButtonMode = UITextFieldViewModeAlways
+        if prefill: tf.text = prefill
+        if placeholder: tf.placeholder = placeholder
+    def DoRename() -> None:
+        nonlocal tf, prefill, placeholder
+        def Rename() -> None:
+            nonlocal tf
+            newName = utils.pathsafeify(str(tf.text))
+            Release()
+            def Retry() -> None:
+                nonlocal tf, prefill, placeholder
+                tf = None
+                prefill = newName
+                DoRename()
+            if not newName:
+                parent.show_error(_('Invalid name, please try again.'), vc = vc, onOk = Retry)
+            elif newName == info.name:
+                parent.show_error(_('You specified the same name!'), vc = vc, onOk = Retry)
+            elif WalletsMgr.check_wallet_exists(newName):
+                parent.show_error(_('A wallet with that name already exists, please try again.'), vc = vc, onOk = Retry)
+            parent.do_wallet_rename(info = info, newName = newName, vc = vc)
+        
+        prefill = prefill or info.name
+        placeholder = _('Enter new wallet name')
+        utils.show_alert(vc = vc,
+                         title = _('Rename Wallet'),
+                         message = _("Please enter the new name for this wallet:"),
+                         actions = [ [ _("Cancel"), Release ], [ _("Rename"), Rename ]], cancel = _("Cancel"),
+                         uiTextFieldHandlers = [ TfHandler ])
+    def DoSave() -> None:
+        if not parent.wallet: return
+        parent.show_wallet_share_actions(info = info, vc = vc, ipadAnchor = ipadAnchor)
+    def DoDelete() -> None:
+        nonlocal tf, placeholder, prefill
+        if not parent.wallet: return
+        def DeleteChk() -> None:
+            nonlocal tf, placeholder, prefill
+            prefill = ''
+            if tf:
+                txt = str(tf.text).lower().strip()
+                if txt == 'delete':
+                    try:
+                        os.remove(info.full_path)
+                        parent.refresh_components('wallets')
+                        utils.show_notification(message = _("Wallet deleted successfully"))
+                    except:
+                        parent.show_error(vc = vc, message = str(sys.exc_info()[1]))
+                else:
+                    parent.show_error(vc = vc, title = _("Not Deleted"), message = _("You didn't enter the text 'delete' in the previous dialog. For your own safety, the wallet file was not deleted."))
+            Release()
+        placeholder = _("Type 'delete' to proceed")
+        utils.show_alert(vc = vc,
+                         title = _('Delete Wallet'),
+                         message = _("You are about to delete the wallet '{}'. Unless you have other copies of this wallet or you wrote its seed down, you may lose funds!\n\nIn order to proceed, please type the word 'delete' in the box below:").format(info.name),
+                         actions = [ [ _("Cancel"), Release ], [ _("Delete"), DeleteChk ]], cancel = _("Cancel"), destructive = _('Delete'),
+                         uiTextFieldHandlers = [ TfHandler ])
+    def DoOpen() -> None:
+        parent.switch_wallets(vc = vc, wallet_name = info.name, onFailure = lambda x: parent.show_error(str(x)))
+    def DoSeed() -> None:
+        def gotPW(pw) -> None:
+            parent.show_seed_dialog(pw)
+        parent.prompt_password_if_needed_asynch(vc=vc, callBack = gotPW)
+    def DoPWChange() -> None:
+        parent.show_change_password(vc = vc)
+        
+    actions = [
+        [ _("Open Wallet"), DoOpen ],
+        [ _("Rename Wallet"), DoRename ],
+        [ _("Save/Export Wallet"), DoSave ],
+        [ _("Cancel") ],
+    ]
+    if isCurrent:
+        actions.pop(0)
+        actions.insert(0, [_('Change or Set Password'), DoPWChange])
+        if parent.wallet.has_seed():
+            actions.insert(0, [_('Wallet Recovery Seed'), DoSeed])
+    destructive = None
+    cancel = actions[-1][0]
+    if not isCurrent:
+        actions.append([_("Delete Wallet"), DoDelete ])
+        destructive = actions[-1][0]
+    return utils.show_alert(vc = vc, title = _("Wallet Operations"), message = info.name, actions = actions,
+                            cancel = cancel, destructive = destructive,
+                            ipadAnchor = ipadAnchor, style = UIAlertControllerStyleActionSheet)

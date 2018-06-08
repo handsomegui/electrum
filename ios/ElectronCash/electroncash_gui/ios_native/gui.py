@@ -1371,6 +1371,80 @@ class ElectrumGui(PrintError):
             waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:25] + "...", completion = promptPwLater)
         else:
             DoSwicheroo()
+            
+    def show_wallet_share_actions(self, info : wallets.WalletsMgr.Info, vc : UIViewController = None, ipadAnchor : object = None, warnIfUnsafe : bool = True) -> None:
+        if vc is None: vc = self.get_presented_viewcontroller()
+        if not os.path.exists(info.full_path):
+            self.show_error("Wallet file not found", vc = vc)
+            return
+        if warnIfUnsafe:
+            try:
+                storage = WalletStorage(info.full_path, manual_upgrades=True)
+                if not storage.is_encrypted():
+                    w = Wallet(storage)
+                    if not w.is_watching_only() and not w.has_password():
+                        self.question(title = _("Potentially Unsafe Operation"),
+                                      message = _("This spending wallet is not encrypted and not password protected. Sharing it over the internet could result in others intercepting the data and for you to potentially lose funds.\n\nContinue anyway?"), yesno = True, vc = vc,
+                                      onOk = lambda: self.show_wallet_share_actions(info = info, vc = vc, ipadAnchor = ipadAnchor, warnIfUnsafe = False))
+                        return
+            except:
+                self.show_error(sys.exc_info()[1], vc = vc)
+                return 
+        waitDlg = None
+        def Dismiss(compl = None, animated = True) -> None:
+            nonlocal waitDlg
+            if waitDlg:
+                waitDlg.presentingViewController.dismissViewControllerAnimated_completion_(animated, compl)
+                waitDlg = None
+                
+        def DoIt() -> None:
+            try:
+                from shutil import copy2
+                fn = copy2(info.full_path, utils.get_tmp_dir())
+                if fn:
+                    print("copied wallet to:", fn)
+                    utils.show_share_actions(vc = waitDlg, fileName = fn, ipadAnchor = ipadAnchor, objectName = _('Wallet file'),
+                                             finishedCompletion = lambda x: Dismiss())
+                else:
+                    def MyCompl() -> None: self.show_error("Could not copy wallet file", vc = vc)
+                    Dismiss(MyCompl, False)
+            except:
+                err = str(sys.exc_info()[1])
+                def MyCompl() -> None: self.show_error(err, vc = vc)
+                Dismiss(MyCompl, False)
+                utils.NSLog("Got exception copying wallet: %s", err)
+        waitDlg = utils.show_please_wait(vc = vc, message = _("Exporting Wallet..."), completion = DoIt)
+
+    def do_wallet_rename(self, info : wallets.WalletsMgr.Info, newName : str, vc : UIViewController = None, password : str = None):
+        if not self.wallet: return # disallow this operation if they don't have a wallet open
+        if not vc: vc = self.get_presented_viewcontroller()
+        if not os.path.exists(info.full_path):
+            self.show_error("File not found", vc = vc)
+            return
+        isCurrent = info.full_path == self.wallet.storage.path
+        if isCurrent and self.wallet.storage.is_encrypted() and not password:
+            def gotPW(pw : str) -> None:
+                self.do_wallet_rename(info = info, vc = vc, password = pw, newName = newName)
+            self.prompt_password_if_needed_asynch(callBack = gotPW, vc = vc,
+                                                  prompt = _("You are renaming the currently open encrypted wallet '{}'. Please provide the wallet password to proceed.").format(info.name))
+            return
+        newName = utils.pathsafeify(newName)
+        new_path = os.path.join(os.path.split(info.full_path)[0], newName)
+        if os.path.exists(new_path):
+            self.show_error(_("A wallet with that name already exists. Cannot proceed."), vc = vc)
+            return
+        try:
+            if isCurrent:
+                self.daemon.stop_wallet(self.wallet.storage.path)
+                self.wallet = None
+            
+            os.rename(info.full_path, new_path)
+            utils.show_notification(_("Wallet successfully renamed"))
+            self.refresh_components('wallets')
+            if isCurrent:
+                self.switch_wallets(wallet_name = newName, wallet_pass = password, vc = vc)
+        except:
+            self.show_error(str(sys.exc_info()[1]), vc = vc)
     
     def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None, onForcedDismissal = None,
                                          usingStorage : Any = None) -> ObjCInstance:

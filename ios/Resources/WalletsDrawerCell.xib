@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14109" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14113" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -20,15 +20,15 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <label opaque="NO" userInteractionEnabled="NO" tag="2" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Default Wallet" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="ZaK-GI-rTF">
-                        <rect key="frame" x="55" y="21" width="212" height="17"/>
+                        <rect key="frame" x="55" y="21" width="202" height="17"/>
                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                         <nil key="highlightedColor"/>
                     </label>
                     <label opaque="NO" userInteractionEnabled="NO" tag="3" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="16 KB" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Nb3-M8-5GN">
-                        <rect key="frame" x="275" y="20.5" width="100" height="18"/>
+                        <rect key="frame" x="265" y="20.5" width="85" height="18"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="100" id="azL-9e-OIP"/>
+                            <constraint firstAttribute="width" constant="85" id="azL-9e-OIP"/>
                             <constraint firstAttribute="height" constant="18" id="jrY-2l-WIz"/>
                         </constraints>
                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
@@ -42,13 +42,35 @@
                             <constraint firstAttribute="height" constant="13" id="qGD-TL-gOo"/>
                         </constraints>
                     </imageView>
+                    <button opaque="NO" tag="4" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="6fI-wE-8Ut" userLabel="OptionsButton">
+                        <rect key="frame" x="350" y="22.5" width="15" height="15"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="15" id="Bfj-JE-s3L"/>
+                            <constraint firstAttribute="width" constant="15" id="oWi-nM-8W0"/>
+                        </constraints>
+                        <state key="normal" title="Button" image="options_blu.png"/>
+                        <state key="highlighted" image="options_blu_hil.png"/>
+                    </button>
+                    <button opaque="NO" tag="5" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" buttonType="roundedRect" reversesTitleShadowWhenHighlighted="YES" showsTouchWhenHighlighted="YES" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4Un-xP-iMd" userLabel="FakeBgBut">
+                        <rect key="frame" x="325" y="0.0" width="50" height="60"/>
+                        <fontDescription key="fontDescription" type="system" pointSize="20"/>
+                        <state key="highlighted">
+                            <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        </state>
+                    </button>
                 </subviews>
                 <constraints>
                     <constraint firstItem="HQh-33-p9V" firstAttribute="centerY" secondItem="Kro-T2-2Lp" secondAttribute="centerY" id="45Q-PV-TMc"/>
-                    <constraint firstAttribute="trailing" secondItem="Nb3-M8-5GN" secondAttribute="trailing" id="8Dj-R7-L2d"/>
+                    <constraint firstAttribute="trailing" secondItem="4Un-xP-iMd" secondAttribute="trailing" id="Aao-1G-98w"/>
                     <constraint firstItem="ZaK-GI-rTF" firstAttribute="centerY" secondItem="HQh-33-p9V" secondAttribute="centerY" id="E5z-2l-JLl"/>
+                    <constraint firstItem="6fI-wE-8Ut" firstAttribute="leading" secondItem="Nb3-M8-5GN" secondAttribute="trailing" id="ED4-Nn-gUS"/>
+                    <constraint firstAttribute="bottom" secondItem="4Un-xP-iMd" secondAttribute="bottom" id="G9j-uo-8Mg"/>
                     <constraint firstItem="Nb3-M8-5GN" firstAttribute="centerY" secondItem="ZaK-GI-rTF" secondAttribute="centerY" id="MU7-od-UCx"/>
+                    <constraint firstItem="6fI-wE-8Ut" firstAttribute="centerY" secondItem="Kro-T2-2Lp" secondAttribute="centerY" id="VDP-kn-j5u"/>
+                    <constraint firstItem="4Un-xP-iMd" firstAttribute="leading" secondItem="Nb3-M8-5GN" secondAttribute="trailing" constant="-25" id="afS-fc-CIP"/>
                     <constraint firstItem="HQh-33-p9V" firstAttribute="leading" secondItem="Kro-T2-2Lp" secondAttribute="leadingMargin" id="bx6-Wd-JyR"/>
+                    <constraint firstItem="4Un-xP-iMd" firstAttribute="top" secondItem="Kro-T2-2Lp" secondAttribute="top" id="odt-Vr-1MS"/>
+                    <constraint firstAttribute="trailing" secondItem="6fI-wE-8Ut" secondAttribute="trailing" constant="10" id="r3q-KN-TXo"/>
                     <constraint firstItem="Nb3-M8-5GN" firstAttribute="leading" secondItem="ZaK-GI-rTF" secondAttribute="trailing" constant="8" id="rna-bs-af1"/>
                     <constraint firstItem="ZaK-GI-rTF" firstAttribute="leading" secondItem="HQh-33-p9V" secondAttribute="trailing" constant="22" id="vak-HK-t8g"/>
                 </constraints>
@@ -58,5 +80,7 @@
     </objects>
     <resources>
         <image name="bluechk.png" width="17" height="13"/>
+        <image name="options_blu.png" width="20" height="22"/>
+        <image name="options_blu_hil.png" width="20" height="22"/>
     </resources>
 </document>
