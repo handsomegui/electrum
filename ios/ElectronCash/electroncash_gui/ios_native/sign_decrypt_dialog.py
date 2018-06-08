@@ -25,6 +25,7 @@ EncryptDecrypt = 1
 class SignDecryptVC(UIViewController):
     
     mode = objc_property()
+    kbas = objc_property()
     
     @objc_method
     def initWithMode_(self, mode : int) -> ObjCInstance:
@@ -43,6 +44,7 @@ class SignDecryptVC(UIViewController):
         self.title = None
         self.view = None
         self.mode = None
+        self.kbas = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -86,6 +88,7 @@ class SignDecryptVC(UIViewController):
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
         self.refresh()
         parent().cash_addr_sig.connect(lambda: self.refresh(), self)
+        self.kbas = utils.register_keyboard_autoscroll(self.view)
         
         
     @objc_method
@@ -104,6 +107,9 @@ class SignDecryptVC(UIViewController):
         elif self.mode == EncryptDecrypt:
             data = utils.set_namedtuple_field(data, 'pubkey', text)
         utils.nspy_put_byname(self, data, 'data')
+        if self.kbas:
+            utils.unregister_keyboard_autoscroll(self.kbas)
+            self.kbas = None
         
     @objc_method
     def refresh(self) -> None:
@@ -179,16 +185,6 @@ class SignDecryptVC(UIViewController):
     @objc_method
     def onCloseKeyboard_(self, sender : ObjCInstance) -> None:
         self.view.viewWithTag_(sender.tag).resignFirstResponder()
-        
-    @objc_method
-    def textViewDidBeginEditing_(self, tv : ObjCInstance) -> None:
-        sv = self.view
-        if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
-            # try and center the text fields on the screen.. this is an ugly HACK.
-            # todo: fixme!
-            frame = tv.frame
-            frame.origin.y += 150 + 64
-            sv.scrollRectToVisible_animated_(frame, True)
 
     @objc_method
     def onExecuteBut_(self, sender : ObjCInstance) -> None:

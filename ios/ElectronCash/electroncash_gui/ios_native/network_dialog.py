@@ -76,6 +76,7 @@ class NetworkDialogVC(UIViewController):
     protocol = objc_property() # set to 't' for now -- TODO: figure out SSL stuff
     lastPort = objc_property()
     cellIdentifier = objc_property()
+    kbas = objc_property()
 
     @objc_method
     def dealloc(self) -> None:
@@ -94,6 +95,7 @@ class NetworkDialogVC(UIViewController):
         self.protocol = None
         self.lastPort = None
         self.cellIdentifier = None
+        self.kbas = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
    
@@ -292,6 +294,13 @@ class NetworkDialogVC(UIViewController):
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__,self,'viewWillAppear:', c_bool(animated), argtypes=[c_bool])
         self.refresh()
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__,self,'viewWillDisappear:', c_bool(animated), argtypes=[c_bool])
+        if self.kbas:
+            utils.unregister_keyboard_autoscroll(int(self.kbas))
+            self.kbas = None
     
     @objc_method
     def viewDidAppear_(self, animated : bool) -> None:
@@ -299,6 +308,7 @@ class NetworkDialogVC(UIViewController):
         self.view.flashScrollIndicators()
         self.connectedTV.flashScrollIndicators()
         self.peersTV.flashScrollIndicators()
+        self.kbas = utils.register_keyboard_autoscroll(self.view)
     
     @objc_method
     def numberOfSectionsInTableView_(self, tv) -> int:
@@ -425,23 +435,6 @@ class NetworkDialogVC(UIViewController):
                                   onOk = wantsToChangeServer)
             
         tv.deselectRowAtIndexPath_animated_(indexPath, True)
-            
-    @objc_method
-    def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
-        if not utils.is_iphone():  return
-        # try and center the text fields on the screen.. this is an ugly HACK.
-        # todo: fixme!
-        sv = self.viewIfLoaded 
-        if sv and isinstance(sv, UIScrollView):
-            sb = UIScreen.mainScreen.bounds
-            v = sv.subviews()[0]
-            frame = v.frame
-            frame.origin.y = 700 - frame.size.height
-            if utils.is_landscape():
-                frame.origin.y -= 100
-                #print("WAS LANDSCAPE")
-            #print("frame=%f,%f,%f,%f"%(frame.origin.x,frame.origin.y,frame.size.width,frame.size.height))
-            sv.scrollRectToVisible_animated_(frame, True)
         
     @objc_method
     def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:

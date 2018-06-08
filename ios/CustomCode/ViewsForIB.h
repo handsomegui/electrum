@@ -80,7 +80,7 @@
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *previewBut;
 @property (nonatomic, weak) IBOutlet UIButton *sendBut; // actually a subview of a UIBarButtonItem
 @property (nonatomic, weak) IBOutlet UILabel *message;
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop, *csTvHeight, *csPayToTop;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFeeTop, *csTvHeight, *csPayToTop, *csContentHeight;
 @property (nonatomic, weak) IBOutlet UITableView *tv;
 @property (nonatomic, weak) IBOutlet UIView *bottomView, *messageView;
 @property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
@@ -328,7 +328,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UITableView *tv;
 @property (nonatomic, weak) IBOutlet UIButton *freezeBut, *spendFromBut; // set .selected=YES/NO for checked/unchecked
 @property (nonatomic, weak) IBOutlet UIGestureRecognizer *utxoGr; // enabled when they have nonzero utxos
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *txHistoryTopCS, *statusTopCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *txHistoryTopCS, *statusTopCS, *contentHeightCS;
 @property (nonatomic) CGFloat txHistoryTopSaved, statusTopSaved;
 @end
 
@@ -362,8 +362,9 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @property (nonatomic, weak) IBOutlet UITextView *desc;
 @property (nonatomic, weak) IBOutlet UIButton *freezeBut; // set .selected=YES/NO for checked/unchecked
 @property (nonatomic, weak) IBOutlet UIButton *spendFromBut;
-@property (nonatomic, weak) IBOutlet NSLayoutConstraint *addressTopCS, *statusTopCS;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *addressTopCS, *statusTopCS, *contentHeightCS;
 @property (nonatomic) CGFloat addressTopSaved, statusTopSaved;
+@property (nonatomic, weak) IBOutlet UIView *descBox;
 @end
 
 // stub for python -- implemented in coins.py

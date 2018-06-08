@@ -414,6 +414,8 @@ class SendVC(SendBase):
             self.csTvHeight.constant = 0
             self.csPayToTop.constant = 0
         
+        f = self.desc.frame
+        self.csContentHeight.constant = f.origin.y + f.size.height + 125
         
         retVal = False
         errLbl = self.message

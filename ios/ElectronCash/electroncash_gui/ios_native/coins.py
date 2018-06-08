@@ -23,6 +23,7 @@ class CoinsDetail(CoinsDetailBase):
     outputhash = objc_property()
     blockRefresh = objc_property()
     needsRefresh = objc_property()
+    kbas = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
@@ -43,6 +44,7 @@ class CoinsDetail(CoinsDetailBase):
         self.outputhash = None
         self.blockRefresh = None
         self.needsRefresh = None
+        self.kbas = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         gui.ElectrumGui.gui.sigCoins.disconnect(self)
@@ -69,13 +71,6 @@ class CoinsDetail(CoinsDetailBase):
         #setup callbacks..
         def didBeginEditing() -> None:
             self.blockRefresh = True
-            sv = self.view
-            if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
-                # try and center the text fields on the screen.. this is an ugly HACK.
-                # todo: fixme!
-                frame = self.desc.superview().frame
-                frame.origin.y += 150 + 64 + 64
-                sv.scrollRectToVisible_animated_(frame, True)
         def didEndEditing(text : ObjCInstance) -> None:
             self.blockRefresh = False
             text = str(py_from_ns(text)).strip()
@@ -93,9 +88,17 @@ class CoinsDetail(CoinsDetailBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.kbas = utils.register_keyboard_autoscroll(self.view)
         self.blockRefresh = False
         self.needsRefresh = False
         self.refresh()
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if self.kbas:
+            utils.unregister_keyboard_autoscroll(int(self.kbas))
+            self.kbas = None
 
     @objc_method
     def refresh(self) -> None:
@@ -154,6 +157,9 @@ class CoinsDetail(CoinsDetailBase):
             self.statusTopCS.constant = self.statusTopSaved + 8
                 
         self.needsRefresh = False
+        
+        f = self.descBox.frame
+        self.contentHeightCS.constant = f.origin.y + f.size.height + 75
     
     @objc_method
     def viewWillTransitionToSize_withTransitionCoordinator_(self, size : CGSize, coordinator : ObjCInstance) -> None:

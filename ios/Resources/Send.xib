@@ -17,6 +17,7 @@
                 <outlet property="clearBut" destination="4y4-Sz-2LC" id="lkT-io-VEB"/>
                 <outlet property="contactBut" destination="qTe-7D-gzO" id="EyG-YB-ojI"/>
                 <outlet property="contentView" destination="b2F-qP-ezb" id="6rw-56-Y5k"/>
+                <outlet property="csContentHeight" destination="X72-wH-lvd" id="WEc-OJ-SiT"/>
                 <outlet property="csFeeTop" destination="zXY-SD-Riz" id="8gr-NU-RsU"/>
                 <outlet property="csPayToTop" destination="9Jt-G1-t3p" id="9X0-J3-rt1"/>
                 <outlet property="csTvHeight" destination="b6g-Sh-R6v" id="Cpe-eG-PCT"/>

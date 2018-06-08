@@ -1350,18 +1350,23 @@ def unregister_keyboard_callbacks(handle : int) -> None:
         entry.obs.dissociate()
         entry.handler.release()
     else:
-        NSLog("WARNING: unregister_keyboard_callbacks could not find handle %d!", handle)
+        NSLog("*** WARNING: unregister_keyboard_callbacks could not find handle %d!", handle)
         
 # boilerplate code below to auto-scroll textfields/textviews when keyboard shown. Install this in viewWillAppear.
 def register_keyboard_autoscroll(sv : UIScrollView) -> int:
+    if not isinstance(sv, UIScrollView):
+        NSLog("*** WARNING: register_keyboard_autoscroll called but it wasn't passed a UIScrollView. Ignoring!")
+        return
     def kbShow(r : CGRect) -> None:
         resp = UIResponder.currentFirstResponder()
-        if resp:
+        if resp and isinstance(resp, UIView):
             visible = sv.frame
             visible.size.height -= r.size.height
-            origin = resp.frame.origin
-            if not CGRectContainsPoint(visible, origin):
-                scrollPoint = CGPoint(0.0, origin.y - visible.size.height + resp.frame.size.height + 10)
+            respFrame = resp.convertRect_toView_(resp.bounds, sv)
+            origin = respFrame.origin
+            bottomLeft = CGPoint(origin.x, origin.y+respFrame.size.height)
+            if  not CGRectContainsPoint(visible, bottomLeft): #or not CGRectContainsPoint(visible, origin):
+                scrollPoint = CGPoint(0.0, origin.y - visible.size.height + respFrame.size.height + 10)
                 sv.setContentOffset_animated_(scrollPoint, True)
     #def kbHide() -> None:
     #    #sv.setContentOffset_animated_(CGPoint(0,0), True)

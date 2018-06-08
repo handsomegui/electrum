@@ -39,6 +39,7 @@ class AddressDetail(AddressDetailBase):
     blockRefresh = objc_property()
     needsRefresh = objc_property()
     domain = objc_property() # string repr of adddress in question -- used to get the cached address entry from the datamgr
+    kbas = objc_property()
     
     @objc_method
     def init(self) -> ObjCInstance:
@@ -74,6 +75,7 @@ class AddressDetail(AddressDetailBase):
         self.view = None
         self.blockRefresh = None
         self.needsRefresh = None
+        self.kbas = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -96,13 +98,6 @@ class AddressDetail(AddressDetailBase):
         # setup callbacks
         def didBeginEditing() -> None:
             self.blockRefresh = True # temporarily block refreshing since that kills our keyboard/textfield
-            sv = self.view
-            if isinstance(sv, UIScrollView) and utils.is_iphone(): # fee manual edit, make sure it's visible
-                # try and center the text fields on the screen.. this is an ugly HACK.
-                # todo: fixme!
-                frame = self.desc.superview().frame
-                frame.origin.y += 150 + 64 + 64
-                sv.scrollRectToVisible_animated_(frame, True)
     
         self.descDel.didBeginEditing = Block(didBeginEditing)
 
@@ -123,7 +118,15 @@ class AddressDetail(AddressDetailBase):
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.kbas = utils.register_keyboard_autoscroll(self.view)
         self.refresh()
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if self.kbas:
+            utils.unregister_keyboard_autoscroll(self.kbas)
+            self.kbas = None
         
     @objc_method
     def refresh(self) -> None:
