@@ -27,10 +27,7 @@ class PrivateKeyDialog(PrivateKeyDialogBase):
     
     @objc_method
     def dealloc(self) -> None:
-        #print("PrivateKeyDialog dealloc")
         utils.nspy_pop(self)
-        self.title = None
-        self.view = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -51,8 +48,7 @@ class PrivateKeyDialog(PrivateKeyDialogBase):
         
     @objc_method
     def refresh(self) -> None:
-        v = self.viewIfLoaded
-        if v is None: return
+        if not self.viewIfLoaded: return
         entry = utils.nspy_get_byname(self, 'entry')
  
         lbl = self.addressTit
