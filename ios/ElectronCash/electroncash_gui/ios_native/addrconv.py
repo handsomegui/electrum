@@ -14,24 +14,16 @@ from .custom_objc import *
 
 
 class AddrConvVC(AddrConvBase):
-   
-    qr = objc_property()
-    qrvc = objc_property()
-   
+      
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
-            self.qr = None
-            self.qrvc = None
             self.title = _("Address Converter")
-            self.tabBarItem.image = UIImage.imageNamed_("tab_converter.png").imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal)
         return self
     
     @objc_method
     def dealloc(self) -> None:
-        self.qr = None
-        self.qrvc = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -42,7 +34,10 @@ class AddrConvVC(AddrConvBase):
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         self.address.text = ""
-        self.doConversion_("")  # disables copy buttons
+        self.doConversion_("")  # disables copy buttons and show qr buttons before any data is present
+        ats = NSMutableAttributedString.alloc().initWithAttributedString_(self.blurb.attributedText).autorelease()
+        r = NSRange(0, ats.length())
+        ats.addAttribute_value_range_(NSKernAttributeName, utils._kern, r)
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -54,11 +49,19 @@ class AddrConvVC(AddrConvBase):
             "format."
             )
         
-        self.blurb.text = txt.replace('\n','\n\n')
+        utils.uilabel_replace_attributed_text(self.blurb, txt.replace('\n','\n\n'), font = UIFont.italicSystemFontOfSize_(14.0))
         
-        self.address.placeholder = _('Address to convert')
-        self.cashTit = _('Cash address')
-        self.legacyTit = _('Legacy address')
+        self.address.attributedPlaceholder = NSAttributedString.alloc().initWithString_attributes_(
+            _('Address to convert'),
+            {
+                NSFontAttributeName            : UIFont.italicSystemFontOfSize_(14.0),
+                NSForegroundColorAttributeName : utils.uicolor_custom('light')
+             }).autorelease()
+        self.addressTit.setText_withKerning_(_('Address'), utils._kern)
+        self.cashTit.setText_withKerning_(_('Cash address'), utils._kern)
+        self.legacyTit.setText_withKerning_(_('Legacy address'), utils._kern)
+        
+        utils.uitf_redo_attrs(self.address)
         
     @objc_method
     def textFieldShouldReturn_(self, tf) -> bool:
@@ -67,20 +70,29 @@ class AddrConvVC(AddrConvBase):
         return True
     
     @objc_method
+    def textFieldDidEndEditing_(self, tf) -> None:
+        utils.uitf_redo_attrs(tf)
+    
+    @objc_method
     def onBut_(self, but) -> None:
-        if but.ptr == self.cpyCashBut.ptr:
+        if but.ptr.value == self.cpyCashBut.ptr.value:
             gui.ElectrumGui.gui.copy_to_clipboard(self.cash.text, 'Address')
-        elif but.ptr == self.cpyLegBut.ptr:
+        elif but.ptr.value == self.cpyLegBut.ptr.value:
             gui.ElectrumGui.gui.copy_to_clipboard(self.legacy.text, 'Address')
-        elif but.ptr == self.qrBut.ptr:
+        elif but.ptr.value == self.qrBut.ptr.value:
             if not QRCodeReader.isAvailable:
                 utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
             else:
-                self.qr = QRCodeReader.new().autorelease()
-                self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
+                self.qr = QRCodeReader.new().autorelease() # self.qr is a weak property decalred in objc superclass.. it auto-zeros itself when the qr code reader disappears
+                self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
                 self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
                 self.qrvc.delegate = self
                 self.presentViewController_animated_completion_(self.qrvc, True, None)
+        elif but.ptr.value in (self.qrButShowLegacy.ptr.value, self.qrButShowCash.ptr.value):
+            datum = self.cash.text if but.ptr.value == self.qrButShowCash.ptr.value else self.legacy.text
+            print("qrcode datum =", datum)
+            qrvc = utils.present_qrcode_vc_for_data(vc=self, data=datum, title = _('QR code'))
+            gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
 
     @objc_method
     def reader_didScanResult_(self, reader, result) -> None:
@@ -104,9 +116,8 @@ class AddrConvVC(AddrConvBase):
     @objc_method
     def readerDidCancel_(self, reader) -> None:
         if reader is not None: reader.stopScanning()
-        self.dismissViewControllerAnimated_completion_(True, None)
-        self.qr = None
-        self.qrvc = None
+        if self.presentedViewController:
+            self.dismissViewControllerAnimated_completion_(True, None)
         
     @objc_method
     def onAddress_(self, tf) -> None:
@@ -119,6 +130,8 @@ class AddrConvVC(AddrConvBase):
         self.legacy.text = ""
         self.cpyCashBut.enabled = False
         self.cpyLegBut.enabled = False
+        self.qrButShowCash.enabled = False
+        self.qrButShowLegacy.enabled = False
         text = text.strip()
         
         addy = None
@@ -133,5 +146,8 @@ class AddrConvVC(AddrConvBase):
             self.legacy.text = addy.to_full_string(Address.FMT_LEGACY)
             self.cpyCashBut.enabled = True
             self.cpyLegBut.enabled = True
+            self.qrButShowCash.enabled = True
+            self.qrButShowLegacy.enabled = True
+            
             return True
         return False

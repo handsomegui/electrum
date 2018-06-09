@@ -22,8 +22,6 @@ static BOOL IS_IPHONE_5(void) {
 
 @implementation AddrConvBase
 // properties get autosynthesized since Xcode 4.4
-- (IBAction) onBut:(id)sender { /* implement in subclass.. */ }
-- (IBAction) onAddress:(id)sender { /* implement in subclass.. */ }
 @end
 
 @implementation NewContactBase

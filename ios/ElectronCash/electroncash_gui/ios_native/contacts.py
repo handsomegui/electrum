@@ -491,7 +491,7 @@ class NewContactVC(NewContactBase):
             utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
         else:
             self.qr = QRCodeReader.new().autorelease()
-            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
+            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
             self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
             self.qrvc.delegate = self
             self.presentViewController_animated_completion_(self.qrvc, True, None)

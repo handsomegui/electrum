@@ -792,10 +792,11 @@ def _Get(domain = None) -> AddressData:
 
 def _GetBBTitle(x = None) -> Any:
     if x is not None:
-        return [ _("Show CashAddr"), _("Show Legacy") ]
+        #return [ _("Show CashAddr"), _("Show Legacy") ]
+        return [ _("Toggle Format"), _("Toggle Format") ]
     if gui.ElectrumGui.gui.prefs_get_use_cashaddr():
-        return _("Show Legacy")
-    return _("Show CashAddr")
+        return _("Toggle Format") #_("Show Legacy")
+    return _("Toggle Format")  #_("Show CashAddr")
 
 def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = None):
     parent = gui.ElectrumGui.gui
