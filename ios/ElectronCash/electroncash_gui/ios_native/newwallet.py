@@ -779,7 +779,7 @@ class Import1(Import1Base):
         else:
             self.view.endEditing_(True)
             self.qr = QRCodeReader.new().autorelease()
-            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,True,True)
+            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
             self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
             self.qrvc.delegate = self
             self.presentViewController_animated_completion_(self.qrvc, True, None)
