@@ -83,13 +83,15 @@
 @property (nonatomic, weak) IBOutlet UITableView *tv;
 @property (nonatomic, weak) IBOutlet UIView *bottomView, *messageView;
 @property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
+@end
 
+@interface SendVC : SendBase
 -(IBAction)onQRBut:(id)sender; // implemented in python send.py
 -(IBAction)onContactBut:(id)sender; // implemented in python send.py
 -(IBAction)clear; // implemented in python send.py
 -(IBAction)onPreviewSendBut:(id)sender; // implemented in python send.py
 -(IBAction)clearSpendFrom; // implemented in python send.py
--(IBAction)spendMax; // implemented in python send.py
+-(IBAction)onMaxBut:(id)sender; // implemented in python send.py
 @end
 
 

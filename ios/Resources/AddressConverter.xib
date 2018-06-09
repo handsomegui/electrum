@@ -60,7 +60,7 @@
                                 <constraint firstAttribute="width" constant="23" id="p7f-7t-hrM"/>
                             </constraints>
                             <state key="normal" image="qrcode_new_framed.png"/>
-                            <state key="highlighted" image="qrcode_blue.png"/>
+                            <state key="highlighted" image="qrcode_new_framed_hi.png"/>
                             <connections>
                                 <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="p8U-A9-7xp"/>
                             </connections>
@@ -88,7 +88,7 @@
                             <constraints>
                                 <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="18" id="tay-qD-mID"/>
                             </constraints>
-                            <fontDescription key="fontDescription" type="boldSystem" pointSize="16"/>
+                            <fontDescription key="fontDescription" type="system" weight="medium" pointSize="16"/>
                             <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                             <nil key="highlightedColor"/>
                         </label>
@@ -99,6 +99,7 @@
                                 <constraint firstAttribute="height" constant="22" id="D4U-U3-V4Q"/>
                             </constraints>
                             <state key="normal" image="copy_clipboard.png"/>
+                            <state key="highlighted" image="copy_clipboard_hi.png"/>
                             <connections>
                                 <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="155-o2-PLK"/>
                             </connections>
@@ -108,7 +109,7 @@
                             <constraints>
                                 <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="18" id="7us-8q-CUU"/>
                             </constraints>
-                            <fontDescription key="fontDescription" type="boldSystem" pointSize="16"/>
+                            <fontDescription key="fontDescription" type="system" weight="medium" pointSize="16"/>
                             <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                             <nil key="highlightedColor"/>
                         </label>
@@ -119,6 +120,7 @@
                                 <constraint firstAttribute="width" constant="18" id="h9J-Kd-Iqc"/>
                             </constraints>
                             <state key="normal" image="copy_clipboard.png"/>
+                            <state key="highlighted" image="copy_clipboard_hi.png"/>
                             <connections>
                                 <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="2eS-tQ-PZi"/>
                             </connections>
@@ -162,6 +164,7 @@ You are encouraged to use the 'Cash address' format.</string>
                                 <constraint firstAttribute="height" constant="22" id="ln1-AX-wX8"/>
                             </constraints>
                             <state key="normal" image="qrcode_new.png"/>
+                            <state key="highlighted" image="qrcode_new_hi.png"/>
                             <connections>
                                 <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="uhT-uj-9rD"/>
                             </connections>
@@ -173,6 +176,7 @@ You are encouraged to use the 'Cash address' format.</string>
                                 <constraint firstAttribute="height" constant="22" id="AO4-Di-R2Q"/>
                             </constraints>
                             <state key="normal" image="qrcode_new.png"/>
+                            <state key="highlighted" image="qrcode_new_hi.png"/>
                             <connections>
                                 <action selector="onBut:" destination="-1" eventType="primaryActionTriggered" id="5g6-VN-fYF"/>
                             </connections>
@@ -226,9 +230,11 @@ You are encouraged to use the 'Cash address' format.</string>
     </objects>
     <resources>
         <image name="copy_clipboard.png" width="18" height="22"/>
+        <image name="copy_clipboard_hi.png" width="18" height="22"/>
         <image name="i_yellow.png" width="18" height="18"/>
-        <image name="qrcode_blue.png" width="24" height="24"/>
         <image name="qrcode_new.png" width="22" height="22"/>
         <image name="qrcode_new_framed.png" width="23" height="23"/>
+        <image name="qrcode_new_framed_hi.png" width="23" height="23"/>
+        <image name="qrcode_new_hi.png" width="22" height="22"/>
     </resources>
 </document>

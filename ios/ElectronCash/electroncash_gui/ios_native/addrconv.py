@@ -75,24 +75,32 @@ class AddrConvVC(AddrConvBase):
     
     @objc_method
     def onBut_(self, but) -> None:
-        if but.ptr.value == self.cpyCashBut.ptr.value:
-            gui.ElectrumGui.gui.copy_to_clipboard(self.cash.text, 'Address')
-        elif but.ptr.value == self.cpyLegBut.ptr.value:
-            gui.ElectrumGui.gui.copy_to_clipboard(self.legacy.text, 'Address')
-        elif but.ptr.value == self.qrBut.ptr.value:
-            if not QRCodeReader.isAvailable:
-                utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
-            else:
-                self.qr = QRCodeReader.new().autorelease() # self.qr is a weak property decalred in objc superclass.. it auto-zeros itself when the qr code reader disappears
-                self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
-                self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
-                self.qrvc.delegate = self
-                self.presentViewController_animated_completion_(self.qrvc, True, None)
-        elif but.ptr.value in (self.qrButShowLegacy.ptr.value, self.qrButShowCash.ptr.value):
-            datum = self.cash.text if but.ptr.value == self.qrButShowCash.ptr.value else self.legacy.text
-            print("qrcode datum =", datum)
-            qrvc = utils.present_qrcode_vc_for_data(vc=self, data=datum, title = _('QR code'))
-            gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
+        def DoIt() -> None:
+            if not self.autorelease().viewIfLoaded: return
+            if but.ptr.value == self.cpyCashBut.ptr.value:
+                gui.ElectrumGui.gui.copy_to_clipboard(self.cash.text, 'Address')
+            elif but.ptr.value == self.cpyLegBut.ptr.value:
+                gui.ElectrumGui.gui.copy_to_clipboard(self.legacy.text, 'Address')
+            elif but.ptr.value == self.qrBut.ptr.value:
+                if not QRCodeReader.isAvailable:
+                    utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
+                else:
+                    self.qr = QRCodeReader.new().autorelease() # self.qr is a weak property decalred in objc superclass.. it auto-zeros itself when the qr code reader disappears
+                    self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
+                    self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
+                    self.qrvc.delegate = self
+                    self.presentViewController_animated_completion_(self.qrvc, True, None)
+            elif but.ptr.value in (self.qrButShowLegacy.ptr.value, self.qrButShowCash.ptr.value):
+                datum = self.cash.text if but.ptr.value == self.qrButShowCash.ptr.value else self.legacy.text
+                print("qrcode datum =", datum)
+                qrvc = utils.present_qrcode_vc_for_data(vc=self, data=datum, title = _('QR code'))
+                gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
+        but.retain()
+        # dumb assed iOS makes you do it from a callback otherwise the highlighted state didn't take effect..
+        utils.call_later(0.03, lambda: but.setHighlighted_(True))
+        utils.call_later(0.3, lambda: but.autorelease().setHighlighted_(False))
+        self.retain()
+        utils.call_later(0.1, DoIt)
 
     @objc_method
     def reader_didScanResult_(self, reader, result) -> None:

@@ -85,17 +85,27 @@ class PrivateKeyDialog(PrivateKeyDialogBase):
         elif sender.tag == 320: data = str(entry.privkey)
         elif sender.tag == 420: data = entry.address.to_script().hex()
         parent().copy_to_clipboard(data)
+        sender.retain()
+        utils.call_later(0.030, lambda: sender.setHighlighted_(True))
+        utils.call_later(0.3, lambda: sender.autorelease().setHighlighted_(False))
 
     @objc_method
     def onQRBut_(self, sender) -> None:
-        entry = utils.nspy_get_byname(self, 'entry')
-        data = ""
-        if sender.tag == 130: data = str(entry.address)
-        elif sender.tag == 330: data = str(entry.privkey)
-        elif sender.tag == 430: data = entry.address.to_script().hex()
-        qrvc = utils.present_qrcode_vc_for_data(vc=self,
-                                                data=data,
-                                                title = _('QR code'))
-        parent().add_navigation_bar_close_to_modal_vc(qrvc)
-        
+        def DoIt() -> None:
+            if not self.autorelease().viewIfLoaded: return
+            entry = utils.nspy_get_byname(self, 'entry')
+            if not entry: return
+            data = ""
+            if sender.tag == 130: data = str(entry.address)
+            elif sender.tag == 330: data = str(entry.privkey)
+            elif sender.tag == 430: data = entry.address.to_script().hex()
+            qrvc = utils.present_qrcode_vc_for_data(vc=self,
+                                                    data=data,
+                                                    title = _('QR code'))
+            parent().add_navigation_bar_close_to_modal_vc(qrvc)
+        sender.retain()
+        utils.call_later(0.030, lambda: sender.setHighlighted_(True))
+        utils.call_later(0.3, lambda: sender.autorelease().setHighlighted_(False))
+        self.retain()
+        utils.call_later(0.1, DoIt)
 

@@ -214,8 +214,11 @@ class TxHistoryHelper(TxHistoryHelperBase):
             vc.view.separatorInset = UIEdgeInsetsZero
             helper = NewTxHistoryHelper(tv = vc.view, vc = self.vc, domain = _GetDomain(self))
             self.vc.navigationController.pushViewController_animated_(vc, True)
-        c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
-        gr.view.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,seeAllTxs)
+        #c = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.10)
+        #gr.view.backgroundColorAnimationToColor_duration_reverses_completion_(c,0.2,True,seeAllTxs)
+        gr.view.viewWithTag_(1).textColorAnimationFromColor_toColor_duration_reverses_completion_(
+            utils.uicolor_custom('link'), utils.uicolor_custom('linktapped'), 0.2, True, seeAllTxs
+        )
  
     @objc_method
     def tableView_heightForFooterInSection_(self, tv, section : int) -> float:

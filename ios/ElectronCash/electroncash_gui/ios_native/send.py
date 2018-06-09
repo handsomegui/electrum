@@ -341,28 +341,48 @@ class SendVC(SendBase):
 
     @objc_method
     def onQRBut_(self, but) -> None:
-        if not QRCodeReader.isAvailable:
-            utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
-        else:
-            self.qr = QRCodeReader.new().autorelease()
-            self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
-            self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
-            self.qrvc.delegate = self
-            self.presentViewController_animated_completion_(self.qrvc, True, None)
-            self.qrScanErr = False
+        def DoIt() -> None:
+            if not QRCodeReader.isAvailable:
+                utils.show_alert(self, _("QR Not Avilable"), _("The camera is not available for reading QR codes"))
+            else:
+                self.qr = QRCodeReader.new().autorelease()
+                self.qrvc = QRCodeReaderViewController.readerWithCancelButtonTitle_codeReader_startScanningAtLoad_showSwitchCameraButton_showTorchButton_("Cancel",self.qr,True,False,False)
+                self.qrvc.modalPresentationStyle = UIModalPresentationFormSheet
+                self.qrvc.delegate = self
+                self.presentViewController_animated_completion_(self.qrvc, True, None)
+                self.qrScanErr = False
+        but.retain()
+        utils.call_later(0.030, lambda: but.setHighlighted_(True))
+        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
+        self.retain()
+        utils.call_later(0.1, DoIt)
 
     @objc_method
     def onContactBut_(self, but) -> None:
-        def onPayTo(addys : list) -> None:
-            if contacts.pay_to(addys):
-                self.dismissViewControllerAnimated_completion_(True, None)
-        vc = contacts.ContactsVC.alloc().initWithMode_(contacts.ModePicker).autorelease()                
-        nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(vc).autorelease())
-        utils.add_callback(vc, 'on_pay_to', onPayTo)
-        if self.payTo and self.payTo.text:
-            utils.nspy_put_byname(vc, self.payTo.text, 'preselected')
-        self.presentViewController_animated_completion_(nav, True, None) 
-
+        def DoIt() -> None:
+            if not self.autorelease().viewIfLoaded: return
+            def onPayTo(addys : list) -> None:
+                if contacts.pay_to(addys):
+                    self.dismissViewControllerAnimated_completion_(True, None)
+            vc = contacts.ContactsVC.alloc().initWithMode_(contacts.ModePicker).autorelease()                
+            nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(vc).autorelease())
+            utils.add_callback(vc, 'on_pay_to', onPayTo)
+            if self.payTo and self.payTo.text:
+                utils.nspy_put_byname(vc, self.payTo.text, 'preselected')
+            self.presentViewController_animated_completion_(nav, True, None)
+        but.retain()
+        utils.call_later(0.030, lambda: but.setHighlighted_(True))
+        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
+        self.retain()
+        utils.call_later(0.1, DoIt)
+        
+    @objc_method
+    def onMaxBut_(self, but) -> None:
+        but.retain()
+        utils.call_later(0.030, lambda: but.setHighlighted_(True))
+        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
+        self.spendMax()
+        
     @objc_method
     def textFieldShouldEndEditing_(self, tf : ObjCInstance) -> bool:
         #print('textFieldShouldEndEditing %d'%tf.tag)
