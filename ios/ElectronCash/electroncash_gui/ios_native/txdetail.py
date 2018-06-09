@@ -645,15 +645,11 @@ class TxDetail(TxDetailBase):
     @objc_method
     def onCpyBut_(self, but) -> None:
         entry = utils.nspy_get_byname(self, 'tx_entry')
-        gui.ElectrumGui.gui.copy_to_clipboard(entry.tx_hash)
-        but.retain()
-        utils.call_later(0.030, lambda: but.setHighlighted_(True))
-        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
+        utils.boilerplate.vc_highlight_button_then_do(self, but, lambda:gui.ElectrumGui.gui.copy_to_clipboard(entry.tx_hash))
 
     @objc_method
     def onQRBut_(self, but) -> None:
         def DoIt() -> None:
-            if not self.autorelease().viewIfLoaded: return
             entry = utils.nspy_get_byname(self, 'tx_entry')
             if not entry: return
     
@@ -661,11 +657,7 @@ class TxDetail(TxDetailBase):
                                                     data=entry.tx_hash,
                                                     title = _('QR code'))
             gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
-        but.retain()
-        utils.call_later(0.030, lambda: but.setHighlighted_(True))
-        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
-        self.retain()
-        utils.call_later(0.1, DoIt)
+        utils.boilerplate.vc_highlight_button_then_do(self, but, DoIt)
 
     @objc_method
     def onShareSave_(self, sender : ObjCInstance) -> None:

@@ -76,7 +76,6 @@ class AddrConvVC(AddrConvBase):
     @objc_method
     def onBut_(self, but) -> None:
         def DoIt() -> None:
-            if not self.autorelease().viewIfLoaded: return
             if but.ptr.value == self.cpyCashBut.ptr.value:
                 gui.ElectrumGui.gui.copy_to_clipboard(self.cash.text, 'Address')
             elif but.ptr.value == self.cpyLegBut.ptr.value:
@@ -95,12 +94,7 @@ class AddrConvVC(AddrConvBase):
                 print("qrcode datum =", datum)
                 qrvc = utils.present_qrcode_vc_for_data(vc=self, data=datum, title = _('QR code'))
                 gui.ElectrumGui.gui.add_navigation_bar_close_to_modal_vc(qrvc)
-        but.retain()
-        # dumb assed iOS makes you do it from a callback otherwise the highlighted state didn't take effect..
-        utils.call_later(0.03, lambda: but.setHighlighted_(True))
-        utils.call_later(0.3, lambda: but.autorelease().setHighlighted_(False))
-        self.retain()
-        utils.call_later(0.1, DoIt)
+        utils.boilerplate.vc_highlight_button_then_do(self, but, DoIt)
 
     @objc_method
     def reader_didScanResult_(self, reader, result) -> None:

@@ -351,16 +351,11 @@ class SendVC(SendBase):
                 self.qrvc.delegate = self
                 self.presentViewController_animated_completion_(self.qrvc, True, None)
                 self.qrScanErr = False
-        but.retain()
-        utils.call_later(0.030, lambda: but.setHighlighted_(True))
-        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
-        self.retain()
-        utils.call_later(0.1, DoIt)
+        utils.boilerplate.vc_highlight_button_then_do(self, but, DoIt)
 
     @objc_method
     def onContactBut_(self, but) -> None:
         def DoIt() -> None:
-            if not self.autorelease().viewIfLoaded: return
             def onPayTo(addys : list) -> None:
                 if contacts.pay_to(addys):
                     self.dismissViewControllerAnimated_completion_(True, None)
@@ -370,18 +365,11 @@ class SendVC(SendBase):
             if self.payTo and self.payTo.text:
                 utils.nspy_put_byname(vc, self.payTo.text, 'preselected')
             self.presentViewController_animated_completion_(nav, True, None)
-        but.retain()
-        utils.call_later(0.030, lambda: but.setHighlighted_(True))
-        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
-        self.retain()
-        utils.call_later(0.1, DoIt)
+        utils.boilerplate.vc_highlight_button_then_do(self, but, DoIt)
         
     @objc_method
     def onMaxBut_(self, but) -> None:
-        but.retain()
-        utils.call_later(0.030, lambda: but.setHighlighted_(True))
-        utils.call_later(0.30, lambda: but.autorelease().setHighlighted_(False))
-        self.spendMax()
+        utils.boilerplate.vc_highlight_button_then_do(self, but, lambda:self.spendMax())
         
     @objc_method
     def textFieldShouldEndEditing_(self, tf : ObjCInstance) -> bool:
@@ -870,7 +858,9 @@ class SendVC(SendBase):
             coins = utils.nspy_get_byname(self, 'spend_from') or list()
             lbl.setText_withKerning_( _("Spend From") + " (" + str(len(coins)) + ")" , utils._kern )
             but = hdr.viewWithTag_(2)
-            def clearfun(dummy : objc_id) -> None: self.clearSpendFrom()
+            def clearfun(but : objc_id) -> None:
+                but = ObjCInstance(but)
+                utils.boilerplate.vc_highlight_button_then_do(self, but, lambda: self.clearSpendFrom())
             but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, clearfun)
         else:
             hdr = UIView.alloc().initWithFrame_(CGRectMake(0,0,0,0)).autorelease()

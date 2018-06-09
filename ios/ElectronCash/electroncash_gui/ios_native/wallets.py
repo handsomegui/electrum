@@ -376,13 +376,9 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
             def onBut(b : objc_id) -> None:
                 if info.size:
                     def DoIt() -> None:
-                        self.autorelease()
                         if self and self.ptr.value and self.viewIfLoaded and self.viewIfLoaded.window:                    
                             _ShowOptionsForWalletAtIndex(vc = self, index = row, ipadAnchor = cell.convertRect_toView_(cell.bounds, self.view))
-                    but.retain().setHighlighted_(True)
-                    utils.call_later(0.3, lambda: but.autorelease().setHighlighted_(False))
-                    self.retain()
-                    utils.call_later(0.1, DoIt)
+                    utils.boilerplate.vc_highlight_button_then_do(self, but, DoIt)
             blk = Block(onBut)
             but.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, blk)
             but2.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, blk)

@@ -1377,3 +1377,17 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
 # be sure to unregister the autoscroller when view disappears. Install unregister call in viewWillDisappear.
 def unregister_keyboard_autoscroll(handle : int) -> None:
     unregister_keyboard_callbacks(handle)
+
+##### Boilerplate crap
+class boilerplate:
+
+    @staticmethod
+    def vc_highlight_button_then_do(vc : UIViewController,  but : UIButton, func : Callable[[],None]) -> None:
+        #if not isinstance(vc, UIViewController) or not isinstance(but, UIButton) or not callable(func):
+        #    raise ValueError('One of the arguments passed to vc_highlight_button_then_do is invalid!')
+        # iOS weirdness. Buttons don't always flash to highlighted state on tap.. so we have to force it using this hack.
+        but.retain()
+        call_later(0.030, lambda: but.setHighlighted_(True))
+        call_later(0.3, lambda: but.autorelease().setHighlighted_(False))
+        vc.retain()
+        call_later(0.1, lambda: vc.autorelease().viewIfLoaded and func())

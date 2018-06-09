@@ -83,16 +83,12 @@ class PrivateKeyDialog(PrivateKeyDialogBase):
         data = ""
         if sender.tag == 120: data = str(entry.address)
         elif sender.tag == 320: data = str(entry.privkey)
-        elif sender.tag == 420: data = entry.address.to_script().hex()
-        parent().copy_to_clipboard(data)
-        sender.retain()
-        utils.call_later(0.030, lambda: sender.setHighlighted_(True))
-        utils.call_later(0.3, lambda: sender.autorelease().setHighlighted_(False))
+        elif sender.tag == 420: data = entry.address.to_script().hex()        
+        utils.boilerplate.vc_highlight_button_then_do(self, sender, lambda:parent().copy_to_clipboard(data))
 
     @objc_method
     def onQRBut_(self, sender) -> None:
         def DoIt() -> None:
-            if not self.autorelease().viewIfLoaded: return
             entry = utils.nspy_get_byname(self, 'entry')
             if not entry: return
             data = ""
@@ -103,9 +99,5 @@ class PrivateKeyDialog(PrivateKeyDialogBase):
                                                     data=data,
                                                     title = _('QR code'))
             parent().add_navigation_bar_close_to_modal_vc(qrvc)
-        sender.retain()
-        utils.call_later(0.030, lambda: sender.setHighlighted_(True))
-        utils.call_later(0.3, lambda: sender.autorelease().setHighlighted_(False))
-        self.retain()
-        utils.call_later(0.1, DoIt)
+        utils.boilerplate.vc_highlight_button_then_do(self, sender, DoIt)
 
