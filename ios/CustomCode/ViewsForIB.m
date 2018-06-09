@@ -401,3 +401,7 @@ static BOOL IS_IPHONE_5(void) {
 @implementation SpendFromCell
 @end
 
+@implementation PrivateKeyDialogBase
+@end
+
+

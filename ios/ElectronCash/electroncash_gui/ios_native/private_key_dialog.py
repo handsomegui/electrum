@@ -8,6 +8,7 @@ from . import utils
 from . import gui
 from electroncash.i18n import _, language
 from .uikit_bindings import *
+from .custom_objc import *
 from collections import namedtuple
 from electroncash import bitcoin
 
@@ -16,14 +17,12 @@ def parent() -> object:
 
 PrivateKeyEntry = namedtuple("PrivateKeyEntry", "address privkey is_frozen is_change")
 
-class PrivateKeyDialog(UIViewController):
-    
-    defaultBG = objc_property()
-    
+class PrivateKeyDialog(PrivateKeyDialogBase):
+        
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
-        self.title = "Private Key"
+        self.title = _("Private Key")
         return self
     
     @objc_method
@@ -32,36 +31,11 @@ class PrivateKeyDialog(UIViewController):
         utils.nspy_pop(self)
         self.title = None
         self.view = None
-        self.defaultBG = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
     def loadView(self) -> None:
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("PrivateKeyDialog",None,None)
-        v = None
-        
-        for o in objs:
-            if isinstance(o, UIView):
-                v = o
-        if v is None:
-            raise ValueError('PrivateKeyDialog XIB is missing either the primary view !')
-
-   
-        entry = utils.nspy_get_byname(self, 'entry')
-        
-        views = v.allSubviewsRecursively()
-        # attach copy/qr button actions
-        for view in views:
-            if isinstance(view, UIButton):
-                if view.tag < 100:
-                    continue
-                which = view.tag % 100
-                if which == 20: # copybut
-                    view.addTarget_action_forControlEvents_(self, SEL(b'onCpyBut:'), UIControlEventPrimaryActionTriggered)
-                elif which == 30: # qrbut
-                    view.addTarget_action_forControlEvents_(self, SEL(b'onQRBut:'), UIControlEventPrimaryActionTriggered)
-
-        self.view = v
+        NSBundle.mainBundle.loadNibNamed_owner_options_("PrivateKeyDialog",self,None)
                 
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -81,39 +55,31 @@ class PrivateKeyDialog(UIViewController):
         if v is None: return
         entry = utils.nspy_get_byname(self, 'entry')
  
-        lbl = v.viewWithTag_(100)
-        lbl.text = _("Address") + ":"        
-        lbl = v.viewWithTag_(110)
+        lbl = self.addressTit
+        lbl.setText_withKerning_( _("Address"), utils._kern )
+        lbl = self.address
         lbl.text = str(entry.address)
-        bgColor = None
-        if self.defaultBG is None:
-            self.defaultBG = lbl.backgroundColor
-        lbl.textColor = UIColor.blackColor 
-        if entry.is_change:
-            lbl.backgroundColor = utils.uicolor_custom('change address')
-            if entry.is_frozen:
-                lbl.textColor = utils.uicolor_custom('frozen address text')
-        elif entry.is_frozen:
-            lbl.backgroundColor = utils.uicolor_custom('frozen address')
+        if entry.is_frozen:
+            lbl.textColor = utils.uicolor_custom('frozen address text')
         else:
-            lbl.backgroundColor = self.defaultBG
-        bgColor = lbl.backgroundColor
-        lbl = v.viewWithTag_(200)
-        lbl.text = _("Script type") + ":"
-        lbl = v.viewWithTag_(210)
+            lbl.textColor = utils.uicolor_custom('dark')
+   
+        lbl = self.scriptTypeTit
+        lbl.setText_withKerning_( _("Script type"), utils._kern )
+        lbl = self.scriptType
         xtype = bitcoin.deserialize_privkey(entry.privkey)[0]
         lbl.text = xtype
 
-        lbl = v.viewWithTag_(300)
-        lbl.text = _("Private key") + ":"
-        tv = v.viewWithTag_(310)
+        lbl = self.privKeyTit
+        lbl.setText_withKerning_( _("Private key"), utils._kern )
+        tv = self.privKey
         tv.text = str(entry.privkey)
         
-        lbl = v.viewWithTag_(400)
-        lbl.text = _("Redeem Script") + ":"
-        tv = v.viewWithTag_(410)
+        lbl = self.redeemScriptTit
+        lbl.setText_withKerning_( _("Redeem Script"), utils._kern )
+        tv = self.redeemScript
         tv.text = entry.address.to_script().hex()
-        
+
         
     @objc_method
     def onCpyBut_(self, sender) -> None:

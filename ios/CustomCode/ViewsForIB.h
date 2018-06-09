@@ -526,4 +526,15 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface SpendFromCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet UILabel *num, *address, *input, *amount;
 @end
+
+@interface PrivateKeyDialogBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *addressTit, *address, *scriptTypeTit, *scriptType, *privKeyTit, *redeemScriptTit;
+@property (nonatomic, weak) IBOutlet UITextView *privKey, *redeemScript;
+@property (nonatomic, weak) IBOutlet UIButton *cpyAddress, *cpyPrivKey, *cpyRedeemScript, *qrAddress, *qrPrivKey, *qrRedeemScript;
+@end
+@interface PrivateKeyDialog : PrivateKeyDialogBase
+// implemented in python private_key_dialog.py
+- (IBAction) onCpyBut:(id)sender;
+- (IBAction) onQRBut:(id)sender;
+@end
 #endif /* ViewsForIB_h */
