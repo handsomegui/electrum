@@ -544,8 +544,9 @@ class UTILSModalPickerHelper(UIViewController):
                 
     @objc_method
     def  pickerView_titleForRow_forComponent_(self, p : ObjCInstance, row : int, component : int) -> ObjCInstance:
-        assert component == 0 and row < len(self.items)
-        return ns_from_py(self.items[row])
+        txt = ''
+        if component == 0 and row < len(self.items): txt = self.items[row]
+        return txt
     
     @objc_method
     def onOk_(self, but : ObjCInstance) -> None:
@@ -560,13 +561,11 @@ class UTILSModalPickerHelper(UIViewController):
             else:
                 cb()
         self.finished()
-        self.autorelease()
          
     @objc_method
     def onCancel_(self, but : ObjCInstance) -> None:
 #        print ("Cancel pushed")        
         self.finished()
-        self.autorelease()
 
     @objc_method
     def finished(self) -> None:
@@ -589,7 +588,7 @@ def present_modal_picker(parentVC : ObjCInstance,
                          cancelButtonTitle : str = "Cancel") -> ObjCInstance:
     global pickerCallables
     assert parentVC is not None and items is not None and len(items)
-    helper = UTILSModalPickerHelper.new()
+    helper = UTILSModalPickerHelper.new().autorelease()
     objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ModalPickerView",helper,None)
     if objs is None or not len(objs):
         raise Exception("Could not load ModalPickerView nib!")
