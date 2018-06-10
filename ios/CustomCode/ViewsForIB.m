@@ -396,4 +396,7 @@ static BOOL IS_IPHONE_5(void) {
 @implementation PrivateKeyDialogBase
 @end
 
+@implementation SignDecryptBase
+@end
+
 

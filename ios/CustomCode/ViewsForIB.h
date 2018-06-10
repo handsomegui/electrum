@@ -538,4 +538,20 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onCpyBut:(id)sender;
 - (IBAction) onQRBut:(id)sender;
 @end
+
+@interface SignDecryptBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *topTit, *midTit, *botTit;
+@property (nonatomic, weak) IBOutlet UITextView *topTv, *botTv;
+@property (nonatomic, weak) IBOutlet UITextField *tf;
+@property (nonatomic, weak) IBOutlet UIButton *cpyTop, *cpyBot, *addressBut, *butLeft, *butRight;
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *topTvDel, *botTvDel;
+@end
+
+@interface SignDecryptVC : SignDecryptBase
+// implemented in python sign_decrypt_dialog.py
+- (IBAction) onCpyBut:(id)sender;
+- (IBAction) onPickAddress:(id)sender;
+- (IBAction) onExecuteBut:(id)sender;
+@end
+
 #endif /* ViewsForIB_h */

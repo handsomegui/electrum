@@ -5,6 +5,7 @@
 # MIT License
 #
 from .uikit_bindings import *
+from .custom_objc import *
 from . import utils
 from . import gui
 from . import addresses
@@ -22,7 +23,7 @@ DialogData = namedtuple("DialogData", "address pubkey")
 SignVerify = 0
 EncryptDecrypt = 1
 
-class SignDecryptVC(UIViewController):
+class SignDecryptVC(SignDecryptBase):
     
     mode = objc_property()
     kbas = objc_property()
@@ -41,47 +42,29 @@ class SignDecryptVC(UIViewController):
     def dealloc(self) -> None:
         #print("PrivateKeyDialog dealloc")
         utils.nspy_pop(self)
-        self.title = None
-        self.view = None
         self.mode = None
         self.kbas = None
         send_super(__class__, self, 'dealloc')
     
     @objc_method
     def loadView(self) -> None:
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("SignVerify",None,None)
-        v = None
-        
-        for o in objs:
-            if isinstance(o, UIView):
-                v = o
-        if v is None:
-            raise ValueError('SignVerify XIB is missing either the primary view !')
+        NSBundle.mainBundle.loadNibNamed_owner_options_("SignVerify",self,None)
 
-   
         data = utils.nspy_get_byname(self, 'data')
         
-        views = v.allSubviewsRecursively()
-        # attach copy/qr button actions
-        for view in views:
-            if isinstance(view, UIButton):
-                if view.tag in (220,320):
-                    view.addTarget_action_forControlEvents_(self, SEL(b'onCpyBut:'), UIControlEventPrimaryActionTriggered)
-                elif view.tag in (120,): # pick address
-                    view.addTarget_action_forControlEvents_(self, SEL(b'onPickAddress:'), UIControlEventPrimaryActionTriggered)
-                elif view.tag in (1000,2000): #
-                    view.addTarget_action_forControlEvents_(self, SEL(b'onExecuteBut:'), UIControlEventPrimaryActionTriggered)
-            elif isinstance(view, (UITextField,UITextView)):
-                if view.tag in (110,210,310): # address text field
-                    spacer = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemFlexibleSpace, None, None).autorelease()
-                    item = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onCloseKeyboard:')).autorelease()
-                    item.tag = view.tag
-                    toolBar = UIToolbar.alloc().init().autorelease()
-                    toolBar.sizeToFit()
-                    toolBar.items = [spacer, item]
-                    view.inputAccessoryView = toolBar
+        # Can't set this property from IB, so we do it here programmatically to create the stroke around the button
+        self.butRight.layer.borderColor = utils.uicolor_custom('nav').CGColor
 
-        self.view = v
+        # attach copy/qr button actions
+        for view in (self.topTv, self.tf, self.botTv):
+            spacer = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemFlexibleSpace, None, None).autorelease()
+            item = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemDone, self, SEL(b'onCloseKeyboard:')).autorelease()
+            item.tag = view.tag
+            toolBar = UIToolbar.alloc().init().autorelease()
+            toolBar.sizeToFit()
+            toolBar.items = [spacer, item]
+            view.inputAccessoryView = toolBar
+
                 
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:

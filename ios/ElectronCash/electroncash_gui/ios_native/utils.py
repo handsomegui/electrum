@@ -1341,14 +1341,22 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
         return
     def kbShow(r : CGRect) -> None:
         resp = UIResponder.currentFirstResponder()
-        if resp and isinstance(resp, UIView):
-            visible = sv.frame
+        window = sv.window()
+        if resp and isinstance(resp, UIView) and window and resp.window():
+            #r = sv.convertRect_toView_(r, window)
+            visible = sv.convertRect_toView_(sv.bounds, window)
             visible.size.height -= r.size.height
-            respFrame = resp.convertRect_toView_(resp.bounds, sv)
+            respFrame = resp.convertRect_toView_(resp.bounds, window)
             origin = respFrame.origin
             bottomLeft = CGPoint(origin.x, origin.y+respFrame.size.height)
-            if  not CGRectContainsPoint(visible, bottomLeft): #or not CGRectContainsPoint(visible, origin):
-                scrollPoint = CGPoint(0.0, origin.y - visible.size.height + respFrame.size.height + 10)
+            diff = None
+            if  not CGRectContainsPoint(visible, bottomLeft): 
+                diff = bottomLeft.y - (visible.origin.y+visible.size.height) + 25
+                print("diff=", diff, " bottomLeft=",bottomLeft.y, "visible.origin.y=", visible.origin.y, "visible.size.height=", visible.size.height)
+            elif not CGRectContainsPoint(visible, origin):
+                diff = origin.y - visible.origin.y - 25
+            if diff:
+                scrollPoint = CGPoint(0.0, sv.contentOffset.y + diff)#origin.y - visible.size.height + respFrame.size.height + 10)
                 sv.setContentOffset_animated_(scrollPoint, True)
     #def kbHide() -> None:
     #    #sv.setContentOffset_animated_(CGPoint(0,0), True)
