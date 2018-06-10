@@ -526,7 +526,6 @@ class UTILSModalPickerHelper(UIViewController):
     @objc_method
     def dealloc(self) -> None:
         self.finished()
-        self.view = None
         self.needsDismiss = None
 #        print("UTILSModalPickerHelper dealloc")
         send_super(__class__, self, 'dealloc')

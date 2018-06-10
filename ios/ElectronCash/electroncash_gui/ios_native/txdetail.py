@@ -576,8 +576,6 @@ class TxDetail(TxDetailBase):
     @objc_method
     def dealloc(self) -> None:
         print("TxDetail dealloc")
-        self.title = None
-        self.view = None
         self.notsigned = None
         self.unrelated = None
         self.noBlkXplo = None

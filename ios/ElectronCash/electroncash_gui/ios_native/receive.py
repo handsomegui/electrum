@@ -88,7 +88,6 @@ class ReceiveVC(UIViewController):
         self.expiresIdx = None
         self.fxIsEnabled = None
         self.addr = None
-        self.view = None
         self.lastQRData = None
         self.tvd = None
         utils.nspy_pop(self)
@@ -237,7 +236,7 @@ class ReceiveVC(UIViewController):
         def pickedAddress(entry) -> None:
             self.addr = str(entry.address)
             # refresh of view will be done as a result of viewWillAppear which will be called after this returns
-        addresses.present_modal_address_picker(pickedAddress, self)
+        addresses.present_modal_address_picker(pickedAddress, vc = self, comboPreset = (1,2))
 
     @objc_method
     def onCopyBut(self) -> None:

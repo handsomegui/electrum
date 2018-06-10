@@ -82,7 +82,6 @@ class SendVC(SendBase):
     
     @objc_method
     def dealloc(self) -> None:
-        self.view = None
         self.qrScanErr = None
         self.amountSats = None
         self.feeSats = None

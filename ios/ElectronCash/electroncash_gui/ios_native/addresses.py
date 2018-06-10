@@ -15,10 +15,7 @@ import electroncash.exchange_rate
 from electroncash.i18n import _, language
 from electroncash.address import Address
 
-import time
-import html
-import sys
-import enum
+import time, html, sys, enum
 from collections import namedtuple
 
 from .uikit_bindings import *
@@ -70,9 +67,7 @@ class AddressDetail(AddressDetailBase):
         gui.ElectrumGui.gui.sigAddresses.disconnect(self)
         gui.ElectrumGui.gui.sigHistory.disconnect(self)
         utils.nspy_pop(self)
-        self.title = None
         self.domain = None
-        self.view = None
         self.blockRefresh = None
         self.needsRefresh = None
         self.kbas = None
@@ -289,6 +284,7 @@ class AddressesVC(AddressesVCBase):
     refreshControl = objc_property()
     comboL = objc_property()
     comboR = objc_property()
+    comboPreset = objc_property()
 
     @objc_method
     def initWithMode_(self, mode : int):
@@ -333,6 +329,7 @@ class AddressesVC(AddressesVCBase):
         self.refreshControl = None
         self.comboL = None
         self.comboR = None
+        self.comboPreset = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
@@ -470,22 +467,27 @@ class AddressesVC(AddressesVCBase):
         else: # picker mode
             if newCell: 
                 cell.accessoryType = UITableViewCellAccessoryNone
-                cell.textLabel.adjustsFontSizeToFitWidth = True
-                cell.textLabel.minimumScaleFactor = 0.9
+                cell.textLabel.adjustsFontSizeToFitWidth = False
+                #cell.textLabel.minimumScaleFactor = 0.9
+                cell.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
                 font = cell.textLabel.font
-                cell.textLabel.font = UIFont.boldSystemFontOfSize_(font.pointSize)
+                cell.textLabel.font = UIFont.systemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
                 cell.detailTextLabel.adjustsFontSizeToFitWidth = True
                 cell.detailTextLabel.minimumScaleFactor = 0.85
             cell.textLabel.text = str(entry.address)
             cell.detailTextLabel.text = "bal: " + entry.balance_str + ( (' (' + entry.fiat_balance_str + ')') if addrData.show_fx else '') + " numtx: " + str(entry.num_tx) + ((" - " + entry.label) if entry.label else "")
-            cell.detailTextLabel.textColor = utils.uicolor_custom('dark')
+            font = cell.detailTextLabel.font
+            cell.detailTextLabel.font = UIFont.systemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
             cell.backgroundColor = tableView.backgroundColor
             cell.textLabel.textColor = utils.uicolor_custom('dark')
+            cell.detailTextLabel.textColor = utils.uicolor_custom('light')
             if entry.is_frozen:
-                cell.backgroundColor = utils.uicolor_custom('frozen address')
-                cell.textLabel.textColor = utils.uicolor_custom('frozen address text')
+                #cell.backgroundColor = utils.uicolor_custom('frozen address')
+                cell.textLabel.textColor = utils.uicolor_custom('frozentext')
+                cell.detailTextLabel.textColor = utils.uicolor_custom('frozentextlight')
             if entry.is_change:
-                cell.backgroundColor = utils.uicolor_custom('change address')                
+                cell.detailTextLabel.text = cell.detailTextLabel.text + " (Change Address)"
+                #cell.backgroundColor = utils.uicolor_custom('change address') 
 
         return cell
     
@@ -569,7 +571,17 @@ class AddressesVC(AddressesVCBase):
         self.comboR.topTitle = _("Status")
         self.comboR.items = [ _(x) for x in _STATUSES ]
         parent = gui.ElectrumGui.gui
-        if parent.config:
+        presetOK = False
+        if self.comboPreset:
+            try:
+                cpl = list(self.comboPreset)
+                self.comboL.selection = cpl[0]
+                self.comboR.selection = cpl[1]
+                presetOK = True # success!
+            except:
+                utils.NSLog("Exception trying to read comboPreset in setupComboItems: %s", str(sys.exc_info()[1]))
+        # if above fails... read from config...
+        if parent.config and not presetOK:
             self.comboL.selection = parent.config.get("AddressTab_Type_Filter", 0)
             self.comboR.selection = parent.config.get("AddressTab_Status_Filter", 0)
 
@@ -617,7 +629,7 @@ class AddressesVC(AddressesVCBase):
             which = self.presentedViewController
             if isinstance(which, ComboDrawerPicker):
                 parent = gui.ElectrumGui.gui
-                if parent.config:
+                if parent.config and not self.comboPreset:
                     whichKey = "AddressTab_Status_Filter" if which == self.comboR else "AddressTab_Type_Filter"
                     parent.config.set_key(whichKey, sel, True)
                 whichLbl = self.topLblL if which == self.comboL else self.topLblR
@@ -740,10 +752,11 @@ class AddressData:
         utils.NSLog("fetched %d addresses from wallet in %f ms",numAddresses,(time.time()-t0)*1e3)
     
 
-def present_modal_address_picker(callback, vc = None) -> None:
+def present_modal_address_picker(callback, vc = None, comboPreset : list = None) -> None:
     parent = gui.ElectrumGui.gui
     avc = AddressesVC.alloc().initWithMode_(ModePicker).autorelease()
     nav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(avc).autorelease())
+    avc.comboPreset = list(comboPreset) if isinstance(comboPreset, (tuple, list)) and len(comboPreset) == 2 else None
     def pickedAddress(entry) -> None:
         if callable(callback):
             callback(entry)
