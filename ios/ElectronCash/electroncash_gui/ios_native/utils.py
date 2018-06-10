@@ -1337,7 +1337,7 @@ def unregister_keyboard_callbacks(handle : int) -> None:
 def register_keyboard_autoscroll(sv : UIScrollView) -> int:
     if not isinstance(sv, UIScrollView):
         NSLog("*** WARNING: register_keyboard_autoscroll called but it wasn't passed a UIScrollView. Ignoring!")
-        return
+        return None
     def kbShow(r : CGRect) -> None:
         resp = UIResponder.currentFirstResponder()
         window = sv.window()

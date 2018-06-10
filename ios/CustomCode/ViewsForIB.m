@@ -399,4 +399,7 @@ static BOOL IS_IPHONE_5(void) {
 @implementation SignDecryptBase
 @end
 
+@implementation ReceiveBase
+@end
+
 
