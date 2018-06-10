@@ -172,30 +172,34 @@ class SignDecryptVC(SignDecryptBase):
         
     @objc_method
     def onCpyBut_(self, sender : ObjCInstance) -> None:
-        tvdel = None
-        if sender.tag == 220: tvdel = self.topTvDel
-        elif sender.tag == 320: tvdel = self.botTvDel
-        if tvdel:
-            data = tvdel.text
-            if data:
-                parent().copy_to_clipboard(data)
+        def DoIt() -> None:
+            tvdel = None
+            if sender.tag == 220: tvdel = self.topTvDel
+            elif sender.tag == 320: tvdel = self.botTvDel
+            if tvdel:
+                data = tvdel.text
+                if data:
+                    parent().copy_to_clipboard(data)
+        utils.boilerplate.vc_highlight_button_then_do(self, sender, DoIt)
 
         
     @objc_method
     def onPickAddress_(self, sender : ObjCInstance) -> None:
-        def pickedAddress(entry) -> None:
-            data = utils.nspy_get_byname(self, 'data')
-            pubkey = None
-            try:
-                pubkey =  parent().wallet.get_public_key(entry.address)
-            except:
-                pass
-            if pubkey is not None and not isinstance(pubkey,str):
-                pubkey = pubkey.to_ui_string()
-            data = DialogData(entry.address, pubkey)
-            utils.nspy_put_byname(self, data, 'data')
-            # refresh will be auto-called as a result of viewWillAppear
-        addresses.present_modal_address_picker(pickedAddress, self)
+        def DoIt() -> None:
+            def pickedAddress(entry) -> None:
+                data = utils.nspy_get_byname(self, 'data')
+                pubkey = None
+                try:
+                    pubkey =  parent().wallet.get_public_key(entry.address)
+                except:
+                    pass
+                if pubkey is not None and not isinstance(pubkey,str):
+                    pubkey = pubkey.to_ui_string()
+                data = DialogData(entry.address, pubkey)
+                utils.nspy_put_byname(self, data, 'data')
+                # refresh will be auto-called as a result of viewWillAppear
+            addresses.present_modal_address_picker(pickedAddress, self)
+        utils.boilerplate.vc_highlight_button_then_do(self, sender, DoIt)
 
     @objc_method
     def onCloseKeyboard_(self, sender : ObjCInstance) -> None:
@@ -203,16 +207,18 @@ class SignDecryptVC(SignDecryptBase):
 
     @objc_method
     def onExecuteBut_(self, sender : ObjCInstance) -> None:
-        if sender.tag == 1000:  # sign/encrypt
-            if self.mode == SignVerify:
-                self.doSign()
-            else:
-                self.doEncrypt()
-        elif sender.tag == 2000: # verify/decrypt
-            if self.mode == SignVerify:
-                self.doVerify()
-            else:
-                self.doDecrypt()
+        def DoIt() -> None:
+            if sender.tag == 1000:  # sign/encrypt
+                if self.mode == SignVerify:
+                    self.doSign()
+                else:
+                    self.doEncrypt()
+            elif sender.tag == 2000: # verify/decrypt
+                if self.mode == SignVerify:
+                    self.doVerify()
+                else:
+                    self.doDecrypt()
+        utils.boilerplate.vc_highlight_button_then_do(self, sender, DoIt)
 
     @objc_method
     def doSign(self) -> None:
