@@ -44,14 +44,6 @@ import time
 from electroncash.i18n import _
 
 
-bundle_identifier = str(NSBundle.mainBundle.bundleIdentifier)
-bundle_domain = '.'.join(bundle_identifier.split('.')[0:-1])
-bundle_short_name = bundle_domain + ".ElectronCash"
-
-font_monospace_17 = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightRegular).retain()
-font_monospace_17_semibold = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightSemibold).retain()
-font_monospace_17_bold = UIFont.monospacedDigitSystemFontOfSize_weight_(17.0, UIFontWeightBold).retain()
-
 def is_2x_screen() -> bool:
     return True if UIScreen.mainScreen.scale > 1.0 else False
 
@@ -105,21 +97,25 @@ def pathsafeify(s : str) -> str:
     return s.translate({ord(i):None for i in ':/.\$#@[]}{*?'}).strip()
 
 # new color schem from Max
-_ColorScheme = {
-    'dark'      : UIColor.colorInDeviceRGBWithHexString_("#414141").retain(), 
-    'light'     : UIColor.colorInDeviceRGBWithHexString_("#CCCCCC").retain(),
-    'ultralight': UIColor.colorInDeviceRGBWithHexString_("#F6F6F6").retain(),
-    'nav'       : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
-    'link'      : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
-    'linktapped': UIColor.colorInDeviceRGBWithHexString_("#FF8BFF").retain(), 
-    'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
-    'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
-    'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(), # very bright green
-    'green'     : UIColor.colorInDeviceRGBWithHexString_("#9BDF1B").retain(), # less bright green
-}
+_ColorScheme = None
     
 def uicolor_custom(name : str) -> ObjCInstance:
+    global _ColorScheme
     name = name.strip().lower() if name else ""
+    if not _ColorScheme:
+        # initialize it on first call. We don't initialize it on initial module load to shave a few mss off app loading time.
+        _ColorScheme = {
+            'dark'      : UIColor.colorInDeviceRGBWithHexString_("#414141").retain(), 
+            'light'     : UIColor.colorInDeviceRGBWithHexString_("#CCCCCC").retain(),
+            'ultralight': UIColor.colorInDeviceRGBWithHexString_("#F6F6F6").retain(),
+            'nav'       : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
+            'link'      : UIColor.colorInDeviceRGBWithHexString_("#558BFF").retain(), 
+            'linktapped': UIColor.colorInDeviceRGBWithHexString_("#FF8BFF").retain(), 
+            'navtint'   : UIColor.colorInDeviceRGBWithHexString_("#FFFFFF").retain(), 
+            'red'       : UIColor.colorInDeviceRGBWithHexString_("#FF6161").retain(),
+            'notif'     : UIColor.colorInDeviceRGBWithHexString_("#BBFF3B").retain(), # very bright green
+            'green'     : UIColor.colorInDeviceRGBWithHexString_("#9BDF1B").retain(), # less bright green
+        }
     schemecolor = _ColorScheme.get(name, None)
     if schemecolor:
         return schemecolor
@@ -1263,22 +1259,6 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
         #ps.lineBreakMode = NSLineBreakByWordWrapping
         #ats.addAttribute_value_range_(NSParagraphStyleAttributeName, ps, r)
     return ats
-###
-# Layout constraint stuff.. programatically
-##
-def layout_peg_view_to_superview(view : UIView) -> None:
-    if not view.superview():
-        NSLog("Warning: layout_peg_view_to_superview -- passed-in view lacks a superview!")
-        return
-    sv = view.superview()
-    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
-        sv, NSLayoutAttributeCenterX, NSLayoutRelationEqual, view, NSLayoutAttributeCenterX, 1.0, 0.0 ))
-    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
-        sv, NSLayoutAttributeCenterY, NSLayoutRelationEqual, view, NSLayoutAttributeCenterY, 1.0, 0.0 ))
-    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
-        sv, NSLayoutAttributeHeight, NSLayoutRelationEqual, view, NSLayoutAttributeHeight, 1.0, 0.0 ))
-    sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
-        sv, NSLayoutAttributeWidth, NSLayoutRelationEqual, view, NSLayoutAttributeWidth, 1.0, 0.0 ))
     
 ###############################################################################
 # Facility to register python callbacks for when the keyboard is shown/hidden #
@@ -1381,13 +1361,29 @@ def unregister_keyboard_autoscroll(handle : int) -> None:
 ##### Boilerplate crap
 class boilerplate:
 
+    # iOS weirdness. Buttons don't always flash to highlighted state on tap.. so we have to force it using this hack.
     @staticmethod
     def vc_highlight_button_then_do(vc : UIViewController,  but : UIButton, func : Callable[[],None]) -> None:
         #if not isinstance(vc, UIViewController) or not isinstance(but, UIButton) or not callable(func):
         #    raise ValueError('One of the arguments passed to vc_highlight_button_then_do is invalid!')
-        # iOS weirdness. Buttons don't always flash to highlighted state on tap.. so we have to force it using this hack.
         but.retain()
         call_later(0.030, lambda: but.setHighlighted_(True))
         call_later(0.3, lambda: but.autorelease().setHighlighted_(False))
         vc.retain()
         call_later(0.1, lambda: vc.autorelease().viewIfLoaded and func())
+
+    # Layout constraint stuff.. programatically
+    @staticmethod
+    def layout_peg_view_to_superview(view : UIView) -> None:
+        if not view.superview():
+            NSLog("Warning: layout_peg_view_to_superview -- passed-in view lacks a superview!")
+            return
+        sv = view.superview()
+        sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+            sv, NSLayoutAttributeCenterX, NSLayoutRelationEqual, view, NSLayoutAttributeCenterX, 1.0, 0.0 ))
+        sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+            sv, NSLayoutAttributeCenterY, NSLayoutRelationEqual, view, NSLayoutAttributeCenterY, 1.0, 0.0 ))
+        sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+            sv, NSLayoutAttributeHeight, NSLayoutRelationEqual, view, NSLayoutAttributeHeight, 1.0, 0.0 ))
+        sv.addConstraint_(NSLayoutConstraint.constraintWithItem_attribute_relatedBy_toItem_attribute_multiplier_constant_(
+            sv, NSLayoutAttributeWidth, NSLayoutRelationEqual, view, NSLayoutAttributeWidth, 1.0, 0.0 ))

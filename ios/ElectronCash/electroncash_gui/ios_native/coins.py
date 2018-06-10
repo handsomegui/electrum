@@ -301,7 +301,7 @@ class CoinsTableVC(UITableViewController):
         else:
             self.noCoins.removeFromSuperview()
             self.view.addSubview_(self.noCoins)
-            utils.layout_peg_view_to_superview(self.noCoins)
+            utils.boilerplate.layout_peg_view_to_superview(self.noCoins)
 
 
     @objc_method

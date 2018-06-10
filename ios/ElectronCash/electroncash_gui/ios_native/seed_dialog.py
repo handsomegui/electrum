@@ -155,7 +155,7 @@ class SeedDisplayVC(UIViewController):
 
 def seed_warning_msg(seed, passphrase):
     return ''.join([
-        '<font face="Arial, Helvetica">',
+        '<font face="Verdana, Arial, Helvetica" color=#414141>',
         "<p>",
         str(_("Your seed extension is") + ": <b>" + passphrase + "</b></p><p>") if passphrase else '',
         _("Please save these %d words on paper (order is important). "),
