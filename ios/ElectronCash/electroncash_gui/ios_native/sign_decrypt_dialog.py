@@ -122,10 +122,10 @@ class SignDecryptVC(SignDecryptBase):
         mode = self.mode
         watch_only = parent().wallet.is_watching_only()
         if watch_only:
-            if mode == 0:
+            if mode == SignVerify:
                 self.butLeft.enabled = False
                 self.butRight.enabled = True
-            else:
+            elif mode == EncryptDecrypt:
                 self.butLeft.enabled = True
                 self.butLeft.enabled = False
         else:
