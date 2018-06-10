@@ -1351,8 +1351,7 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
             bottomLeft = CGPoint(origin.x, origin.y+respFrame.size.height)
             diff = None
             if  not CGRectContainsPoint(visible, bottomLeft): 
-                diff = bottomLeft.y - (visible.origin.y+visible.size.height) + 25
-                print("diff=", diff, " bottomLeft=",bottomLeft.y, "visible.origin.y=", visible.origin.y, "visible.size.height=", visible.size.height)
+                diff = (bottomLeft.y - (visible.origin.y+visible.size.height)) + 25
             elif not CGRectContainsPoint(visible, origin):
                 diff = origin.y - visible.origin.y - 25
             if diff:
