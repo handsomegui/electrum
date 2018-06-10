@@ -24,6 +24,8 @@
 @property (nonatomic, copy) UIColor *color;
 @property (nonatomic, copy) NSParagraphStyle *paragraphStyle; /// if set, the paragraph style to apply to the text
 
+@property (nonatomic) BOOL dontStrip; ///< if true, don't strip whitespace
+
 // do not assign to tv.text directly.  instead, use the properties above
 @property (nonatomic, weak) IBOutlet UITextView *tv;
 

@@ -872,9 +872,12 @@ def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = 
     if not watch_only:
         actions.append([ _('Private key'), on_private_key ] )
         
-    if not watch_only and entry.address.kind == entry.address.ADDR_P2PKH:
-        actions.append([ _('Sign/verify Message'), on_sign_verify ] )
-        actions.append([ _('Encrypt/decrypt Message'), on_encrypt_decrypt ] )
+    if entry.address.kind == entry.address.ADDR_P2PKH:
+        if not watch_only:
+            actions.append([ _('Sign/verify Message'), on_sign_verify ] )
+            actions.append([ _('Encrypt/decrypt Message'), on_encrypt_decrypt ] )
+        else:
+            actions.append([ _('Verify Message'), on_sign_verify ] )
         
     utils.show_alert(
         vc = parentvc,

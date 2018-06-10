@@ -94,7 +94,7 @@
 }
 
 - (void) setText:(NSString *)text {
-    _text = [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    _text = _dontStrip ? [text copy] : [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (!_isPlaceholder) _tv.attributedText = [self genAttrText:_text];
     [self doPlaceholdifyIfNeeded:NO];
 }
