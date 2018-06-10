@@ -590,17 +590,15 @@ def present_modal_picker(parentVC : ObjCInstance,
     assert parentVC is not None and items is not None and len(items)
     helper = UTILSModalPickerHelper.new().autorelease()
     objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ModalPickerView",helper,None)
-    if objs is None or not len(objs):
-        raise Exception("Could not load ModalPickerView nib!")
+    if not objs: raise Exception("Could not load ModalPickerView nib!")
     mpv = helper.view # auto-attached by NIB loader above because connection was made in NIB to file's owner.view
     p = mpv.viewWithTag_(200) # note UIPickerView p is auto-connected to helper as dataSource and delegate by NIB
     okBut = mpv.viewWithTag_(1)
-    okLbl = mpv.viewWithTag_(11)
     cancelBut = mpv.viewWithTag_(2)
-    cancelLbl = mpv.viewWithTag_(22)
+    cancelBut.layer.borderColor = uicolor_custom('nav').CGColor
     helper.items = items
-    if okButtonTitle is not None and okLbl is not None: okLbl.text = okButtonTitle
-    if cancelButtonTitle is not None and cancelLbl is not None: cancelLbl.text = cancelButtonTitle
+    if okButtonTitle is not None: okBut.setTitle_forState_(okButtonTitle, UIControlStateNormal)
+    if cancelButtonTitle is not None: cancelBut.setTitle_forState_(cancelButtonTitle, UIControlStateNormal)
     if okBut and cancelBut:
         okBut.addTarget_action_forControlEvents_(helper, SEL(b'onOk:'), UIControlEventPrimaryActionTriggered)
         cancelBut.addTarget_action_forControlEvents_(helper, SEL(b'onCancel:'), UIControlEventPrimaryActionTriggered)
