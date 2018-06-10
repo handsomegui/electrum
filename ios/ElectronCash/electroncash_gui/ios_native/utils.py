@@ -503,7 +503,6 @@ def call_later(timeout : float, func : Callable, *args) -> ObjCInstance:
 ###
 ### Modal picker stuff
 ###
-pickerCallables = dict()
 class UTILSModalPickerHelper(UIViewController):
     ''' This class has this funny name because in the obj-c space, all class names are in the global namespace
         and as this class really is a private class to utils.py, we name it using the UTILS prefix to keep things
@@ -526,6 +525,7 @@ class UTILSModalPickerHelper(UIViewController):
     @objc_method
     def dealloc(self) -> None:
         self.finished()
+        remove_all_callbacks(self)
         self.needsDismiss = None
 #        print("UTILSModalPickerHelper dealloc")
         send_super(__class__, self, 'dealloc')
@@ -551,17 +551,16 @@ class UTILSModalPickerHelper(UIViewController):
     @objc_method
     def onOk_(self, but : ObjCInstance) -> None:
 #        print ("Ok pushed")
-        global pickerCallables
-        cb = pickerCallables.get(self.ptr.value, None) 
-        if cb is not None:
+        cb = get_callback(self, 'onOk') 
+        if callable(cb):
             sig = signature(cb)
             params = sig.parameters
             if len(params) > 0:
-                cb(int(self.lastSelection))
+                cb(int(self.lastSelection if self.lastSelection else 0))
             else:
                 cb()
         self.finished()
-         
+
     @objc_method
     def onCancel_(self, but : ObjCInstance) -> None:
 #        print ("Cancel pushed")        
@@ -569,9 +568,7 @@ class UTILSModalPickerHelper(UIViewController):
 
     @objc_method
     def finished(self) -> None:
-        global pickerCallables
-        pickerCallables.pop(self.ptr.value, None)  
-        if self.viewIfLoaded is not None and self.needsDismiss:
+        if self.viewIfLoaded and self.needsDismiss:
             self.dismissViewControllerAnimated_completion_(True, None)
         self.items = None
         self.lastSelection = None
@@ -586,7 +583,6 @@ def present_modal_picker(parentVC : ObjCInstance,
                          okCallback : Callable[[int],None] = None,
                          okButtonTitle : str = "OK",
                          cancelButtonTitle : str = "Cancel") -> ObjCInstance:
-    global pickerCallables
     assert parentVC is not None and items is not None and len(items)
     helper = UTILSModalPickerHelper.new().autorelease()
     objs = NSBundle.mainBundle.loadNibNamed_owner_options_("ModalPickerView",helper,None)
@@ -604,7 +600,7 @@ def present_modal_picker(parentVC : ObjCInstance,
         cancelBut.addTarget_action_forControlEvents_(helper, SEL(b'onCancel:'), UIControlEventPrimaryActionTriggered)
     else:
         raise Exception('Picker NIB loaded but could not find the OK or Cancel button views! FIXME!')
-    if okCallback is not None: pickerCallables[helper.ptr.value] = okCallback
+    if callable(okCallback): add_callback(helper, 'onOk', okCallback)
     if selectedIndex > 0 and selectedIndex < len(items):
         p.selectRow_inComponent_animated_(selectedIndex, 0, False)
         helper.lastSelection = selectedIndex
