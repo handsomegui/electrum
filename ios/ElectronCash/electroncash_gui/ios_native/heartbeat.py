@@ -14,13 +14,16 @@ except Exception as e:
 
 
 singleton = None
-
+#
 # This class implements a callback "tick" function invoked by the objective c
-# CFRunLoop for this app.  This is necessary so the Python interpreter ends up executing
-# its threads. Otherwise control exits the interpreter and never returns to it.
-# It's a horrible hack but I can't otherwise figure out how to give the jsonrpc server
-# timeslices and/or a chance to run.  If you can figure it out, let me know!
-# -Calin
+# CFRunLoop for this app.  This is was once necessary so the Python interpreter
+# could end up executing its threads.  Since creating this class, I figured out
+# what the problem was, and I no longer need this.  As such -- this class is now
+# superfluous and useless.
+#
+# DO NOT USE IT.
+# TODO: Remove this file.
+#
 class HeartBeat(NSObject):
     funcs = objc_property()
     tickTimer = objc_property()
