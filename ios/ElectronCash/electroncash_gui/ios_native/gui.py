@@ -1700,14 +1700,14 @@ class ElectrumGui(PrintError):
         if not vc: vc = self.get_presented_viewcontroller()
         vc.presentViewController_animated_completion_(self.sendNav, True, None)
      
-    def show_receive_modal(self, vc = None, callback = None) -> None:
+    def show_receive_modal(self, vc = None, onDone = None) -> None:
         self.receive_create_if_none()
         if not self.tabController or not self.receiveNav: return
         if self.receiveNav.topViewController.ptr.value != self.receiveVC.ptr.value:
             self.receiveNav.popToRootViewControllerAnimated_(False)
         if self.receiveNav.presentingViewController: return # already presented, return early
         if not vc: vc = self.get_presented_viewcontroller()
-        if callable(callback): utils.add_callback(self.receiveVC, 'on_done', callback)
+        if callable(onDone): utils.add_callback(self.receiveVC, 'on_done', onDone)
         vc.presentViewController_animated_completion_(self.receiveNav, True, None)
         
     def show_addresses_tab(self) -> None:

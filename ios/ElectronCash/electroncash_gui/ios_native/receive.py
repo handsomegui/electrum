@@ -54,6 +54,7 @@ class ReceiveVC(ReceiveBase):
     expiresIdx = objc_property() # the index of their 'expires' pick -- saved for ui translation
     expiresList = objc_property()
     addrStr = objc_property() # string repr of address
+    savedAmtSats = objc_property()
     fxIsEnabled = objc_property()
     lastQRData = objc_property()
     kbas = objc_property()
@@ -87,6 +88,7 @@ class ReceiveVC(ReceiveBase):
         self.lastQRData = None
         self.kbas = None
         self.savedOk = None
+        self.savedAmtSats = None
         utils.nspy_pop(self)
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
@@ -135,7 +137,7 @@ class ReceiveVC(ReceiveBase):
         pr = utils.nspy_get_byname(self, 'payment_request')
         if pr:
             if pr.fiat: self.amtFiat.setAmount_(int(pr.fiat))
-            self.amt.setAmount_(int(pr.amount))
+            if pr.amount: self.amt.setAmount_(int(pr.amount))
             if pr.addr:
                 self.addr.linkDisabled = True
                 self.setReceiveAddress_(pr.addr.to_ui_string())
@@ -199,6 +201,7 @@ class ReceiveVC(ReceiveBase):
         self.amtFiatTit.setText_withKerning_( _("Fiat amount"), utils._kern )
         self.expiresTit.setText_withKerning_( _("Request expires"), utils._kern )
         self.expiresLink.linkText = _("Change")
+        self.shareRequestBut.setTitle_forState_(_("Share request"), UIControlStateNormal)
         
 
     @objc_method
@@ -209,7 +212,11 @@ class ReceiveVC(ReceiveBase):
             self.amt.placeholder = (_("Input amount") + " ({})").format(self.amt.baseUnit())
             self.amtFiat.placeholder = (_("Input amount") + " ({})").format(self.amtFiat.baseUnit())
 
-        self.amt.setAmount_(self.amt.getAmount()) # redoes decimal point placement
+        if self.savedAmtSats:
+            self.amt.setAmount_(self.savedAmtSats)
+            self.savedAmtSats = None
+        else:
+            self.amt.setAmount_(self.amt.getAmount()) # redoes decimal point placement
         
         if not self.addrStr:
             # get an address
@@ -237,7 +244,9 @@ class ReceiveVC(ReceiveBase):
         self.redoQR()
         self.updateFXFromAmt()
         
-        self.kbas = utils.register_keyboard_autoscroll(self.view)
+        self.kbas = utils.register_keyboard_autoscroll(self.sv)
+        
+        self.bottomView.setHidden_(utils.nspy_get_byname(self, 'payment_request') is None)
         
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -252,6 +261,7 @@ class ReceiveVC(ReceiveBase):
             self.kbas = None
         if not self.addr: return
         self.addrStr = self.addr.linkText
+        self.savedAmtSats = self.amt.getAmount()
     
     @objc_method
     def onAddressTap_(self, uigr : ObjCInstance) -> None:
@@ -406,7 +416,6 @@ class ReceiveVC(ReceiveBase):
         if self.savedOk:
             if self.navigationItem.leftBarButtonItem:
                 self.navigationItem.leftBarButtonItem.title = _("Close")
-            # todo: allow for 'share request' button to appear here..
             self.setEditable_(False)
             pr = utils.nspy_get_byname(self, 'payment_request')
             cb = utils.get_callback(self, 'on_done')
@@ -417,6 +426,7 @@ class ReceiveVC(ReceiveBase):
                     if len(signature(cb).parameters) > 0: cb(pr)
                     else: cb()
             ItIsDoneMyMaster()
+            self.refresh() # side effect of this is it causes the "Share request" button to appear
 
     ## tf delegate methods
     @objc_method
@@ -466,6 +476,10 @@ class ReceiveVC(ReceiveBase):
                 current_address = addr.to_ui_string()        
             #TODO:
             #self.parent.new_request_button.setEnabled(addr != current_address)
+            
+    @objc_method
+    def onShareRequestBut_(self, sender) -> None:
+        print("share req but pushed...")
 
 
 def _GetReqs() -> list:
@@ -618,7 +632,9 @@ class ReqTVD(ReqTVDBase):
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
-        if not self.vc or not self.vc.navigationController: return
+        if not self.vc or not self.vc.navigationController:
+            utils.NSLog("Cannot preset ReceiveVC because current view controller ReqTVD is embedded in is either undefined or lacks a navigationController!")
+            return
         reqs = _GetReqs()
         try:
             item = reqs[indexPath.row]

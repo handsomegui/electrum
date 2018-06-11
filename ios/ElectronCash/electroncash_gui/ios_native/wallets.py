@@ -265,9 +265,10 @@ class WalletsVC(WalletsVCBase):
         if gui.ElectrumGui.gui.warn_user_if_no_wallet():
             return
         def OnReqSaved() -> None:
-            self.segControl.setSelectedSegmentIndex_animated_(1, True)
-            self.didChangeSegment_(self.segControl)
-        gui.ElectrumGui.gui.show_receive_modal(vc = self, callback = OnReqSaved)
+            if self.segControl:
+                self.segControl.setSelectedSegmentIndex_animated_(1, False)
+                self.didChangeSegment_(self.segControl)
+        gui.ElectrumGui.gui.show_receive_modal(vc = self, onDone = OnReqSaved)
         
     @objc_method
     def doChkTableViewCounts(self) -> None:

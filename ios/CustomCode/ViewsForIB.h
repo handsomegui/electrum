@@ -557,16 +557,19 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface ReceiveBase : UIViewController
-@property (nonatomic, weak) IBOutlet UILabel *addrTit, *descTit, *amtTit, *amtFiatTit, *expiresTit, *expires;
+@property (nonatomic, weak) IBOutlet UILabel *addrTit, *descTit, *amtTit, *amtFiatTit, *expiresTit, *expires, *message;
 @property (nonatomic, weak) IBOutlet LinkLabel *addr, *expiresLink;
 @property (nonatomic, weak) IBOutlet UIImageView *qr;
 @property (nonatomic, weak) IBOutlet UITextField *desc, *amt, *amtFiat;
-@property (nonatomic, weak) IBOutlet UIButton *cpyBut;
+@property (nonatomic, weak) IBOutlet UIButton *cpyBut, *shareRequestBut;
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *saveBarBut;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFiatLine;
+@property (nonatomic, weak) IBOutlet UIScrollView *sv;
+@property (nonatomic, weak) IBOutlet UIView *bottomView;
 @end
 
 @interface ReceiveVC : ReceiveBase
 // implemented in python receive.py
+- (IBAction) onShareRequestBut:(id)sender;
 @end
 #endif /* ViewsForIB_h */
