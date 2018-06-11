@@ -48,12 +48,20 @@ class PythonAppDelegate(UIResponder):
 
     @objc_method
     def application_openURL_options_(self, application : ObjCInstance, url : ObjCInstance, options : ObjCInstance) -> bool:
-        data, filename = utils.nsurl_read_local_file(url)
-        utils.NSLog("App openURL: %s Options: %s",str(filename),str(py_from_ns(options) if options else dict()))
+        scheme = url.scheme.lower()
+        url_string = url.absoluteString or url.relativeString
+        utils.NSLog("Got URL using scheme: %s, absoluteURL/relativeURL: %s", scheme, url_string)
         eg = gui.ElectrumGui.gui
         ret = True
         if eg:
-            eg.open_ext_txn(data)
+            if scheme == 'bitcoincash':
+                eg.open_bitcoincash_url(url_string)
+            elif scheme == 'file':
+                data, filename = utils.nsurl_read_local_file(url)
+                utils.NSLog("App file openURL: %s Options: %s",str(filename),str(py_from_ns(options) if options else dict()))
+                eg.open_ext_txn(data)
+            else:
+                utils.NSLog("Unknown URL scheme, ignoring!")
         else:
             utils.NSLog("ERROR -- no gui! Cannot open txn!")
             ret = False

@@ -206,7 +206,7 @@ class ReceiveVC(ReceiveBase):
 
     @objc_method
     def refresh(self) -> None:
-        if not self.viewIfLoaded: return
+        if not self.viewIfLoaded or not parent().wallet: return
         # Placeholder for amount
         if self.isEditable():
             self.amt.placeholder = (_("Input amount") + " ({})").format(self.amt.baseUnit())

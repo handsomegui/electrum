@@ -58,6 +58,7 @@ class SendVC(SendBase):
     timer = objc_property()
     dismissOnAppear = objc_property()
     kbas = objc_property()
+    queuedPayTo = objc_property()
     
     @objc_method
     def init(self):
@@ -72,6 +73,7 @@ class SendVC(SendBase):
         self.timer = None
         self.dismissOnAppear = False
         self.kbas = None
+        self.queuedPayTo = None
         
         self.navigationItem.leftItemsSupplementBackButton = True
         bb = UIBarButtonItem.new().autorelease()
@@ -94,6 +96,7 @@ class SendVC(SendBase):
         self.timer = None
         self.excessiveFee = None
         self.kbas = None
+        self.queuedPayTo = None
         utils.nspy_pop(self)
         send_super(__class__, self, 'dealloc')
 
@@ -249,6 +252,15 @@ class SendVC(SendBase):
         if self.dismissOnAppear and self.presentingViewController and not self.isBeingDismissed():
             self.presentingViewController.dismissViewControllerAnimated_completion_(animated, None)
             return
+
+        if self.queuedPayTo:
+            try:
+                qpt = list(self.queuedPayTo)
+                self.queuedPayTo = None
+                self.onPayTo_message_amount_(qpt[0],qpt[1],qpt[2])
+            except:
+                utils.NSLog("queuedPayTo.. failed with exception: %s",str(sys.exc_info()[1]))
+            
         
         self.kbas = utils.register_keyboard_autoscroll(self.view.viewWithTag_(54321))        
 
@@ -389,6 +401,9 @@ class SendVC(SendBase):
     @objc_method
     def onPayTo_message_amount_(self, address, message, amount) -> None:
         # address
+        if not self.viewIfLoaded:
+            self.queuedPayTo = [address, message, amount]
+            return
         tf = self.payTo
         tf.text = str(address) if address is not None else tf.text
         tf.resignFirstResponder() # just in case

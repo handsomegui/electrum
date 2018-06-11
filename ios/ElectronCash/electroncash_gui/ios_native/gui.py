@@ -226,6 +226,7 @@ class ElectrumGui(PrintError):
         self.downloadingNotif = None
         self.downloadingNotif_view = None
         self.queued_ext_txn = None
+        self.queued_payto_uri = None
         self.queued_refresh_components = set()
         self.queued_refresh_components_mut = threading.Lock()
         self.last_refresh = 0
@@ -972,10 +973,10 @@ class ElectrumGui(PrintError):
         else:       
             if callable(onSuccess): onSuccess()
 
-    def pay_to_URI(self, URI, errFunc : callable = None):
+    def pay_to_URI(self, URI, errFunc : callable = None) -> bool:
         utils.NSLog("PayTo URI: %s", str(URI))
         if not URI or not self.wallet:
-            return
+            return False
         try:
             out = web.parse_URI(URI, self.on_pr)
         except Exception as e:
@@ -983,21 +984,30 @@ class ElectrumGui(PrintError):
                 self.show_error(_('Invalid bitcoincash URI:') + '\n' + str(e))
             else:
                 errFunc()
-            return
+            return False
         r = out.get('r')
         sig = out.get('sig')
         name = out.get('name')
         if r or (name and sig):
             #self.prepare_for_payment_request()
-            print("TODO: prepare_for_payment_request")
-            return
+            self.show_error("Don't know how to handle this payment request type. Sorry!\n\nEmail the developers!")
+            return False
+        if self.has_modal():
+            self.show_error(_("Cannot display the request since you already have a modal dialog open."))
+            return False
         self.show_send_modal()
         address = out.get('address')
         amount = out.get('amount')
         label = out.get('label')
         message = out.get('message')
         # use label as description (not BIP21 compliant)
-        self.sendVC.onPayTo_message_amount_(address,message,amount)
+        if self.sendVC:
+            self.sendVC.onPayTo_message_amount_(address,message,amount)
+            return True
+        else:
+            self.show_error("Oops! Something went wrong! Email the developers!")
+        return False
+
     
     def refresh_all(self):
         self.refresh_components('*')
@@ -1108,7 +1118,9 @@ class ElectrumGui(PrintError):
                 # (this is to remove stale addresses, coins, contacts, etc screens from old wallet which are irrelevant to this new wallet)
                 if isinstance(vcs[i], UINavigationController): vcs[i].popToRootViewControllerAnimated_(False)
             self.refresh_all()
-            self.ext_txn_check()
+            self.ext_txn_check() or self.open_uri_check()
+            self.queued_ext_txn = None # force these to None here .. no matter what happened above..
+            self.queued_payto_uri = None
             
     def on_open_last_wallet_fail(self):
         if not self.present_on_boarding_wizard_if_needed():
@@ -1763,6 +1775,12 @@ class ElectrumGui(PrintError):
     def copy_to_clipboard(self, text, messagePrefix = "Text") -> None:
         UIPasteboard.generalPasteboard.string = text
         utils.show_notification(message=_(messagePrefix.strip() + " copied to clipboard"))
+      
+    def open_bitcoincash_url(self, uri : str) -> None:
+        if not self.wallet:
+            self.queued_payto_uri = uri
+        else:
+            self.pay_to_URI(uri)
             
     def open_ext_txn(self, data : str) -> None:
         if not self.wallet:
@@ -1770,13 +1788,22 @@ class ElectrumGui(PrintError):
         else:
             self.show_ext_txn(data)
  
-    def ext_txn_check(self) -> None:
+    def ext_txn_check(self) -> bool:
         if self.queued_ext_txn and self.wallet and self.window and self.tabController and self.window.rootViewController and self.window.rootViewController.ptr.value == self.tabController.ptr.value:
             txn = self.queued_ext_txn
             self.queued_ext_txn = None
-            self.show_ext_txn(txn)
+            return self.show_ext_txn(txn)
+        return False
+    
+    def open_uri_check(self) -> bool:
+        if self.queued_payto_uri and self.wallet and self.window and self.tabController and self.window.rootViewController and self.window.rootViewController.ptr.value == self.tabController.ptr.value:
+            uri = self.queued_payto_uri
+            self.queued_payto_uri = None
+            return self.pay_to_URI(uri)
+        return False
+        
            
-    def show_ext_txn(self, txn : str) -> None:
+    def show_ext_txn(self, txn : str) -> bool:
         if isinstance(txn, bytes):
             txn = txn.decode('utf-8')
             print("Warning: show_ext_txn got bytes instead of a str for the txn.. this may be bad...")
@@ -1785,7 +1812,7 @@ class ElectrumGui(PrintError):
         try:
             if not self.wallet:
                 self.show_error(_("Cannot display the requested transaction as you don't have a wallet open."))
-                return
+                return False
             txt_tx = tx_from_str(txn)
             tx = Transaction(txt_tx)
             tx.deserialize()
@@ -1803,10 +1830,11 @@ class ElectrumGui(PrintError):
                 vc = self.get_presented_viewcontroller()
                 txvc = txdetail.CreateTxDetailWithTx(tx, asModalNav = True)
                 vc.presentViewController_animated_completion_(txvc, True, None)
+                return True
         except:
             traceback.print_exc(file=sys.stderr)
             self.show_error(_("Electron Cash was unable to parse your transaction"))
-            return
+        return False
 
     def present_on_boarding_wizard_if_needed(self) -> ObjCInstance:
         if ( (not self.onboardingWizard or self.onboardingWizard.isBeingDismissed())
