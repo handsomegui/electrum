@@ -137,6 +137,7 @@ class ReceiveVC(ReceiveBase):
         self.addrTit.setText_withKerning_( _("Receiving address"), utils._kern )
         self.descTit.setText_withKerning_( _("Description"), utils._kern )
         self.amtTit.setText_withKerning_( _("Requested amount"), utils._kern )
+        self.amtFiatTit.setText_withKerning_( _("Fiat amount"), utils._kern )
         self.expiresTit.setText_withKerning_( _("Request expires"), utils._kern )
         self.expiresBut.setTitle_forState_(_(self.expiresList[self.expiresIdx][0]),UIControlStateNormal)
         self.saveBut.setTitle_forState_(_("Save"), UIControlStateNormal)
@@ -171,7 +172,10 @@ class ReceiveVC(ReceiveBase):
                 self.setReceiveAddress_(address.to_ui_string())
             
         self.fxIsEnabled = parent().daemon.fx and parent().daemon.fx.is_enabled()
-        utils.uiview_set_enabled(self.amtFiat, self.fxIsEnabled)
+        self.csFiatLine.constant = 101.0 if self.fxIsEnabled else 15.0
+        self.amtFiat.setHidden_(not self.fxIsEnabled)
+        self.amtFiatTit.setHidden_(not self.fxIsEnabled)
+            
    
         utils.uitf_redo_attrs(self.desc)
         utils.uitf_redo_attrs(self.amt)

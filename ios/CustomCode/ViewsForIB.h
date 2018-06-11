@@ -555,10 +555,11 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @end
 
 @interface ReceiveBase : UIViewController
-@property (nonatomic, weak) IBOutlet UILabel *addr, *addrTit, *descTit, *amtTit, *expiresTit;
+@property (nonatomic, weak) IBOutlet UILabel *addr, *addrTit, *descTit, *amtTit, *amtFiatTit, *expiresTit;
 @property (nonatomic, weak) IBOutlet UIImageView *qr;
 @property (nonatomic, weak) IBOutlet UITextField *desc, *amt, *amtFiat;
 @property (nonatomic, weak) IBOutlet UIButton *saveBut, *neueBut, *expiresBut, *cpyBut;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csFiatLine;
 @end
 
 @interface ReceiveVC : ReceiveBase
