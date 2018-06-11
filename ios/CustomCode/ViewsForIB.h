@@ -55,6 +55,10 @@
 // dummy stub for Interface Builder -- actual implementation is in python in amountedit.py
 @interface FiatAmountEdit : BTCAmountEdit
 @end
+// dummy stub for Interface Builder -- actual implementation is in python in amountedit.py
+@interface BTCkBEdit : BTCAmountEdit
+@end
+
 // dummy stub for Interface Builder -- actual implementation is in python in feeslider.py
 @interface FeeSlider : UISlider
 @end

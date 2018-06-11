@@ -8,6 +8,7 @@ from . import utils
 from . import gui
 from . import heartbeat
 from . import addrconv
+from . import amountedit
 from electroncash.util import timestamp_to_datetime
 from electroncash.i18n import _, language
 import time
@@ -167,7 +168,7 @@ class PrefsVC(UITableViewController):
         return 0
 
     @objc_method
-    def tableView_cellForRowAtIndexPath_(self, tableView, indexPath):
+    def tableView_cellForRowAtIndexPath_(self, tableView, indexPath) -> ObjCInstance:
         assert indexPath.section >= 0 and indexPath.section < len(SECTION_TITLES)
         section,row = indexPath.section, indexPath.row
         secName = SECTION_TITLES[section]
@@ -177,6 +178,10 @@ class PrefsVC(UITableViewController):
             cell = self.createCellForSection_row_(secName,row)
         self.setupCell_section_row_(cell,secName,row)
         return cell
+    
+    @objc_method
+    def tableView_heightForRowAtIndexPath_(self, tableView, indexPath) -> float:
+        return 44.0
     
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
@@ -242,19 +247,25 @@ class PrefsVC(UITableViewController):
             f = cell.imageView.frame
             f.size = CGSizeMake(24,24)
             cell.imageView.frame = f
+            cell.textLabel.textColor = utils.uicolor_custom('dark')
+            cell.detailTextLabel.textColor = utils.uicolor_custom('dark')
+            cell.textLabel.font = UIFont.systemFontOfSize_weight_(16.0, UIFontWeightRegular)
+            cell.detailTextLabel.font = UIFont.systemFontOfSize_weight_(12.0, UIFontWeightThin)
 
         elif secName == 'Fees':
             if row == 0:
                 l = cell.viewWithTag_(1)
                 tf = cell.viewWithTag_(2)
-                l2 = cell.viewWithTag_(3)
                 l.text = _('Max static fee')
                 tf.placeholder = parent.base_unit()
-                l2.text = parent.base_unit() + "/kB"
                 tf.delegate = self
                 tf.text = get_max_static_fee_str(parent)
                 if tf.allTargets.count <= 0:
                     tf.addTarget_action_forControlEvents_(self, SEL(b'onMaxStaticFee:'), UIControlEventEditingChanged)
+                if isinstance(tf, amountedit.BTCkBEdit):
+                    tf.setUseUnitLabel_(True)
+                    tf.fixedUnitLabelWidth = 75.0
+                utils.uitf_redo_attrs(tf)
             elif row == 1: # 'edit fees manually', a bool cell
                 l = cell.viewWithTag_(1)
                 s = cell.viewWithTag_(2)
@@ -425,9 +436,13 @@ class PrefsVC(UITableViewController):
     @objc_method
     def textFieldShouldReturn_(self, tf : ObjCInstance) -> bool:
         tf.resignFirstResponder()
-        self.onMaxStaticFee_(tf)
         return True
     
+    @objc_method
+    def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
+        self.onMaxStaticFee_(tf)
+        utils.uitf_redo_attrs(tf)
+   
     @objc_method
     def getNumZerosList(self) -> ObjCInstance:
         parent = gui.ElectrumGui.gui

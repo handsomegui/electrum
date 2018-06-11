@@ -227,6 +227,8 @@ def nsurl_read_local_file(url : ObjCInstance, binary = False) -> tuple:
 def show_share_actions(vc : ObjCInstance,
                        fileName : str = None,
                        text : str = None,
+                       url : NSURL = None,
+                       img : UIImage = None,
                        excludedActivityTypes = None,
                        completion: Callable[[],None] = None, # optional completion function that gets called when alert is presented
                        ipadAnchor : object = None,
@@ -238,8 +240,12 @@ def show_share_actions(vc : ObjCInstance,
     items = []
     if fileName:
         items.append(NSURL.fileURLWithPath_(fileName))
-    if text is not None:
+    if isinstance(text, str):
         items.append(ns_from_py(text))
+    if isinstance(url, NSURL):
+        items.append(url)
+    if isinstance(img, UIImage):
+        items.append(img)
     avc = UIActivityViewController.alloc().initWithActivityItems_applicationActivities_(items, None).autorelease()
     if excludedActivityTypes is None:
         excludedActivityTypes = [
@@ -284,7 +290,7 @@ def show_share_actions(vc : ObjCInstance,
             DoUserCompl()
         if activity is None: return
         if activity in (py_from_ns(UIActivityTypeCopyToPasteboard)):
-            show_notification(message = _("{} contents copied to clipboard").format(objectName))
+            show_notification(message = _("{} copied to clipboard").format(objectName))
         elif activity in ('com.apple.CloudDocsUI.AddToiCloudDrive', py_from_ns(UIActivityTypeAirDrop)):
             show_notification(message = _("{} saved successfully").format(objectName))
         elif activity in (py_from_ns(UIActivityTypeMessage),py_from_ns(UIActivityTypeMail)):

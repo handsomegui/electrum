@@ -352,7 +352,6 @@ class ReceiveVC(ReceiveBase):
     
     @objc_method
     def generatePrURI(self) -> ObjCInstance:
-        qriv = self.qr
         amount = self.amt.getAmount()
         message = self.desc.text
         print("addr,amount,message=",self.addrStr,amount,message)
@@ -479,7 +478,28 @@ class ReceiveVC(ReceiveBase):
             
     @objc_method
     def onShareRequestBut_(self, sender) -> None:
-        print("share req but pushed...")
+        ipadAnchor = sender.convertRect_toView_(sender.bounds, self.view) if isinstance(sender, UIView) else None
+        def OnShareURI() -> None:
+            uri = self.generatePrURI()
+            url = NSURL.URLWithString_(uri)
+            utils.show_share_actions(vc = self, url = url, ipadAnchor = ipadAnchor, objectName = _("Request URI"))
+        def OnShareQR() -> None:
+            if not self.qr.image: self.redoQR()
+            if not self.qr.image: parent().show_error(vc = self, message = "Error Generating QR Image")
+            else: utils.show_share_actions(vc = self, img = self.qr.image, ipadAnchor = ipadAnchor, objectName = _("Image"))
+        
+        actions = [
+            [ _("Share as URI..."), OnShareURI ],
+            [ _("Share as QR Image..."), OnShareQR ],
+            [ _("Cancel") ]
+        ]
+        alert = utils.show_alert(vc = self,
+                                 title = _("Share Request"),
+                                 message = _("You may share this payment request as a 'bitcoincash:' style URI, or as a QR Code Image."),
+                                 actions = actions,
+                                 style = UIAlertControllerStyleActionSheet,
+                                 cancel = _("Cancel"),
+                                 ipadAnchor = ipadAnchor)
 
 
 def _GetReqs() -> list:
