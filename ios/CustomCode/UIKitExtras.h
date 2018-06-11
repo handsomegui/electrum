@@ -109,8 +109,10 @@ typedef void(^ActionBlock)(UIControl *);
 @property (nonatomic, copy) void(^linkWillAnimate)(LinkLabel *); // called right before the link animation begins
 @property (nonatomic, copy) void(^linkTarget)(LinkLabel *); // the action for the link
 @property (nonatomic, copy) UIColor *normalColor, // the color the link flashes from, defaults to whatever the .textColor was when tapped but if set explicitly, will be a different color
-                                    *highlightedColor; // the color the link flashes to. Defaults to white. Set it to something purplish
+                                    *highlightedColor, // the color the link flashes to. Defaults to white. Set it to something purplish
+                                    *disabledColor; // the color the link should be when .linkDistabled = YES
 @property (nonatomic) CGFloat duration; // the duration of the link animation.  defaults to 0.3 seconds
+@property (nonatomic) BOOL linkDisabled; // if true, will draw the link as not underlined, using .textColor, and it won't respond to touches.  Use this to sometimes disable a link for some screens. Defaults to NO.
 @end
 
 @interface UIResponder (FirstResponder)

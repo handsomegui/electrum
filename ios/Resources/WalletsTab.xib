@@ -430,6 +430,7 @@
         <customObject id="vtb-qn-tmr" customClass="ReqTVD">
             <connections>
                 <outlet property="tv" destination="SEd-Hd-vMb" id="OQt-Pj-8NS"/>
+                <outlet property="vc" destination="5hO-gj-WnP" id="5Pr-gV-IsZ"/>
             </connections>
         </customObject>
         <tapGestureRecognizer id="1Xa-I9-r22" userLabel="TopNav Tap Gesture Recognizer">

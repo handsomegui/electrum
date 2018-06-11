@@ -679,8 +679,11 @@ class ElectrumGui(PrintError):
             vc = ObjCInstance(objc_id(but.tag))
         vc.dismissViewControllerAnimated_completion_(True, None)
         
-    def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = True) -> ObjCInstance:
-        closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self.helper, SEL(b'onModalClose:')).autorelease()
+    def add_navigation_bar_close_to_modal_vc(self, vc : ObjCInstance, leftSide = True, useXIcon = True) -> ObjCInstance:
+        if useXIcon:
+            closeButton = UIBarButtonItem.alloc().initWithBarButtonSystemItem_target_action_(UIBarButtonSystemItemStop, self.helper, SEL(b'onModalClose:')).autorelease()
+        else:
+            closeButton = UIBarButtonItem.alloc().initWithTitle_style_target_action_(_('Cancel'), UIBarButtonItemStylePlain, self.helper, SEL(b'onModalClose:')).autorelease()
         # poor man's weak ref -- used in above on_modal_close() to properly close nested modals
         closeButton.tag = vc.ptr.value
         if leftSide:
@@ -1697,13 +1700,14 @@ class ElectrumGui(PrintError):
         if not vc: vc = self.get_presented_viewcontroller()
         vc.presentViewController_animated_completion_(self.sendNav, True, None)
      
-    def show_receive_modal(self, vc = None) -> None:
+    def show_receive_modal(self, vc = None, callback = None) -> None:
         self.receive_create_if_none()
         if not self.tabController or not self.receiveNav: return
         if self.receiveNav.topViewController.ptr.value != self.receiveVC.ptr.value:
             self.receiveNav.popToRootViewControllerAnimated_(False)
         if self.receiveNav.presentingViewController: return # already presented, return early
         if not vc: vc = self.get_presented_viewcontroller()
+        if callable(callback): utils.add_callback(self.receiveVC, 'on_done', callback)
         vc.presentViewController_animated_completion_(self.receiveNav, True, None)
         
     def show_addresses_tab(self) -> None:
@@ -1729,7 +1733,7 @@ class ElectrumGui(PrintError):
         self.receiveNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.receiveVC).autorelease())
         self.receiveNav.navigationBar.backIndicatorImage = self.walletsNav.navigationBar.backIndicatorImage
         self.receiveNav.navigationBar.backIndicatorTransitionMaskImage = self.walletsNav.navigationBar.backIndicatorTransitionMaskImage
-        self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True)
+        self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True, useXIcon = False)
         def doCleanup(oid : objc_id) -> None:
             self.receiveVC = None
             self.receiveNav = None

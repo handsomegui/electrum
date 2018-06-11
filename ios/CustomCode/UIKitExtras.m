@@ -459,22 +459,36 @@ static long UIButtonBlockKey = 0xb10cb10c;
     __weak UITapGestureRecognizer *_gr;
 }
 
-- (void) setLinkText:(NSString *)text {
-    if (!_normalColor) self.normalColor = self.textColor;
-    NSAttributedString *ats = [[NSAttributedString alloc] initWithString:text
-                                                              attributes:@{
-                                                                           NSFontAttributeName : self.font,
-                                                                NSForegroundColorAttributeName : _normalColor,
-                                                                 NSUnderlineStyleAttributeName : @(NSUnderlineStyleSingle)
-                                                                           }];
-    self.attributedText = ats;
+- (void) chkCreateGr {
     if (!_gr) {
-        self.userInteractionEnabled = YES;
+        self.userInteractionEnabled = !_linkDisabled;
         UITapGestureRecognizer *gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(linkLabelTapped)];
         [self addGestureRecognizer:gr];
         _gr = gr;
+    } else {
+        self.userInteractionEnabled = !_linkDisabled;
     }
 }
+
+- (void) setLinkText:(NSString *)text {
+    if (!_normalColor) self.normalColor = self.textColor;
+    NSDictionary *attributes =
+    !_linkDisabled
+    ? @{
+        NSFontAttributeName : self.font,
+        NSForegroundColorAttributeName : _normalColor,
+        NSUnderlineStyleAttributeName : @(NSUnderlineStyleSingle)
+        }
+    : @{ NSFontAttributeName : self.font,
+         NSForegroundColorAttributeName : _disabledColor ? _disabledColor : self.textColor
+         };
+    NSAttributedString *ats = [[NSAttributedString alloc] initWithString:text
+                                                              attributes:attributes];
+    self.attributedText = ats;
+    [self chkCreateGr];
+}
+- (NSString *) linkText { return self.attributedText.string; }
+
 - (void) linkLabelTapped {
     static const CGFloat defaultDuration = 0.3;
     static __weak id lastLink = nil;
@@ -489,6 +503,11 @@ static long UIButtonBlockKey = 0xb10cb10c;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_duration/2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         if (weakSelf.linkTarget && lastLink == weakSelf) weakSelf.linkTarget(weakSelf);
     });
+}
+- (void) setLinkDisabled:(BOOL)b {
+    if (!!b == !!_linkDisabled) return;
+    _linkDisabled = b;
+    self.linkText = self.linkText; // sets up the link text again based on _linkDisabled property
 }
 @end
 

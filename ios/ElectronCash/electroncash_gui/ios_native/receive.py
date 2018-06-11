@@ -35,7 +35,7 @@ pr_tooltips = {
     PR_EXPIRED:'Expired'
 }
 
-ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr timestamp")
+ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr timestamp expiration expirationStr amount fiat")
 
 def parent():
     return gui.ElectrumGui.gui
@@ -57,6 +57,7 @@ class ReceiveVC(ReceiveBase):
     fxIsEnabled = objc_property()
     lastQRData = objc_property()
     kbas = objc_property()
+    savedOk = objc_property()
     
     @objc_method
     def init(self):
@@ -85,7 +86,9 @@ class ReceiveVC(ReceiveBase):
         self.addrStr = None
         self.lastQRData = None
         self.kbas = None
+        self.savedOk = None
         utils.nspy_pop(self)
+        utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
     
     @objc_method
@@ -110,6 +113,10 @@ class ReceiveVC(ReceiveBase):
             self.onAddressTap_(ObjCInstance(lbl).gr)
         
         self.addr.linkTarget = onLinkTapped
+
+        def onExpiresLink(l : objc_id) -> None:
+            self.showExpiresMenu_(ObjCInstance(l))
+        self.expiresLink.linkTarget = onExpiresLink
     
         utils.add_callback(self.amt, 'textChanged', onAmtChg)
         utils.add_callback(self.amtFiat, 'textChanged', onAmtChg)
@@ -123,12 +130,64 @@ class ReceiveVC(ReceiveBase):
         self.amtFiat.delegate = self
         self.desc.delegate = self
 
-        self.neueBut.addTarget_action_forControlEvents_(self, SEL(b'clear'), UIControlEventPrimaryActionTriggered)
-        self.saveBut.addTarget_action_forControlEvents_(self, SEL(b'onSave'), UIControlEventPrimaryActionTriggered)
         self.cpyBut.addTarget_action_forControlEvents_(self, SEL(b'onCopyBut:'), UIControlEventPrimaryActionTriggered)
-        self.expiresBut.addTarget_action_forControlEvents_(self, SEL(b'showExpiresMenu:'), UIControlEventPrimaryActionTriggered)
+        
+        pr = utils.nspy_get_byname(self, 'payment_request')
+        if pr:
+            if pr.fiat: self.amtFiat.setAmount_(int(pr.fiat))
+            self.amt.setAmount_(int(pr.amount))
+            if pr.addr:
+                self.addr.linkDisabled = True
+                self.setReceiveAddress_(pr.addr.to_ui_string())
+            else:
+                self.getUnusedAddress()
+            if pr.message:
+                self.desc.text = pr.message
+            self.setExpiresByTS_( (pr.timestamp + (pr.expiration or 0.0)) if pr.expiration and pr.timestamp else 0.0)
+            self.setEditable_(False)
+        else:
+            self.setEditable_(True)
+            self.getUnusedAddress()
+            self.expiresLink.linkDisabled = False
+            self.expiresLink.setHidden_(False)
+            self.setExpiresByIndex_(self.expiresIdx or 0)
+   
         
         self.translateUI()
+    
+    @objc_method
+    def setEditable_(self, b : bool) -> None:
+        if not b:
+            self.expiresLink.linkDisabled = True
+            self.expiresLink.setHidden_(True)
+            self.amt.userInteractionEnabled = False
+            self.amtFiat.userInteractionEnabled = False
+            self.desc.userInteractionEnabled = False
+            self.amt.backgroundColor = UIColor.clearColor
+            self.amtFiat.backgroundColor = UIColor.clearColor
+            self.desc.backgroundColor = UIColor.clearColor
+            self.amt.placeholder = ''
+            self.amtFiat.placeholder = ''
+            self.desc.placeholder = ''
+            self.navigationItem.rightBarButtonItem = None
+        else:
+            bb = UIBarButtonItem.alloc().initWithImage_style_target_action_(UIImage.imageNamed_('barbut_chk'), UIBarButtonItemStylePlain, self, SEL('onSaveDone:')).autorelease()
+            self.navigationItem.rightBarButtonItem = bb
+            self.saveBarBut = bb
+            self.expiresLink.linkDisabled = False
+            self.expiresLink.setHidden_(False)
+            self.amt.userInteractionEnabled = True
+            self.amtFiat.userInteractionEnabled = True
+            self.desc.userInteractionEnabled = True
+            c = utils.uicolor_custom('ultralight')
+            self.amt.backgroundColor = c
+            self.amtFiat.backgroundColor = c
+            self.desc.backgroundColor = c
+            
+    @objc_method
+    def isEditable(self) -> bool:
+        return self.amt and self.amt.isUserInteractionEnabled()
+            
         
     @objc_method
     def translateUI(self) -> None:
@@ -139,22 +198,16 @@ class ReceiveVC(ReceiveBase):
         self.amtTit.setText_withKerning_( _("Requested amount"), utils._kern )
         self.amtFiatTit.setText_withKerning_( _("Fiat amount"), utils._kern )
         self.expiresTit.setText_withKerning_( _("Request expires"), utils._kern )
-        self.expiresBut.setTitle_forState_(_(self.expiresList[self.expiresIdx][0]),UIControlStateNormal)
-        self.saveBut.setTitle_forState_(_("Save"), UIControlStateNormal)
-        self.neueBut.setTitle_forState_(_("New"), UIControlStateNormal)
+        self.expiresLink.linkText = _("Change")
         
 
     @objc_method
     def refresh(self) -> None:
         if not self.viewIfLoaded: return
         # Placeholder for amount
-        self.amt.placeholder = (_("Input amount") + " ({})").format(self.amt.baseUnit())
-        font = self.amt.font
-        self.amt.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
-
-        self.amtFiat.placeholder = (_("Input amount") + " ({})").format(self.amtFiat.baseUnit())
-        font = self.amtFiat.font
-        self.amtFiat.font = UIFont.monospacedDigitSystemFontOfSize_weight_(font.pointSize, UIFontWeightRegular)
+        if self.isEditable():
+            self.amt.placeholder = (_("Input amount") + " ({})").format(self.amt.baseUnit())
+            self.amtFiat.placeholder = (_("Input amount") + " ({})").format(self.amtFiat.baseUnit())
 
         self.amt.setAmount_(self.amt.getAmount()) # redoes decimal point placement
         
@@ -170,7 +223,7 @@ class ReceiveVC(ReceiveBase):
             address = decodeAddress(self.addrStr)
             if address is not None:
                 self.setReceiveAddress_(address.to_ui_string())
-            
+                            
         self.fxIsEnabled = parent().daemon.fx and parent().daemon.fx.is_enabled()
         self.csFiatLine.constant = 101.0 if self.fxIsEnabled else 15.0
         self.amtFiat.setHidden_(not self.fxIsEnabled)
@@ -183,7 +236,6 @@ class ReceiveVC(ReceiveBase):
         
         self.redoQR()
         self.updateFXFromAmt()
-        self.updateRequestList()
         
         self.kbas = utils.register_keyboard_autoscroll(self.view)
         
@@ -217,8 +269,27 @@ class ReceiveVC(ReceiveBase):
     def setExpiresByIndex_(self, idx : int) -> None:
         if idx < 0 or idx >= len(self.expiresList): return
         self.expiresIdx = idx
-        self.expiresBut.setTitle_forState_(_(self.expiresList[idx][0]),UIControlStateNormal)
+        self.expires.text = _("This request expires: {}").format(_(self.expiresList[idx][0]))
         
+    @objc_method
+    def setExpiresByTS_(self, ts : float) -> None:
+        if not ts or ts <= 0.001:
+            self.expires.text = _("This request expires: {}").format(_("Never"))
+            return
+        secs = ts - time.time()
+        if secs <= 0:
+            self.expires.text = _("This request expires: {}").format(_("Already Expired"))
+            return
+        m = int( (secs / 60.0) % 60.0 )
+        h = int( (secs / 60.0 / 60.0) % 24.0 )
+        d = int( (secs / 60.0 / 60.0 / 24.0) )
+        s = int( secs % 60.0 )
+        txt = ""
+        if d: txt += _('{} days').format(d) + ' '
+        if h: txt += _('{} hours').format(h) + ' '
+        if m: txt += _('{} mins').format(m) + ' '
+        if s: txt += _("{} secs").format(s)
+        self.expires.text = txt.strip()
         
     @objc_method
     def showExpiresMenu_(self, but : ObjCInstance) -> None:
@@ -285,8 +356,7 @@ class ReceiveVC(ReceiveBase):
         qriv = self.qr
         amount = self.amt.getAmount()
         message = self.desc.text
-        utils.uiview_set_enabled(self.saveBut,
-                                 (amount is not None) or (message != ""))
+        if self.saveBarBut: self.saveBarBut.setEnabled_((amount is not None) or (message != ""))
         if uri != self.lastQRData:
             qriv.image = utils.get_qrcode_image_for_data(uri)
             self.lastQRData = uri
@@ -302,6 +372,7 @@ class ReceiveVC(ReceiveBase):
 
     @objc_method
     def onSave(self) -> None:
+        self.savedOk = False
         if not self.addrStr:
             parent().show_error(_('No receiving address'))
             return
@@ -309,7 +380,7 @@ class ReceiveVC(ReceiveBase):
         message = self.desc.text
         if not message and not amount:
             parent().show_error(_('No message or amount'))
-            return False
+            return
         i = self.expiresIdx
         expiration = list(map(lambda x: x[1], self.expiresList))[i]
         if expiration <= 0: expiration = None
@@ -317,17 +388,35 @@ class ReceiveVC(ReceiveBase):
         req = parent().wallet.make_payment_request(theAddr, amount, message, expiration)
         print(req)
         parent().wallet.add_payment_request(req, parent().config)
+        utils.nspy_put_byname(self, req, 'payment_request')
         def OnDone() -> None:
             if not parent().wallet: return
             parent().wallet.storage.write() # commit it to disk
             parent().refresh_components('address','receive')
+            self.savedOk = (amount is not None) or (message != "")
             # force disable save button
-            utils.uiview_set_enabled(self.saveBut,
-                                     (amount is not None) or (message != ""))
+            if self.saveBarBut: self.saveBarBut.setEnabled_(self.savedOk)
             
         parent().sign_payment_request(addr = theAddr, onSuccess = OnDone, vc = self)
         
 
+    @objc_method
+    def onSaveDone_(self, sender) -> None:
+        self.onSave()
+        if self.savedOk:
+            if self.navigationItem.leftBarButtonItem:
+                self.navigationItem.leftBarButtonItem.title = _("Close")
+            # todo: allow for 'share request' button to appear here..
+            self.setEditable_(False)
+            pr = utils.nspy_get_byname(self, 'payment_request')
+            cb = utils.get_callback(self, 'on_done')
+            def ItIsDoneMyMaster() -> None:
+                utils.show_notification(_("Payment request saved"))
+                if callable(cb):
+                    from inspect import signature
+                    if len(signature(cb).parameters) > 0: cb(pr)
+                    else: cb()
+            ItIsDoneMyMaster()
 
     ## tf delegate methods
     @objc_method
@@ -355,7 +444,7 @@ class ReceiveVC(ReceiveBase):
         self.addrStr = adr
         
     @objc_method
-    def updateRequestList(self) -> None:
+    def getUnusedAddress(self) -> None:
         wallet = parent().wallet
         if not wallet: return
         # hide receive tab if no receive requests available
@@ -413,8 +502,9 @@ class RequestsMgr(utils.DataMgr):
                 print("addr '%s' not in domain!"%str(address))
                 continue
             timestamp = req.get('time', 0)
-            amount = req.get('amount')
+            amount = req.get('amount', None)
             expiration = req.get('exp', None)
+            expirationStr = format_time(expiration) if expiration else ''
             message = req.get('memo', '')
             date = format_time(timestamp)
             status = req.get('status')
@@ -425,6 +515,7 @@ class RequestsMgr(utils.DataMgr):
             iconSign = ''
             iconStatus = ''
             fiatStr = ''
+            fiat = None
             #item.setData(0, Qt.UserRole, address)
             if signature is not None:
                 #item.setIcon(2, QIcon(":icons/seal.png"))
@@ -437,11 +528,16 @@ class RequestsMgr(utils.DataMgr):
             try:
                 if daemon and daemon.fx.is_enabled() and amount:
                     fiatStr = daemon.fx.format_amount_and_units(amount)
+                    try:
+                        fiat = float(fiatStr.split()[0])
+                    except:
+                        pass
             except:
                 utils.NSLog("ReqMgr: could not get fiat amount")
                 fiatStr = ''
-            #ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr, timestamp")
-            item = ReqItem(date, address.to_ui_string(), signedBy, message, amount_str, pr_tooltips.get(status,''), address, iconSign, iconStatus, fiatStr, timestamp)
+            #ReqItem = namedtuple("ReqItem", "dateStr addrStr signedBy message amountStr statusStr addr iconSign iconStatus fiatStr, timestamp expiration expirationStr amount fiat")
+            item = ReqItem(date, address.to_ui_string(), signedBy, message, amount_str, pr_tooltips.get(status,''), address, iconSign, iconStatus, fiatStr, timestamp, expiration, expirationStr, amount, fiat)
+            #print ("addr,amount,expiration = ",item.addrStr, item.amountStr, item.expiration, item.expirationStr)
             #self.addTopLevelItem(item)
             reqs.append(item)
             #print(item)
@@ -491,7 +587,8 @@ class ReqTVD(ReqTVDBase):
             self.didReg.addObject_(tv.ptr.value)
         if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
             # this sometimes happens on app re-foregrounding.. so guard against it
-            return UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "Cell").autorelease()
+            cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "Cell").autorelease()
+            cell.selectionStyle = UITableViewCellSelectionStyleNone
         cell = tv.dequeueReusableCellWithIdentifier_(identifier)
         #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
         item = reqs[indexPath.row]
@@ -512,17 +609,25 @@ class ReqTVD(ReqTVDBase):
         else:
             cell.desc.text = ''
         cell.status.text = item.statusStr if item.statusStr else _('Unknown')
+        cell.selectionStyle = UITableViewCellSelectionStyleNone if not self.vc or not self.vc.navigationController else UITableViewCellSelectionStyleDefault
+        cell.chevron.setHidden_(cell.selectionStyle == UITableViewCellSelectionStyleNone)
         return cell
 
     # Below 3 methods conform to UITableViewDelegate protocol
-    @objc_method
-    def tableView_accessoryButtonTappedForRowWithIndexPath_(self, tv, indexPath) -> None:
-        pass
     
     @objc_method
     def tableView_didSelectRowAtIndexPath_(self, tv, indexPath) -> None:
         tv.deselectRowAtIndexPath_animated_(indexPath,True)
-        parent().show_error('Request Detail Screen Coming soon!', 'Unimplemented')
+        if not self.vc or not self.vc.navigationController: return
+        reqs = _GetReqs()
+        try:
+            item = reqs[indexPath.row]
+            vc = ReceiveVC.new().autorelease()
+            utils.nspy_put_byname(vc, item, 'payment_request')
+            self.vc.navigationController.pushViewController_animated_(vc, True)
+        except:
+            utils.NSLog("Exception in ReqTVD didSelectRowAtIndexPath: %s", str(sys.exc_info()[1]))
+
     
     @objc_method
     def tableView_commitEditingStyle_forRowAtIndexPath_(self, tv : ObjCInstance, es : int, indexPath : ObjCInstance) -> None:
@@ -582,5 +687,7 @@ class ReqTVDTiny(ReqTVD):
         cell.detailTextLabel.numberOfLines = 1
         cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle
         cell.detailTextLabel.adjustsFontSizeToFitWidth = True
-        cell.detailTextLabel.minimumScaleFactor = 0.3        
+        cell.detailTextLabel.minimumScaleFactor = 0.3
+        cell.accessoryType = UITableViewCellAccessoryNone
+        cell.selectionStyle = UITableViewCellSelectionStyleNone
         return cell

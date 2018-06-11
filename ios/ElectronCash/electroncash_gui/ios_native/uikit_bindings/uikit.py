@@ -339,6 +339,12 @@ UITableViewCellEditingStyleNone = 0
 UITableViewCellEditingStyleDelete = 1
 UITableViewCellEditingStyleInsert = 2
 
+UITableViewCellSelectionStyleNone = 0
+UITableViewCellSelectionStyleBlue = 1
+UITableViewCellSelectionStyleGray = 2
+UITableViewCellSelectionStyleDefault = 3
+
+
 # UITextField.h
 UITextField = ObjCClass('UITextField')
 
