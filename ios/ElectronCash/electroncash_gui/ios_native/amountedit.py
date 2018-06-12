@@ -220,7 +220,8 @@ class BTCAmountEdit(UITextField):
         #self.setCursorPosition(pos)
 
     @objc_method
-    def formatPlain_(self, amount : int) -> ObjCInstance:
+    def formatPlain_(self, amount : ObjCInstance) -> ObjCInstance:
+        amount = int(amount)
         return ns_from_py(format_satoshis_plain(amount, self.decimalPoint()))
         #return ns_from_py(format_satoshis(amount, False, parent().num_zeros, self.decimalPoint()))
         
@@ -248,7 +249,7 @@ class BTCAmountEdit(UITextField):
         if amount is None:
             self.text = ""  # Text(" ") # Space forces repaint in case units changed
         else:
-            self.text = self.formatPlain_(amount) 
+            self.text = self.formatPlain_(amount)
         self.numbify()
 
 class FiatAmountEdit(BTCAmountEdit):

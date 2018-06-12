@@ -866,10 +866,10 @@ class ElectrumGui(PrintError):
     def get_presented_viewcontroller(self) -> ObjCInstance:
         rvc = self.window.rootViewController if self.window else None
         pvc = rvc.presentedViewController if rvc is not None else None
-        while pvc is not None and pvc.isBeingDismissed():
+        while pvc and pvc.presentedViewController and not pvc.presentedViewController.isBeingDismissed():
             # keep looking up the view controller hierarchy until we find a modal that is *NOT* being dismissed currently
-            pvc = pvc.presentingViewController
-        return rvc if pvc is None else pvc
+            pvc = pvc.presentedViewController
+        return pvc if pvc else rvc
 
     def get_current_nav_controller(self) -> ObjCInstance:
         return self.tabController.selectedViewController
@@ -973,27 +973,24 @@ class ElectrumGui(PrintError):
         else:       
             if callable(onSuccess): onSuccess()
 
-    def pay_to_URI(self, URI, errFunc : callable = None) -> bool:
+    def pay_to_URI(self, URI, showErr : bool = True) -> bool:
         utils.NSLog("PayTo URI: %s", str(URI))
         if not URI or not self.wallet:
             return False
         try:
             out = web.parse_URI(URI, self.on_pr)
-        except Exception as e:
-            if not callable(errFunc):
-                self.show_error(_('Invalid bitcoincash URI:') + '\n' + str(e))
-            else:
-                errFunc()
+        except:
+            e = sys.exc_info()[1]
+            utils.NSLog("Invalid bitcoincash URI: %s, exception: %s", URI, str(e))
+            if showErr: self.show_error(_('Invalid bitcoincash URI:') + '\n' + str(e))
             return False
         r = out.get('r')
         sig = out.get('sig')
         name = out.get('name')
         if r or (name and sig):
             #self.prepare_for_payment_request()
-            self.show_error("Don't know how to handle this payment request type. Sorry!\n\nEmail the developers!")
-            return False
-        if self.has_modal():
-            self.show_error(_("Cannot display the request since you already have a modal dialog open."))
+            utils.NSLog("Don't know how to handle this payment request type. %s %s %s", str(r), str(name), str(sig))
+            if showErr: self.show_error("Don't know how to handle this payment request type. Sorry!\n\nEmail the developers!")
             return False
         self.show_send_modal()
         address = out.get('address')
