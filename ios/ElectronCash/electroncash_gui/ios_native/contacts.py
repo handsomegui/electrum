@@ -667,10 +667,15 @@ def _Updated() -> None:
     gui.ElectrumGui.gui.refresh_components('contacts')
     
 def Find(addy) -> ContactsEntry:
+    if isinstance(addy, str):
+        try:
+            addy = Address.from_string(addy)
+        except:
+            return None
     contacts = _Get()
-    if isinstance(addy, (Address, str)) and contacts:
+    if isinstance(addy, Address) and contacts:
         for c in contacts:
-            if (isinstance(addy, Address) and c.address == addy) or (isinstance(addy, str) and c.address_str == addy):
+            if c.address == addy:
                 return c
     return None
 

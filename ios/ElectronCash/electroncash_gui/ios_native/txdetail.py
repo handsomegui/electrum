@@ -305,18 +305,14 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                     addresses.PushDetail(addy,self.txDetailVC.navigationController)
                 
                 actions.insert(0, [ _("Address Details"), onShowAddy, addy ] )
-            elif addy.to_ui_string() not in parent.wallet.contacts.keys(): # is not mine, isn't in contacts, offer user the option of adding
-                def doAddNewContact(addy):
-                    from .contacts import show_new_edit_contact
-                    show_new_edit_contact(addy, self.txDetailVC, onEdit=lambda x:utils.show_notification(_("Contact added")), title = _("New Contact"))
-                actions.insert(1, [ _("Add to Contacts"), doAddNewContact, addy ] )
-            elif self.txDetailVC.navigationController: # is not mine but is in contacts, so offer them a chance to view the contact
-                def doShowContact(addy):
-                    from .contacts import Find, PushNewContactDetailVC
-                    entry = Find(addy)
-                    if entry:
-                        PushNewContactDetailVC(entry, self.txDetailVC.navigationController)
-                actions.insert(1, [ _("Show Contact"), doShowContact, addy ] )
+            else:
+                entry = contacts.Find(addy)
+                if not entry: # is not mine, isn't in contacts, offer user the option of adding
+                    def doAddNewContact(addy):
+                        contacts.show_new_edit_contact(addy, self.txDetailVC, onEdit=lambda x:utils.show_notification(_("Contact added")), title = _("New Contact"))
+                    actions.insert(1, [ _("Add to Contacts"), doAddNewContact, addy ] )
+                elif self.txDetailVC.navigationController: # is not mine but is in contacts, so offer them a chance to view the contact
+                    actions.insert(1, [ _("Show Contact"), contacts.PushNewContactDetailVC, entry, self.txDetailVC.navigationController ] )
 
         
         utils.show_alert(vc = vc,
