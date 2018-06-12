@@ -1115,9 +1115,12 @@ class ElectrumGui(PrintError):
                 # (this is to remove stale addresses, coins, contacts, etc screens from old wallet which are irrelevant to this new wallet)
                 if isinstance(vcs[i], UINavigationController): vcs[i].popToRootViewControllerAnimated_(False)
             self.refresh_all()
-            self.ext_txn_check() or self.open_uri_check()
-            self.queued_ext_txn = None # force these to None here .. no matter what happened above..
-            self.queued_payto_uri = None
+            def onWalletDelayed() -> None:
+                # This is a hack to prevent an esoteric crash.. TODO: fix me!
+                self.ext_txn_check() or self.open_uri_check()
+                self.queued_ext_txn = None # force these to None here .. no matter what happened above..
+                self.queued_payto_uri = None
+            utils.call_later(1.0, onWalletDelayed)
             
     def on_open_last_wallet_fail(self):
         if not self.present_on_boarding_wizard_if_needed():
