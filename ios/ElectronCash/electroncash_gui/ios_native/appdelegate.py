@@ -8,7 +8,6 @@
 
 from .uikit_bindings import *
 from . import gui
-from . import heartbeat
 from . import utils
 import ElectronCash.app
 import time
@@ -123,13 +122,10 @@ bgTimer = None
 def startup_bg_task_stuff(application : ObjCInstance) -> None:
     global bgTask
     global bgTimer
-    utils.NSLog("Background: Entered background, notifying iOS about bgTask, starting bgTimer.")#, starting up heartbeat.")
+    utils.NSLog("Background: Entered background, notifying iOS about bgTask, starting bgTimer.")
 
     bgTask = application.beginBackgroundTaskWithName_expirationHandler_(at("Electron_Cash_Background_Task"), on_bg_task_expiration)        
 
-    wasRunning = heartbeat.IsRunning()
-    #heartbeat.Start() # not sure if this makes much of a difference yet.. so don't use
-    if wasRunning: utils.NSLog("Background: Heartbeat was already active in foreground. FIXME!")
     if bgTimer is not None: utils.NSLog("Background: bgTimer was not None. FIXME!")
     
     def onTimer() -> None:
@@ -161,11 +157,6 @@ def cleanup_possible_bg_task_stuff() -> (str, callable):
     else:
         msg += "no bgTimer was running"
         
-    if heartbeat.IsRunning():
-        heartbeat.Stop()
-        msg += ", sent stop to heartbeat"
-    else:
-        msg += ", heartbeat was not running"
     if bgTask != UIBackgroundTaskInvalid:
         bgTask_saved = bgTask
         bgTask = UIBackgroundTaskInvalid

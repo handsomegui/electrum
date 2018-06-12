@@ -607,7 +607,8 @@ def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor 
     ]
     if isCurrent:
         actions.pop(0)
-        actions.insert(0, [_('Change or Set Password'), DoPWChange])
+        if not parent.wallet.is_watching_only():
+            actions.insert(0, [_('Change or Set Password'), DoPWChange])
         if parent.wallet.has_seed():
             actions.insert(0, [_('Wallet Recovery Seed'), DoSeed])
     destructive = None

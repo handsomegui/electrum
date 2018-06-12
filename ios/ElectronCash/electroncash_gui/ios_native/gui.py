@@ -1808,7 +1808,7 @@ class ElectrumGui(PrintError):
         from . import txdetail
         try:
             if not self.wallet:
-                self.show_error(_("Cannot display the requested transaction as you don't have a wallet open."))
+                self.show_error(_("Cannot display the requested transaction as you don't have a wallet open.\n\nOpen a wallet and try again."))
                 return False
             txt_tx = tx_from_str(txn)
             tx = Transaction(txt_tx)
@@ -1822,7 +1822,7 @@ class ElectrumGui(PrintError):
                     tx._inputs[i]['value'] = my_coins[my_index]['value']
             print("ext txn read ok")
             if self.has_modal():
-                self.show_error(_("Cannot display the requested transaction since you already have a modal dialog open."))
+                self.show_error(_("Cannot display the requested transaction since you already have a modal dialog open.\n\nClose the current dialog and try again."))
             else:
                 vc = self.get_presented_viewcontroller()
                 txvc = txdetail.CreateTxDetailWithTx(tx, asModalNav = True)

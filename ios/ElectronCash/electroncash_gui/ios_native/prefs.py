@@ -6,7 +6,6 @@
 #
 from . import utils
 from . import gui
-from . import heartbeat
 from . import addrconv
 from . import amountedit
 from electroncash.util import timestamp_to_datetime
