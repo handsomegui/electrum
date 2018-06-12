@@ -16,6 +16,7 @@ from electroncash.address import Address, PublicKey
 from electroncash.util import timestamp_to_datetime
 import json, sys
 from . import coins
+from . import contacts
 
 _TxInputsOutputsCellHeight = 85.0
 _TxInputsOutputsHeaderHeight = 22.0
@@ -195,6 +196,9 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                         typ = _("My Receiving Address")
                 else:
                     typ = _("External Address")
+                    contact = contacts.Find(addr)
+                    if contact:
+                        typ += ', ' + _('Contact') + ": " + contact.name
             cell.addressType.text = typ                
             cell.accessoryType = UITableViewCellAccessoryNone #UITableViewCellAccessoryDisclosureIndicator#UITableViewCellAccessoryDetailDisclosureButton#UITableViewCellAccessoryDetailButton #
         except Exception as e:
