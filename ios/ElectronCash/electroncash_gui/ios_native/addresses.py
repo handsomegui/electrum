@@ -295,7 +295,8 @@ class AddressesVC(AddressesVCBase):
             self.needsRefresh = False
             self.blockRefresh = False
             self.mode = int(mode)
-            self.title = _("&Addresses").split('&')[1] if self.mode == ModeNormal else _("Choose Address")
+            ad = _("&Addresses").translate({ord('&') : None})
+            self.title = ad if self.mode == ModeNormal else _("Choose Address")
             if self.mode == ModeNormal:
                 self.tabBarItem.image = UIImage.imageNamed_("tab_addresses_new")
                 bb = UIBarButtonItem.alloc().initWithTitle_style_target_action_(_GetBBTitle(), UIBarButtonItemStylePlain, self, SEL(b'toggleCashAddr')).autorelease()
