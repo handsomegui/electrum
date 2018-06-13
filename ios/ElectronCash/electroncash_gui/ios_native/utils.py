@@ -1044,16 +1044,21 @@ class PySig:
             return
         func = None
         key = None
+        removeAll = False
         if callable(func_or_key):
             func = func_or_key
         else:
             key = func_or_key
             if isinstance(key, ObjCInstance):
                 key = key.ptr.value
+                removeAll = True
+        removeCt = 0
         for i,entry in enumerate(self.entries):
             if (key is not None and key == entry.key) or (func is not None and func == entry.func):
                 self.entries.pop(i)
-                return
+                removeCt += 1
+                if not removeAll: return
+        if removeCt: return
         name = "<Unknown NSObject>"
         try:
             name = str(func_or_key)

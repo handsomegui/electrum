@@ -613,38 +613,42 @@ class ReqTVD(ReqTVDBase):
  
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
-        reqs = _GetReqs()
-        identifier = "RequestListCell"
-        if not self.didReg.containsObject_(tv.ptr.value):
-            nib = UINib.nibWithNibName_bundle_(identifier, None)
-            tv.registerNib_forCellReuseIdentifier_(nib, identifier)
-            self.didReg.addObject_(tv.ptr.value)
-        if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
+        try:
+            reqs = _GetReqs()
+            identifier = "RequestListCell"
+            if not self.didReg.containsObject_(tv.ptr.value):
+                nib = UINib.nibWithNibName_bundle_(identifier, None)
+                tv.registerNib_forCellReuseIdentifier_(nib, identifier)
+                self.didReg.addObject_(tv.ptr.value)
+            if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
+                raise Exception('Bad index path row -- wallet closed and reopened?')
+            cell = tv.dequeueReusableCellWithIdentifier_(identifier)
+            #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
+            item = reqs[indexPath.row]
+            cell.addressTit.setText_withKerning_(_('Address'),utils._kern)
+            cell.statusTit.setText_withKerning_(_('Status'),utils._kern)
+            cell.amountTit.setText_withKerning_(_('Amount'),utils._kern)
+            if item.fiatStr:
+                cell.amount.attributedText = utils.hackyFiatAmtAttrStr(item.amountStr.strip(), item.fiatStr.strip(), '', 2.5, cell.amountTit.textColor)
+            else:
+                cell.amount.text = item.amountStr.strip() if item.amountStr else ''
+            cell.address.text = item.addrStr.strip() if item.addrStr else ''
+            if item.dateStr:
+                cell.date.attributedText = utils.makeFancyDateAttrString(item.dateStr.strip())
+            else:
+                cell.date.text = ''
+            if item.message:
+                cell.desc.setText_withKerning_(item.message,utils._kern)
+            else:
+                cell.desc.text = ''
+            cell.status.text = item.statusStr if item.statusStr else _('Unknown')
+            cell.selectionStyle = UITableViewCellSelectionStyleNone if not self.vc or not self.vc.navigationController else UITableViewCellSelectionStyleDefault
+            cell.chevron.setHidden_(cell.selectionStyle == UITableViewCellSelectionStyleNone)
+        except:
+            utils.NSLog("Exception in ReqTVD cellForRowAtIndexPath: %s", str(sys.exc_info()[1]))
             # this sometimes happens on app re-foregrounding.. so guard against it
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "Cell").autorelease()
             cell.selectionStyle = UITableViewCellSelectionStyleNone
-        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-        #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
-        item = reqs[indexPath.row]
-        cell.addressTit.setText_withKerning_(_('Address'),utils._kern)
-        cell.statusTit.setText_withKerning_(_('Status'),utils._kern)
-        cell.amountTit.setText_withKerning_(_('Amount'),utils._kern)
-        if item.fiatStr:
-            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(item.amountStr.strip(), item.fiatStr.strip(), '', 2.5, cell.amountTit.textColor)
-        else:
-            cell.amount.text = item.amountStr.strip() if item.amountStr else ''
-        cell.address.text = item.addrStr.strip() if item.addrStr else ''
-        if item.dateStr:
-            cell.date.attributedText = utils.makeFancyDateAttrString(item.dateStr.strip())
-        else:
-            cell.date.text = ''
-        if item.message:
-            cell.desc.setText_withKerning_(item.message,utils._kern)
-        else:
-            cell.desc.text = ''
-        cell.status.text = item.statusStr if item.statusStr else _('Unknown')
-        cell.selectionStyle = UITableViewCellSelectionStyleNone if not self.vc or not self.vc.navigationController else UITableViewCellSelectionStyleDefault
-        cell.chevron.setHidden_(cell.selectionStyle == UITableViewCellSelectionStyleNone)
         return cell
 
     # Below 3 methods conform to UITableViewDelegate protocol

@@ -1110,8 +1110,8 @@ class ElectrumGui(PrintError):
             self.config.set_key('gui_last_wallet', self.wallet.storage.path)
             self.config.open_last_wallet() # this badly named function just sets the 'default wallet path' to the gui_last_wallet..
             vcs = self.tabController.viewControllers
-            for i in range(1, len(vcs)):
-                # make sure that all our tabs except the 'wallets' tab is on the root viewcontroller.
+            for i in range(0, len(vcs)):
+                # make sure that all our tabs are on the root viewcontroller.
                 # (this is to remove stale addresses, coins, contacts, etc screens from old wallet which are irrelevant to this new wallet)
                 if isinstance(vcs[i], UINavigationController): vcs[i].popToRootViewControllerAnimated_(False)
             self.refresh_all()

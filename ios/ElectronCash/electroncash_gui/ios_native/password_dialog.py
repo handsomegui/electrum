@@ -54,6 +54,7 @@ class PWChangeVC(UIViewController):
     colors = objc_property()
     encSW = objc_property()
     encTit = objc_property()
+    kbas = objc_property()
     
     @objc_classmethod
     def pwChangeVCWithMessage_hasPW_isEncrypted_(cls : ObjCInstance, msg : ObjCInstance, hasPW : bool, isEnc : bool) -> ObjCInstance:
@@ -78,6 +79,7 @@ class PWChangeVC(UIViewController):
         self.colors = None
         self.encSW = None
         self.encTit = None
+        self.kbas = None
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
     
@@ -123,8 +125,16 @@ class PWChangeVC(UIViewController):
         return True
     
     @objc_method
-    def viewDidAppear_(self, animated : bool) -> None:
-        pass
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        self.kbas = utils.register_keyboard_autoscroll(self.view)
+
+    @objc_method
+    def viewWillDisappear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
+        if self.kbas:
+            utils.unregister_keyboard_autoscroll(self.kbas)
+            self.kbas = None
 
     
     @objc_method

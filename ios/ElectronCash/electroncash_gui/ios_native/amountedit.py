@@ -44,7 +44,7 @@ class BTCAmountEdit(UITextField):
 
     @objc_method
     def initWithCoder_(self, coder : ObjCInstance) -> ObjCInstance:
-        self = ObjCInstance(send_super(__class__, self, 'initWithCoder:', coder.ptr, argtypes=[c_void_p]))
+        self = ObjCInstance(send_super(__class__, self, 'initWithCoder:', coder.ptr, argtypes=[objc_id]))
         if self is not None:
             self.commonInit()
         return self

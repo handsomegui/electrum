@@ -62,8 +62,10 @@ def get_history(domain : list = None, statusImagesOverride : list = None, forceN
         label = wallet.get_label(tx_hash)
         date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
         ts = timestamp if conf > 0 else time.time()
-        fiat_amount = fiat_balance = 0
-        fiat_amount_str = fiat_balance_str = ''
+        fiat_amount = 0
+        fiat_balance = 0
+        fiat_amount_str = ''
+        fiat_balance_str = ''
         if fx: fx.history_used_spot = False
         if not forceNoFX and fx:
             if not ccy:
@@ -367,4 +369,10 @@ def _GetTxs(txsHelper : object) -> list:
 def _GetDomain(txsHelper : object) -> list:
     if not txsHelper:
         raise ValueError('GetDomain: Need to specify a TxHistoryHelper instance')
-    return utils.nspy_get_byname(txsHelper, 'domain')    
+    return utils.nspy_get_byname(txsHelper, 'domain')
+
+def Find(tx_hash_or_address : str) -> HistoryEntry:
+    if not isinstance(tx_hash_or_address, str): return None
+    h = gui.ElectrumGui.gui.sigHistory.get(tx_hash_or_address)
+    if h and len(h): return h[0]
+    return None
