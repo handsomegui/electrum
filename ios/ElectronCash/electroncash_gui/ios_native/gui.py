@@ -1178,6 +1178,9 @@ class ElectrumGui(PrintError):
             print("Pre-existing 'daemon' lock-file removed!")
         except:
             pass
+        if not self.config.get('use_exchange'):
+            self.config.set_key('use_exchange', 'BitcoinAverage')
+            utils.NSLog("Forced default exchange to 'BitcoinAverage'")
         fd, server = ed.get_fd_or_server(self.config)
         self.daemon = ed.Daemon(self.config, fd, True)
         self.daemon.start()
