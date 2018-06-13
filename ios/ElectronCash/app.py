@@ -15,7 +15,8 @@ def main():
             'verbose': True,
             'cmd': 'gui',
             'gui': 'ios_native',
-            'cwd': os.getcwd()
+            'cwd': os.getcwd(),
+            'use_exchange': 'BitcoinAverage'
     }
 
     set_verbosity(config_options.get('verbose'))
