@@ -126,7 +126,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.checking_accounts = False
         self.qr_window = None
         self.not_enough_funds = False
-        self.pluginsdialog = None
+        self.internalpluginsdialog = None
+        self.externalpluginsdialog = None
         self.require_fee_update = False
         self.tx_notifications = []
         self.tl_windows = []
@@ -405,7 +406,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_warning(msg, title=_('Information'))
 
     def open_wallet(self):
-        wallet_folder = self.get_wallet_folder()
+        try:
+            wallet_folder = self.get_wallet_folder()
+        except FileNotFoundError as e:
+            self.show_error(str(e))
+            return
+        if not os.path.exists(wallet_folder):
+            wallet_folder = None
         filename, __ = QFileDialog.getOpenFileName(self, "Select your wallet file", wallet_folder)
         if not filename:
             return
@@ -450,7 +457,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return os.path.dirname(os.path.abspath(self.config.get_wallet_path()))
 
     def new_wallet(self):
-        wallet_folder = self.get_wallet_folder()
+        try:
+            wallet_folder = self.get_wallet_folder()
+        except FileNotFoundError as e:
+            self.show_error(str(e))
+            return
         i = 1
         while True:
             filename = "wallet_%d" % i
@@ -517,7 +528,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         # Settings / Preferences are all reserved keywords in OSX using this as work around
         tools_menu.addAction(_("Electron Cash preferences") if sys.platform == 'darwin' else _("Preferences"), self.settings_dialog)
         tools_menu.addAction(_("&Network"), lambda: self.gui_object.show_network_dialog(self))
-        tools_menu.addAction(_("&Plugins"), self.plugins_dialog)
+        tools_menu.addAction(_("Optional &Features"), self.internal_plugins_dialog)
+        tools_menu.addAction(_("Installed &Plugins"), self.external_plugins_dialog)
         tools_menu.addSeparator()
         tools_menu.addAction(_("&Sign/verify message"), self.sign_verify_message)
         tools_menu.addAction(_("&Encrypt/decrypt message"), self.encrypt_message)
@@ -2352,6 +2364,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             with open(labelsFile, 'r') as f:
                 data = f.read()
+            if type(data) is not dict or len(data) and not all(type(v) is str for v in next(iter(d))):
+                self.show_critical(_("The file you selected does not appear to contain labels."))
+                return
             for key, value in json.loads(data).items():
                 self.wallet.set_label(key, value)
             self.show_message(_("Your labels were imported from") + " '%s'" % str(labelsFile))
@@ -2928,8 +2943,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.close_wallet()
         self.gui_object.close_window(self)
 
-    def plugins_dialog(self):
-        self.pluginsdialog = d = WindowModalDialog(self, _('Electrum Plugins'))
+    def internal_plugins_dialog(self):
+        self.internalpluginsdialog = d = WindowModalDialog(self, _('Optional Features'))
 
         plugins = self.gui_object.plugins
 
@@ -2944,7 +2959,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         w = QWidget()
         scroll.setWidget(w)
-        w.setMinimumHeight(plugins.count() * 35)
+        w.setMinimumHeight(plugins.get_internal_plugin_count() * 35)
 
         grid = QGridLayout()
         grid.setColumnStretch(0,1)
@@ -2961,20 +2976,21 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 widget.setEnabled(bool(p and p.is_enabled()))
 
         def do_toggle(cb, name, i):
-            p = plugins.toggle(name)
+            p = plugins.toggle_internal_plugin(name)
             cb.setChecked(bool(p))
             enable_settings_widget(p, name, i)
+            # All plugins get this whenever one is toggled.
             run_hook('init_qt', self.gui_object)
 
-        for i, descr in enumerate(plugins.descriptions.values()):
+        for i, descr in enumerate(plugins.internal_plugin_metadata.values()):
             name = descr['__name__']
-            p = plugins.get(name)
+            p = plugins.get_internal_plugin(name)
             if descr.get('registers_keystore'):
                 continue
             try:
                 cb = QCheckBox(descr['fullname'])
                 plugin_is_loaded = p is not None
-                cb_enabled = (not plugin_is_loaded and plugins.is_available(name, self.wallet)
+                cb_enabled = (not plugin_is_loaded and plugins.is_internal_plugin_available(name, self.wallet)
                               or plugin_is_loaded and p.can_user_disable())
                 cb.setEnabled(cb_enabled)
                 cb.setChecked(plugin_is_loaded and p.is_enabled())
@@ -2988,8 +3004,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             except Exception:
                 self.print_msg("error: cannot display plugin", name)
                 traceback.print_exc(file=sys.stdout)
-        grid.setRowStretch(len(plugins.descriptions.values()), 1)
+        grid.setRowStretch(len(plugins.internal_plugin_metadata.values()), 1)
         vbox.addLayout(Buttons(CloseButton(d)))
+        d.exec_()
+
+    def external_plugins_dialog(self):
+        import importlib
+        from . import external_plugins_window
+        importlib.reload(external_plugins_window)
+
+        self.externalpluginsdialog = d = external_plugins_window.ExternalPluginsDialog(self, _('Plugin Manager'))
         d.exec_()
 
     def cpfp(self, parent_tx, new_tx):
@@ -3041,4 +3065,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(_('Max fee exceeded'))
             return
         new_tx = self.wallet.cpfp(parent_tx, fee)
+        if new_tx is None:
+            self.show_error(_('CPFP no longer valid'))
+            return
         self.show_transaction(new_tx)
