@@ -402,4 +402,7 @@ static BOOL IS_IPHONE_5(void) {
 @implementation ReceiveBase
 @end
 
+@implementation SeedDisplayBase
+@end
+
 

@@ -576,4 +576,19 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python receive.py
 - (IBAction) onShareRequestBut:(id)sender;
 @end
+
+@interface SeedDisplayBase : UIViewController
+@property (nonatomic, strong) NSString *seed, *passphrase;
+@property (nonatomic, weak) IBOutlet UIView *contentView, *warnView;
+@property (nonatomic, weak) IBOutlet UILabel *seedTit, *extTit, *seedLbl, *extLbl, *blurb, *warnTit, *warn1, *warn2, *warn3;
+@property (nonatomic, weak) IBOutlet UIButton *okBut;
+@property (nonatomic, weak) IBOutlet UIGestureRecognizer *grSeed, *grExt;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csBlurbTop, *csBlurbBot, *csBlurbHeight, *csOkButHeight, *csTitTop;
+@end
+
+@interface SeedDisplayVC : SeedDisplayBase
+// implemented in python seed_dialog.py
+- (IBAction) onSeedLblTap:(id)sender;
+- (IBAction) onOk:(id)sender;
+@end
 #endif /* ViewsForIB_h */

@@ -507,13 +507,13 @@ class ElectrumGui(PrintError):
         walletUnitTxt = ""
         walletUnconfTxt = ""
         networkStatusText = _("Offline")
-        icon = ""
+        #icon = ""
 
         if self.daemon.network is None or not self.daemon.network.is_running():
             text = _("Offline")
             networkStatusText = text
             walletUnitTxt = text
-            icon = "status_disconnected.png"
+            #icon = "status_disconnected.png"
 
         elif self.daemon.network.is_connected():
             server_height = self.daemon.network.get_server_height()
@@ -525,13 +525,13 @@ class ElectrumGui(PrintError):
                 text = _("Synchronizing...")
                 networkStatusText = text
                 walletUnitTxt = text
-                icon = "status_waiting.png"
+                #icon = "status_waiting.png"
                 walletStatus = wallets.StatusSynchronizing
             elif server_lag > 1:
                 text = _("Server is lagging ({} blocks)").format(server_lag)
                 walletUnitTxt = text
                 networkStatusText = text
-                icon = "status_lagging.png"
+                #icon = "status_lagging.png"
                 walletStatus = wallets.StatusSynchronizing
             else:
                 walletStatus = wallets.StatusOnline
@@ -557,10 +557,10 @@ class ElectrumGui(PrintError):
                     text += self.daemon.fx.get_fiat_status_text(c + u + x, self.base_unit(), self.get_decimal_point()) or ''
                     fiatAmtTxt = self.daemon.fx.format_amount_and_units(c)
                     walletUnitTxt += " (" + fiatAmtTxt + ")" if fiatAmtTxt and not u and not x else ''
-                if not self.daemon.network.proxy:
-                    icon = "status_connected.png"
-                else:
-                    icon = "status_connected_proxy.png"
+                #if not self.daemon.network.proxy:
+                #    icon = "status_connected.png"
+                #else:
+                #    icon = "status_connected_proxy.png"
             
             lh, sh = self.daemon.network.get_status_value('updated')        
             '''utils.NSLog("lh=%d sh=%d is_up_to_date=%d Wallet Network is_up_to_date=%d is_connecting=%d is_connected=%d",
@@ -577,12 +577,12 @@ class ElectrumGui(PrintError):
         else:
             text = _("Not connected")
             walletUnitTxt = text
-            icon = "status_disconnected.png"
+            #icon = "status_disconnected.png"
             walletStatus = wallets.StatusOffline
             networkStatusText = _("Offline")
 
 
-        lockIcon = "lock.png" if self.wallet and self.wallet.has_password() else "unlock.png"
+        #lockIcon = "lock.png" if self.wallet and self.wallet.has_password() else "unlock.png"
         hasSeed =  bool(self.wallet.has_seed())
         hasPW = not bool(self.wallet.is_watching_only())
 
@@ -598,12 +598,12 @@ class ElectrumGui(PrintError):
         self.walletsVC.setAmount_andUnits_unconf_(walletBalanceTxt, walletUnitTxt, walletUnconfTxt)
 
         if self.prefsVC and (self.prefsVC.networkStatusText != networkStatusText
-                             or self.prefsVC.lockIcon != lockIcon
+                             #or self.prefsVC.lockIcon != lockIcon
                              or self.prefsVC.hasSeed != hasSeed
                              or self.prefsVC.hasPW != hasPW):
             self.prefsVC.networkStatusText = networkStatusText
-            self.prefsVC.networkStatusIcon = UIImage.imageNamed_(icon)
-            self.prefsVC.lockIcon = lockIcon
+            #self.prefsVC.networkStatusIcon = UIImage.imageNamed_(icon)
+            #self.prefsVC.lockIcon = lockIcon
             self.prefsVC.hasSeed = hasSeed
             self.prefsVC.hasPW = hasPW
             self.prefsVC.refresh()
@@ -697,10 +697,10 @@ class ElectrumGui(PrintError):
         
         
     def cashaddr_icon(self):
-        imgname = "addr_converter_bw.png"
-        if self.prefs_get_use_cashaddr():
-            imgname = "addr_converter.png"
-        return UIImage.imageNamed_(imgname).imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal) 
+        imgname = "cashaddr_off_new"
+        #if self.prefs_get_use_cashaddr():
+        #    imgname = "cashaddr_on_new"
+        return UIImage.imageNamed_(imgname)#.imageWithRenderingMode_(UIImageRenderingModeAlwaysOriginal) 
 
     def toggle_cashaddr(self, on : bool) -> None:
         self.config.set_key('show_cashaddr', on)

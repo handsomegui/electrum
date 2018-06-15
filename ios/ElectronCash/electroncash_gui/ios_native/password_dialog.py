@@ -94,19 +94,6 @@ class PWChangeVC(UIViewController):
     @objc_method
     def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
         if not utils.is_iphone(): return
-        # try and center the password text fields on the screen.. this is an ugly HACK.
-        # todo: fixme!
-        sv = self.viewIfLoaded 
-        if sv and isinstance(sv, UIScrollView):
-            sb = UIScreen.mainScreen.bounds
-            v = sv.subviews()[0]
-            frame = v.frame
-            frame.origin.y = 700 - frame.size.height
-            if utils.is_landscape():
-                frame.origin.y -= 300
-                #print("WAS LANDSCAPE")
-            #print("frame=%f,%f,%f,%f"%(frame.origin.x,frame.origin.y,frame.size.width,frame.size.height))
-            sv.scrollRectToVisible_animated_(frame, True)
         
     @objc_method
     def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
@@ -168,12 +155,13 @@ class PWChangeVC(UIViewController):
                 a.placeholder = new if new != old else newcolon
             elif isinstance(a, UIButton):
                 a.setTitle_forState_(_(a.titleForState_(UIControlStateNormal)), UIControlStateNormal)
+                a.layer.borderColor = utils.uicolor_custom('nav').CGColor
         msgLbl = v.viewWithTag_(20)
         msgLbl.text = msg
         utils.uiview_set_enabled(v.viewWithTag_(100), has_pw)
         utils.uiview_set_enabled(v.viewWithTag_(110), has_pw)
-        sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,320,254)).autorelease()
-        sv.contentSize = CGSizeMake(320,700)
+        sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,345,305)).autorelease()
+        sv.contentSize = CGSizeMake(345,450)
         sv.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.,0.,0.,0.3)
         sv.opaque = False
         sv.addSubview_(v)
@@ -188,8 +176,9 @@ class PWChangeVC(UIViewController):
         self.encTit = v.viewWithTag_(500)
         pwStrLbl = v.viewWithTag_(410)
         pwStrTitLbl = v.viewWithTag_(400)
+        pwStrTitLbl.setText_withKerning_( _("Password Strength"), utils._kern)
         myGreen = UIColor.colorWithRed_green_blue_alpha_(0.0,0.75,0.0,1.0)
-        self.colors =  {"Weak":UIColor.redColor, "Medium":UIColor.blueColor, "Strong":myGreen, "Very Strong": myGreen}
+        self.colors =  {"Weak":utils.uicolor_custom('red'), "Medium":UIColor.blueColor, "Strong":myGreen, "Very Strong": myGreen}
 
         cancelBut = v.viewWithTag_(2000)
         def onCancel(but_in : objc_id) -> None:
