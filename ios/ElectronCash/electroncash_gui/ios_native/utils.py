@@ -58,6 +58,10 @@ def is_iphone4() -> bool:
     # iphone4 has <1136 pix height
     return is_iphone() and ( UIScreen.mainScreen.nativeBounds.size.height - 1136.0 < -0.5 )
 
+def is_iphoneX() -> bool:
+    # iphone X has 2436 pix height
+    return is_iphone() and ( UIScreen.mainScreen.nativeBounds.size.height - 2436.0 < 0.5 )
+   
 def is_ipad() -> bool:
     return not is_iphone()
 
