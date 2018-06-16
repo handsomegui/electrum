@@ -25,21 +25,12 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
-import os
+import sys, os, json, qrcode, qrcode.image.svg, tempfile, random, queue, threading, time, stat
+from collections import namedtuple
 from inspect import signature
 from typing import Callable, Any
 from .uikit_bindings import *
 from .custom_objc import *
-
-import qrcode
-import qrcode.image.svg
-import tempfile
-import random
-import queue
-from collections import namedtuple
-import threading
-import time
 
 from electroncash.i18n import _
 
@@ -1372,6 +1363,59 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
 # be sure to unregister the autoscroller when view disappears. Install unregister call in viewWillDisappear.
 def unregister_keyboard_autoscroll(handle : int) -> None:
     unregister_keyboard_callbacks(handle)
+
+##### File Backed Dict
+class FileBackedDict(object):
+    def __init__(self, fileName : str, other : object = None):
+        self._d = dict()
+        self._fn = fileName
+        if isinstance(other, FileBackedDict):
+            self._d = other._d.copy()
+            if self.write():
+                NSLog("File-backed dict '%s' created as copy of '%s'",os.path.split(self._fn)[-1],os.path.split(other._fn)[-1])
+        else:
+            if os.path.exists(self._fn): self.read()
+            else: NSLog("New empty file-backed dict '%s' -- will create file once data is added.",os.path.split(self._fn)[-1])
+    def read(self) -> bool:
+        if not os.path.exists(self._fn):
+            NSLog("*** WARNING: JSON dict file does not (yet?) exist: %s", self._fn)
+            return False
+        try:
+            with open(self._fn, "r") as f:
+                result = json.load(f)
+        except:
+            NSLog("*** WARNING: Cannot read JSON dict file (%s) exception was: %s", self._fn, str(sys.exc_info()[1]))
+            return False
+        if not isinstance(result, dict):
+            NSLog("*** WARNING: JSON file read but is not a dict: %s", self._fn)
+            return False
+        self._d = result
+        return True        
+    def write(self) -> bool:
+        try:
+            with open(self._fn, "w") as f:
+                json.dump(self._d, f, indent=4)
+            os.chmod(self._fn, stat.S_IREAD | stat.S_IWRITE)
+        except:
+            NSLog("*** WARNING: Cannot write JSON dict file (%s) exception was: %s", self._fn, str(sys.exc_info()[1]))
+            return False
+        return True
+    def dict(self) -> dict:
+        return self._d
+    def get(self, key : Any, default : Any = None) -> Any:
+        return self._d.get(key, default)
+    def set(self, key : Any, value : Any, save : bool = True) -> None:
+        self._d[key] = value
+        if save: self.write()
+    def has(self, key : Any) -> bool:
+        return bool(key in self._d)
+    def pop(self, key : Any, save : bool = True) -> Any:
+        if not isinstance(save, bool):
+            NSLog("*** WARNING: FileBackedDict's pop() method doesn't take a default value. The second argument is always the 'save' arg!")
+        ret = self.pop(key, None)
+        if save: self.write()
+        return ret
+
 
 ##### Boilerplate crap
 class boilerplate:

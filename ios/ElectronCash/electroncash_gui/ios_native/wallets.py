@@ -569,6 +569,12 @@ def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor 
     def DoDelete() -> None:
         nonlocal tf, placeholder, prefill
         if not parent.wallet: return
+        if isCurrent:
+            utils.show_alert(vc = vc,
+                             title = _('Cannot Delete Active Wallet'),
+                             message = _("You are requesting the deletion of the currently active wallet. In order to delete this wallet, please switch to another wallet, then select this option again on this wallet."),
+                             actions = [ [_("OK") ] ])
+            return
         def DeleteChk() -> None:
             nonlocal tf, placeholder, prefill
             prefill = ''
@@ -604,18 +610,16 @@ def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor 
         [ _("Rename Wallet"), DoRename ],
         [ _("Save/Export Wallet"), DoSave ],
         [ _("Cancel") ],
+        [ _("Delete Wallet"), DoDelete ]
     ]
+    cancel = actions[-2][0]
+    destructive = actions[-1][0]
     if isCurrent:
         actions.pop(0)
         if not parent.wallet.is_watching_only():
             actions.insert(0, [_('Change or Set Password'), DoPWChange])
         if parent.wallet.has_seed():
             actions.insert(0, [_('Wallet Recovery Seed'), DoSeed])
-    destructive = None
-    cancel = actions[-1][0]
-    if not isCurrent:
-        actions.append([_("Delete Wallet"), DoDelete ])
-        destructive = actions[-1][0]
     return utils.show_alert(vc = vc, title = _("Wallet Operations"), message = info.name, actions = actions,
                             cancel = cancel, destructive = destructive,
                             ipadAnchor = ipadAnchor, style = UIAlertControllerStyleActionSheet)

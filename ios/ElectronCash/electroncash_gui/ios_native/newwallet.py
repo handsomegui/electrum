@@ -390,6 +390,8 @@ class NewWalletSeed2(NewWalletSeedBase):
             sugSet = set()
             if currActualSeedWord in suggestions:
                 sugSet.add(currActualSeedWord)
+            elif prefix in suggestions: # this fixes issue #4
+                sugSet.add(prefix) 
             while len(sugSet) < len(suggestions) and len(sugSet) < 4:
                 sugSet.add(suggestions[random.randint(0,len(suggestions)-1)])
             #print("sugSet=",*sugSet if sugSet else '')
