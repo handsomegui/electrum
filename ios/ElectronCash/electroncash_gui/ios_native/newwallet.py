@@ -133,6 +133,9 @@ class NewWalletVC(NewWalletVCBase):
         for tf in tfs:
             tf.placeholder = _(d[tf.ptr.value])
             utils.uitf_redo_attrs(tf)
+        if self.showHidePWBut:
+            self.showHidePWBut.setTitle_forState_(" " + _("Show"), UIControlStateNormal)
+            self.showHidePWBut.setTitle_forState_(" " + _("Show"), UIControlStateSelected)
     
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -160,6 +163,12 @@ class NewWalletVC(NewWalletVCBase):
     def textFieldDidBeginEditing_(self, tf : ObjCInstance) -> None:
         pass
     
+    @objc_method
+    def toggleShowHidePW(self) -> None:
+        sel = not self.showHidePWBut.isSelected()
+        self.showHidePWBut.setSelected_(sel)
+        self.walletPw1.setSecureTextEntry_(not sel)
+        self.walletPw2.setSecureTextEntry_(not sel)
     
     @objc_method
     def doChkFormOk(self) -> bool:

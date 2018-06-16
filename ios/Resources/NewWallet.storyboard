@@ -291,7 +291,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -318,7 +318,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -384,9 +384,25 @@
                                             <constraint firstItem="Ces-Y7-igc" firstAttribute="top" secondItem="Gre-gg-6t9" secondAttribute="top" id="vFR-X7-I50"/>
                                         </constraints>
                                     </view>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="878-X9-glw">
+                                        <rect key="frame" x="260" y="111" width="100" height="18"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="100" id="QyK-iA-2AZ"/>
+                                            <constraint firstAttribute="height" constant="18" id="gU8-HV-dC4"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                        <state key="normal" title=" Show" image="Rect_For_Chk_18px.png">
+                                            <color key="titleColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                                        </state>
+                                        <state key="selected" image="Rect_For_Chk_Chkd_18px.png"/>
+                                        <connections>
+                                            <action selector="toggleShowHidePW" destination="FsD-Wr-KwH" eventType="primaryActionTriggered" id="jvg-Ig-WHe"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
+                                    <constraint firstItem="878-X9-glw" firstAttribute="trailing" secondItem="seh-IT-8Js" secondAttribute="trailing" id="0ML-kY-PGR"/>
                                     <constraint firstItem="v28-QS-pGR" firstAttribute="trailing" secondItem="fnB-C8-Gss" secondAttribute="trailing" constant="15" id="2cF-5T-NVY"/>
                                     <constraint firstItem="seh-IT-8Js" firstAttribute="top" secondItem="Weu-dS-B16" secondAttribute="bottom" constant="25" id="3BU-3q-VzH"/>
                                     <constraint firstItem="Weu-dS-B16" firstAttribute="trailing" secondItem="fnB-C8-Gss" secondAttribute="trailing" id="3pl-TS-Gma"/>
@@ -402,6 +418,7 @@
                                     <constraint firstItem="seh-IT-8Js" firstAttribute="leading" secondItem="fnB-C8-Gss" secondAttribute="leading" id="HTT-Jz-n8H"/>
                                     <constraint firstItem="W0m-nW-qy3" firstAttribute="top" secondItem="Fzd-ZY-t1b" secondAttribute="bottom" constant="5" id="Mtn-DD-vFv"/>
                                     <constraint firstItem="Weu-dS-B16" firstAttribute="leading" secondItem="fnB-C8-Gss" secondAttribute="leading" id="SUZ-zt-3vu"/>
+                                    <constraint firstItem="878-X9-glw" firstAttribute="bottom" secondItem="seh-IT-8Js" secondAttribute="bottom" id="TaO-WM-0wt"/>
                                     <constraint firstItem="zuV-JL-yit" firstAttribute="top" relation="greaterThanOrEqual" secondItem="Gre-gg-6t9" secondAttribute="bottom" constant="3" id="V55-Lh-k2S"/>
                                     <constraint firstAttribute="height" constant="603" id="XVE-Cj-JnG"/>
                                     <constraint firstItem="seh-IT-8Js" firstAttribute="trailing" secondItem="fnB-C8-Gss" secondAttribute="trailing" id="cEC-Sz-6Hu"/>
@@ -459,6 +476,7 @@
                         <outlet property="errTopCS" destination="u7G-FN-ltf" id="hzm-Fx-SNr"/>
                         <outlet property="nextBut" destination="zuV-JL-yit" id="Gjf-zN-7Y6"/>
                         <outlet property="nextButBotCS" destination="uZZ-Wy-3wD" id="Rjn-U7-Oa1"/>
+                        <outlet property="showHidePWBut" destination="878-X9-glw" id="Ke6-TQ-gbT"/>
                         <outlet property="walletName" destination="Weu-dS-B16" id="hLi-Ai-mha"/>
                         <outlet property="walletNameTit" destination="fnB-C8-Gss" id="GTF-t7-BZH"/>
                         <outlet property="walletPw1" destination="1e6-VN-XRi" id="snm-PR-ZLe"/>
@@ -1441,7 +1459,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -1468,7 +1486,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -1534,6 +1552,21 @@
                                             <constraint firstItem="Vhl-Vi-ugm" firstAttribute="top" secondItem="L5S-yf-62j" secondAttribute="top" id="zOg-sU-BYl"/>
                                         </constraints>
                                     </view>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bSp-iY-6wN">
+                                        <rect key="frame" x="260" y="111" width="100" height="18"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="100" id="5Xe-BO-JvX"/>
+                                            <constraint firstAttribute="height" constant="18" id="rgj-fk-e10"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                        <state key="normal" title=" Show" image="Rect_For_Chk_18px.png">
+                                            <color key="titleColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                                        </state>
+                                        <state key="selected" image="Rect_For_Chk_Chkd_18px.png"/>
+                                        <connections>
+                                            <action selector="toggleShowHidePW" destination="h0e-sN-UT0" eventType="primaryActionTriggered" id="sgI-8d-bp4"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
@@ -1543,7 +1576,9 @@
                                     </constraint>
                                     <constraint firstItem="jaL-ON-8L9" firstAttribute="trailing" secondItem="tJq-yv-gWa" secondAttribute="trailing" id="CCd-OQ-0tG"/>
                                     <constraint firstItem="bv0-MA-mXh" firstAttribute="top" relation="greaterThanOrEqual" secondItem="L5S-yf-62j" secondAttribute="bottom" constant="3" id="DKc-zo-uBo"/>
+                                    <constraint firstItem="bSp-iY-6wN" firstAttribute="bottom" secondItem="4ua-aZ-vD1" secondAttribute="bottom" id="Df3-4X-fVv"/>
                                     <constraint firstAttribute="height" constant="603" id="E6V-2d-oky"/>
+                                    <constraint firstItem="bSp-iY-6wN" firstAttribute="trailing" secondItem="4ua-aZ-vD1" secondAttribute="trailing" id="EXV-Sx-aQf"/>
                                     <constraint firstItem="bIg-hK-BU6" firstAttribute="top" secondItem="4ua-aZ-vD1" secondAttribute="bottom" constant="5" id="Eeq-P9-3kR"/>
                                     <constraint firstItem="bv0-MA-mXh" firstAttribute="centerX" secondItem="obM-YE-7e1" secondAttribute="centerX" id="GTi-Qy-70y"/>
                                     <constraint firstItem="P10-Wp-rT3" firstAttribute="bottom" secondItem="bv0-MA-mXh" secondAttribute="bottom" constant="25" id="LQU-BV-XW9">
@@ -1610,6 +1645,7 @@
                         <outlet property="errTopCS" destination="6Ro-Ae-ROq" id="2J6-oU-rlJ"/>
                         <outlet property="nextBut" destination="bv0-MA-mXh" id="XcE-cw-NNA"/>
                         <outlet property="nextButBotCS" destination="LQU-BV-XW9" id="f2v-on-5ZI"/>
+                        <outlet property="showHidePWBut" destination="bSp-iY-6wN" id="4Xa-jD-oWk"/>
                         <outlet property="walletName" destination="jaL-ON-8L9" id="SzE-0f-Zyg"/>
                         <outlet property="walletNameTit" destination="tJq-yv-gWa" id="wU5-EN-03C"/>
                         <outlet property="walletPw1" destination="bIg-hK-BU6" id="Aak-eV-Ja9"/>
@@ -2014,7 +2050,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -2041,7 +2077,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -2107,15 +2143,32 @@
                                             <constraint firstAttribute="height" constant="60" id="s5f-wq-r5h"/>
                                         </constraints>
                                     </view>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="I8I-XF-8bO">
+                                        <rect key="frame" x="260" y="111" width="100" height="18"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="100" id="0Fn-Au-4mA"/>
+                                            <constraint firstAttribute="height" constant="18" id="fF6-Uw-00S"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                        <state key="normal" title=" Show" image="Rect_For_Chk_18px.png">
+                                            <color key="titleColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                                        </state>
+                                        <state key="selected" image="Rect_For_Chk_Chkd_18px.png"/>
+                                        <connections>
+                                            <action selector="toggleShowHidePW" destination="sve-yO-HL9" eventType="primaryActionTriggered" id="syR-gB-q73"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
+                                    <constraint firstItem="I8I-XF-8bO" firstAttribute="bottom" secondItem="glh-KW-288" secondAttribute="bottom" id="0Gr-0N-04I"/>
                                     <constraint firstItem="glh-KW-288" firstAttribute="leading" secondItem="4uA-BC-Ngf" secondAttribute="leading" id="1EN-8a-X91"/>
                                     <constraint firstItem="Dvi-Ad-hYn" firstAttribute="bottom" secondItem="Jbr-fh-FVD" secondAttribute="bottom" constant="25" id="1oc-VZ-pig">
                                         <variation key="heightClass=compact-widthClass=compact" constant="0.0"/>
                                         <variation key="heightClass=compact-widthClass=regular" constant="5"/>
                                     </constraint>
                                     <constraint firstItem="Dvi-Ad-hYn" firstAttribute="trailing" secondItem="TEK-xa-GT0" secondAttribute="trailing" constant="15" id="3Pf-zR-HdS"/>
+                                    <constraint firstItem="I8I-XF-8bO" firstAttribute="trailing" secondItem="glh-KW-288" secondAttribute="trailing" id="Al3-86-0a7"/>
                                     <constraint firstItem="zFo-0t-FpI" firstAttribute="top" secondItem="4uA-BC-Ngf" secondAttribute="bottom" constant="5" id="Az4-8x-nDV"/>
                                     <constraint firstItem="Jbr-fh-FVD" firstAttribute="centerX" secondItem="WdZ-2x-nVM" secondAttribute="centerX" id="DQS-2k-rsN"/>
                                     <constraint firstItem="Jbr-fh-FVD" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Dvi-Ad-hYn" secondAttribute="leading" constant="15" id="Eo3-Su-QwH"/>
@@ -2182,6 +2235,7 @@
                         <outlet property="errTopCS" destination="tu7-aY-QiY" id="mGl-fZ-5RH"/>
                         <outlet property="nextBut" destination="Jbr-fh-FVD" id="u77-Cc-utu"/>
                         <outlet property="nextButBotCS" destination="1oc-VZ-pig" id="52P-nN-6Vg"/>
+                        <outlet property="showHidePWBut" destination="I8I-XF-8bO" id="kle-ZN-fQj"/>
                         <outlet property="walletName" destination="zFo-0t-FpI" id="IcR-nj-fdq"/>
                         <outlet property="walletNameTit" destination="4uA-BC-Ngf" id="uN7-eW-uvU"/>
                         <outlet property="walletPw1" destination="fGV-2W-Gaz" id="u8L-ku-dLn"/>
@@ -2591,7 +2645,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -2618,7 +2672,7 @@
                                         </constraints>
                                         <color key="textColor" red="0.25490196079999999" green="0.25490196079999999" blue="0.25490196079999999" alpha="1" colorSpace="deviceRGB"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" smartDashesType="no" smartQuotesType="no"/>
+                                        <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" secureTextEntry="YES" smartDashesType="no" smartQuotesType="no"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
                                                 <integer key="value" value="4"/>
@@ -2684,10 +2738,26 @@
                                             <constraint firstItem="Ecj-Mh-wwo" firstAttribute="top" secondItem="PCn-Tz-fzn" secondAttribute="top" id="s59-ff-byj"/>
                                         </constraints>
                                     </view>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gfk-eO-hpH">
+                                        <rect key="frame" x="260" y="111" width="100" height="18"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="100" id="uoi-4S-pYx"/>
+                                            <constraint firstAttribute="height" constant="18" id="we0-zU-DeW"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                        <state key="normal" title=" Show" image="Rect_For_Chk_18px.png">
+                                            <color key="titleColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
+                                        </state>
+                                        <state key="selected" image="Rect_For_Chk_Chkd_18px.png"/>
+                                        <connections>
+                                            <action selector="toggleShowHidePW" destination="h3c-OP-xUC" eventType="primaryActionTriggered" id="dtA-PT-JI2"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstItem="ekd-0d-dOd" firstAttribute="trailing" secondItem="PCn-Tz-fzn" secondAttribute="trailing" constant="15" id="0i4-gd-xhr"/>
+                                    <constraint firstItem="gfk-eO-hpH" firstAttribute="trailing" secondItem="x8Q-YN-v3g" secondAttribute="trailing" id="1I1-yT-GxB"/>
                                     <constraint firstItem="Ahe-Vq-7Bz" firstAttribute="top" secondItem="x8Q-YN-v3g" secondAttribute="bottom" constant="5" id="5dL-CD-A3e"/>
                                     <constraint firstItem="P9b-7m-zjw" firstAttribute="trailing" secondItem="Igq-6p-fcW" secondAttribute="trailing" id="63H-x5-lcC"/>
                                     <constraint firstItem="6zh-Hq-lKh" firstAttribute="leading" secondItem="ekd-0d-dOd" secondAttribute="leading" constant="15" id="FXI-a2-PGn"/>
@@ -2708,6 +2778,7 @@
                                     <constraint firstItem="x8Q-YN-v3g" firstAttribute="trailing" secondItem="6zh-Hq-lKh" secondAttribute="trailing" id="YCd-2o-Aix"/>
                                     <constraint firstItem="Igq-6p-fcW" firstAttribute="trailing" secondItem="x8Q-YN-v3g" secondAttribute="trailing" id="c1P-aa-FLP"/>
                                     <constraint firstItem="ekd-0d-dOd" firstAttribute="trailing" secondItem="6zh-Hq-lKh" secondAttribute="trailing" constant="15" id="cbg-If-e8n"/>
+                                    <constraint firstItem="gfk-eO-hpH" firstAttribute="bottom" secondItem="x8Q-YN-v3g" secondAttribute="bottom" id="f5V-DB-hQV"/>
                                     <constraint firstItem="x8Q-YN-v3g" firstAttribute="top" secondItem="zj3-vm-O7H" secondAttribute="bottom" constant="25" id="g32-Sy-kqn"/>
                                     <constraint firstItem="FlG-uc-1Zl" firstAttribute="top" relation="greaterThanOrEqual" secondItem="PCn-Tz-fzn" secondAttribute="bottom" constant="3" id="gm3-fB-CU0"/>
                                     <constraint firstItem="x8Q-YN-v3g" firstAttribute="leading" secondItem="6zh-Hq-lKh" secondAttribute="leading" id="iMc-4C-CrX"/>
@@ -2759,6 +2830,7 @@
                         <outlet property="errTopCS" destination="ViZ-gt-OyD" id="Gst-NX-djj"/>
                         <outlet property="nextBut" destination="FlG-uc-1Zl" id="lIU-pW-vZW"/>
                         <outlet property="nextButBotCS" destination="szJ-h7-XrX" id="8wv-Y0-O9Y"/>
+                        <outlet property="showHidePWBut" destination="gfk-eO-hpH" id="RhV-yM-7NS"/>
                         <outlet property="walletName" destination="zj3-vm-O7H" id="IkW-mt-Tb3"/>
                         <outlet property="walletNameTit" destination="6zh-Hq-lKh" id="iGj-Md-KdI"/>
                         <outlet property="walletPw1" destination="Ahe-Vq-7Bz" id="rwY-Lu-h1z"/>
@@ -2990,6 +3062,8 @@
         <image name="ElectronCashFunkyBG_4.png" width="283" height="251"/>
         <image name="OnBoardingLock.png" width="280" height="195"/>
         <image name="OnBoardingShield.png" width="284" height="212"/>
+        <image name="Rect_For_Chk_18px.png" width="18" height="18"/>
+        <image name="Rect_For_Chk_Chkd_18px.png" width="18" height="18"/>
         <image name="bang_red.png" width="18" height="18"/>
         <image name="i_yellow.png" width="18" height="18"/>
         <image name="qrcode_new_framed.png" width="23" height="23"/>
