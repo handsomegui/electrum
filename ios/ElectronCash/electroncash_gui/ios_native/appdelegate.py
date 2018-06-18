@@ -101,6 +101,8 @@ class PythonAppDelegate(UIResponder):
     def applicationDidEnterBackground_(self, application : ObjCInstance) -> None:
         if not self.firstRun:
             startup_bg_task_stuff(application)
+            eg = gui.ElectrumGui.gui
+            if eg: eg.on_backgrounded()
         
     @objc_method
     def applicationWillTerminate_(self, application : ObjCInstance) -> None:

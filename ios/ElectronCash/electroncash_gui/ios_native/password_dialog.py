@@ -36,11 +36,13 @@ from electroncash.i18n import _
 from electroncash import WalletStorage, Wallet
        
 
-def Create_PWChangeVC(msg : str, hasPW : bool, isEnc : bool,
-                      callback : Callable[[str,str,bool], None] # pass a callback that accepts oldPW, newPW, encrypt_wallet_bool
+def Create_PWChangeVC(msg : str, hasPW : bool, isEnc : bool, hasTouchId : bool,
+                      callback : Callable[[str,str,bool,bool], None], # pass a callback that accepts oldPW, newPW, encrypt_wallet_bool
+                      callbackChkTouchId : Callable[[bool],bool] # pass a callback that gets invoked whenever they try to enable touchid. if it can't be done, returns false. arg to callable is whether we want to use or not use touchid (UISwitch isOn())
                       ) -> ObjCInstance:
-    ret = PWChangeVC.pwChangeVCWithMessage_hasPW_isEncrypted_(ns_from_py(msg), hasPW, isEnc)
+    ret = PWChangeVC.pwChangeVCWithMessage_hasPW_isEncrypted_hasTouchId_(ns_from_py(msg), hasPW, isEnc, hasTouchId)
     utils.add_callback(ret, 'okcallback', callback)
+    utils.add_callback(ret, 'on_touchid', callbackChkTouchId)
     return ret
 
 class PWChangeVC(UIViewController):
@@ -50,17 +52,21 @@ class PWChangeVC(UIViewController):
     curPW = objc_property()
     hasPW = objc_property()
     isEnc = objc_property()
+    hasTouchId = objc_property()
     msg = objc_property()
     colors = objc_property()
     encSW = objc_property()
     encTit = objc_property()
+    tidSW = objc_property()
+    tidTit = objc_property()
     kbas = objc_property()
     
     @objc_classmethod
-    def pwChangeVCWithMessage_hasPW_isEncrypted_(cls : ObjCInstance, msg : ObjCInstance, hasPW : bool, isEnc : bool) -> ObjCInstance:
+    def pwChangeVCWithMessage_hasPW_isEncrypted_hasTouchId_(cls : ObjCInstance, msg : ObjCInstance, hasPW : bool, isEnc : bool, hasTouchId : bool) -> ObjCInstance:
         ret = PWChangeVC.new().autorelease()
         ret.hasPW = hasPW
         ret.isEnc = isEnc
+        ret.hasTouchId = hasTouchId
         ret.msg = msg
         ret.modalPresentationStyle = UIModalPresentationOverFullScreen#UIModalPresentationOverCurrentContext
         ret.modalTransitionStyle = UIModalTransitionStyleCrossDissolve
@@ -72,6 +78,7 @@ class PWChangeVC(UIViewController):
         self.okBut = None
         self.hasPW = None
         self.isEnc = None
+        self.hasTouchId = None
         self.curPW = None
         self.pw1 = None
         self.pw2 = None
@@ -79,6 +86,8 @@ class PWChangeVC(UIViewController):
         self.colors = None
         self.encSW = None
         self.encTit = None
+        self.tidSW = None
+        self.tidTit = None
         self.kbas = None
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')
@@ -127,6 +136,7 @@ class PWChangeVC(UIViewController):
     @objc_method
     def loadView(self) -> None:
         is_encrypted = self.isEnc
+        has_touchid = self.hasTouchId
         has_pw = self.hasPW
         msg = self.msg
         if msg is None:
@@ -160,8 +170,9 @@ class PWChangeVC(UIViewController):
         msgLbl.text = msg
         utils.uiview_set_enabled(v.viewWithTag_(100), has_pw)
         utils.uiview_set_enabled(v.viewWithTag_(110), has_pw)
-        sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,345,305)).autorelease()
-        sv.contentSize = CGSizeMake(345,450)
+        f = v.frame
+        sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,f.size.width,f.size.height)).autorelease()
+        sv.contentSize = CGSizeMake(f.size.width,f.size.height + 150)
         sv.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.,0.,0.,0.3)
         sv.opaque = False
         sv.addSubview_(v)
@@ -174,6 +185,9 @@ class PWChangeVC(UIViewController):
         self.encSW = v.viewWithTag_(510)
         self.encSW.setOn_animated_(bool(is_encrypted or not has_pw), False)
         self.encTit = v.viewWithTag_(500)
+        self.tidSW = v.viewWithTag_(610)
+        self.tidTit = v.viewWithTag_(600)
+        self.tidSW.setOn_animated_(bool(has_touchid), False)
         pwStrLbl = v.viewWithTag_(410)
         pwStrTitLbl = v.viewWithTag_(400)
         pwStrTitLbl.setText_withKerning_( _("Password Strength"), utils._kern)
@@ -191,10 +205,11 @@ class PWChangeVC(UIViewController):
             oldpw = self.curPW.text
             newpw = self.pw1.text
             enc = bool(self.encSW.isOn() and newpw)
+            tid = bool(self.tidSW.isOn())
             oldpw = oldpw if oldpw else None
             newpw = newpw if newpw else None
             def onCompletion() -> None:
-                cb(oldpw, newpw, enc)
+                cb(oldpw, newpw, enc, tid)
             self.dismissViewControllerAnimated_completion_(True,onCompletion)
         def onChg(oid : objc_id) -> None:
             tf = ObjCInstance(oid)
@@ -209,6 +224,11 @@ class PWChangeVC(UIViewController):
                     pwStrLbl.text = ""
                     utils.uiview_set_enabled(pwStrTitLbl,False)
             self.doChkOkBut()
+        def onTouchID(oid : objc_id) -> None:
+            sw = ObjCInstance(oid)
+            cb = utils.get_callback(self,'on_touchid')
+            if cb: sw.setOn_animated_(cb(sw.isOn()),True)
+        self.tidSW.handleControlEvent_withBlock_(UIControlEventValueChanged, onTouchID)
         cancelBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered,onCancel)
         okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered,onOk)
         self.pw1.handleControlEvent_withBlock_(UIControlEventEditingChanged,onChg)

@@ -36,10 +36,7 @@ import threading
 from decimal import Decimal
 from functools import partial
 from typing import Callable, Any
-try:
-    from .uikit_bindings import *
-except Exception as e:
-    sys.exit("Error: Could not import iOS libs: %s"%str(e))
+from .uikit_bindings import *
 from . import utils
 from . import history
 from . import addresses
@@ -230,6 +227,11 @@ class ElectrumGui(PrintError):
         self.queued_refresh_components = set()
         self.queued_refresh_components_mut = threading.Lock()
         self.last_refresh = 0
+        
+        self.keyEnclave = utils.SecureKeyEnclave(self.appDomain)
+        self.encPasswords = utils.FileBackedDict(os.path.join(self.config.path, 'enc_pws.json'))
+        self.touchIdAsked = utils.FileBackedDict(os.path.join(self.config.path, 'touch_id_asked.json'))
+        self.killableAlerts = list()
                 
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
         NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
@@ -294,6 +296,8 @@ class ElectrumGui(PrintError):
         self.window.rootViewController = self.tabController
 
         self.window.makeKeyAndVisible()                 
+
+        self.setup_key_enclave()
              
         utils.NSLog("UI Created Ok")
         
@@ -389,6 +393,10 @@ class ElectrumGui(PrintError):
         self.tabs = None
         if self.helper is not None: self.helper.release()
         self.helper = None
+        self.keyEnclave = None
+        self.encPasswords = None
+        self.touchIdAsked = None
+        self.killableAlerts = []
         self.cash_addr_sig.clear()
         
         self.sigHelper.clear()
@@ -401,6 +409,28 @@ class ElectrumGui(PrintError):
         self.sigCoins.clear()
         self.sigWallets.clear()
             
+    def on_backgrounded(self):
+        ct = 0
+        for a in self.killableAlerts:
+            if a.presentingViewController:
+                a.dismissViewControllerAnimated_completion_(False, None)
+                ct += 1
+        wasLen = len(self.killableAlerts)
+        self.killableAlerts = list()
+        if ct or wasLen:
+            utils.NSLog("on_backgrounded: Dismissed %d of %d extant killable alerts", ct, wasLen)
+    
+    def register_killable_alert(self, alert):
+        if alert not in self.killableAlerts:
+            self.killableAlerts.append(alert)
+            def OnDealloc(x : objc_id):
+                if alert in self.killableAlerts:
+                    self.killableAlerts.remove(alert)
+                    utils.NSLog("KillableAlert: Reaped 1 alert")
+                else:
+                    utils.NSLog("KillableAlert: Alert was not found in list. Must have been auto-dismissed.")
+            utils.NSDeallocObserver(alert).connect(OnDealloc)
+    
     def on_rotated(self): # called by PythonAppDelegate after screen rotation
         #update status bar label width
                 
@@ -888,7 +918,8 @@ class ElectrumGui(PrintError):
         return self.show_message(message=message, title=title, onOk=onOk, localRunLoop=localRunLoop, vc=vc)
     
     # full stop question for user -- appropriate for send tx dialog
-    def question(self, message, title = _("Question"), yesno = False, onOk = None, vc = None, destructive = False, okButTitle = None) -> bool:
+    def question(self, message, title = _("Question"), yesno = False, onOk = None, vc = None, destructive = False, okButTitle = None,
+                 onCancel = None) -> bool:
         ret = None
         localRunLoop = True if onOk is None else False
         if localRunLoop:
@@ -902,7 +933,7 @@ class ElectrumGui(PrintError):
             extrakwargs = { 'cancelButTitle' : _("No"), 'okButTitle' : _("Yes") }
         if okButTitle:
             extrakwargs['okButTitle'] = okButTitle
-        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs, vc = vc, destructive = destructive)
+        self.show_message(message=message, title=title, onOk=okFun, localRunLoop = localRunLoop, hasCancel = True, **extrakwargs, vc = vc, destructive = destructive, onCancel = onCancel)
         return ret
         
     # can be called from any thread, always runs in main thread
@@ -1103,7 +1134,8 @@ class ElectrumGui(PrintError):
         self.open_last_wallet()
         self.register_network_callbacks()
         
-    def on_wallet_opened(self):
+    # pass password param optionally if you want to prompt user for touchid if they don't have it enabled and it's possible to do
+    def on_wallet_opened(self, password : str = None) -> None: 
         if self.wallet:
             if self.onboardingWizard and not self.onboardingWizard.isBeingDismissed():
                 self.onboardingWizard.presentingViewController.dismissViewControllerAnimated_completion_(False, None)
@@ -1115,11 +1147,38 @@ class ElectrumGui(PrintError):
                 # (this is to remove stale addresses, coins, contacts, etc screens from old wallet which are irrelevant to this new wallet)
                 if isinstance(vcs[i], UINavigationController): vcs[i].popToRootViewControllerAnimated_(False)
             self.refresh_all()
+
             def onWalletDelayed() -> None:
                 # This is a hack to prevent an esoteric crash.. TODO: fix me!
-                self.ext_txn_check() or self.open_uri_check()
+                openingAModal = bool(self.ext_txn_check() or self.open_uri_check())
                 self.queued_ext_txn = None # force these to None here .. no matter what happened above..
                 self.queued_payto_uri = None
+
+
+                if password and not openingAModal and not self.tabController.presentedViewController:
+                    wallet_name = wallets.CurrentWalletName()
+    
+                    if (self.is_touchid_available() and not self.touchIdAsked.get(wallet_name)
+                        and not self.encPasswords.has(wallet_name)):
+                        def SaidYes() -> None:
+                            def Compl(b : bool) -> None:
+                                if b:
+                                    self.touchIdAsked.set(wallet_name, True)
+                                    utils.show_notification(_("Touch/Face ID enabled for wallet"))
+                            self.set_wallet_use_touchid(wallet_name, password, Compl)
+                        def SaidNo() -> None:
+                            self.touchIdAsked.set(wallet_name, True)
+
+                        actions = [ [_("No"), SaidNo], [ _("Yes"), SaidYes ] ]
+                        alert = utils.show_alert(vc = self.get_presented_viewcontroller(),
+                                                 title = (_("Use Touch/Face ID") + '?'), actions=actions, cancel=_("No"),
+                                                 message = _("For convenience, would you like to use Touch ID or Face ID to " +
+                                                             "open this wallet?\n\n" +
+                                                             "Your wallet password will still be used as a backup mechanism for when " +
+                                                             "Touch/Face ID fails or is unavailable.\n\n" +
+                                                             "Your wallet will continue to be protected and secure.") )
+                        self.register_killable_alert(alert)
+
             utils.call_later(1.0, onWalletDelayed)
             
     def on_open_last_wallet_fail(self):
@@ -1206,7 +1265,8 @@ class ElectrumGui(PrintError):
                             onFailure = None, # signature: fun(errMsg)
                             encrypt : bool = True,
                             vc : UIViewController = None,
-                            message : str = None) -> None:
+                            message : str = None,
+                            wants_touchid : bool = True) -> None:
         if not onSuccess: onSuccess = lambda: None
         if not onFailure: onFailure = lambda x: None
         if not vc: vc = self.get_presented_viewcontroller()
@@ -1261,6 +1321,11 @@ class ElectrumGui(PrintError):
                 wallet = Standard_Wallet(storage)
                 wallet.synchronize()
                 wallet.storage.write()
+                if wallet_pass and wants_touchid:
+                    self.set_wallet_use_touchid(wallet_name, wallet_pass)
+                    self.touchIdAsked.set(wallet_name, True)
+                else:
+                    self.set_wallet_use_touchid(wallet_name, None)
                 self.refresh_components('wallets')
                 def myOnSuccess() -> None: onSuccess()
                 doDismiss(animated = True, compl = myOnSuccess)
@@ -1300,6 +1365,11 @@ class ElectrumGui(PrintError):
                     wallet.save_keystore()
                 wallet.synchronize()
                 wallet.storage.write()
+                if wallet_pass and wants_touchid:
+                    self.set_wallet_use_touchid(wallet_name, wallet_pass)
+                    self.touchIdAsked.set(wallet_name, True)
+                else:
+                    self.set_wallet_use_touchid(wallet_name, None)
                 self.refresh_components('wallets')
                 def myOnSuccess() -> None: onSuccess()
                 doDismiss(animated = True, compl = myOnSuccess)
@@ -1355,6 +1425,7 @@ class ElectrumGui(PrintError):
                 self.on_wallet_opened()
                 onSuccess()
             except:
+                traceback.print_exc(file=sys.stdout)
                 utils.NSLog("Exception in opening wallet: %s",str(sys.exc_info()[1]))
                 onFailure(str(sys.exc_info()[1]))
                 
@@ -1387,8 +1458,8 @@ class ElectrumGui(PrintError):
                 else:
                     prompt = _("This wallet is encrypted with a password, please provide it to proceed:")
                     title = _("Password Required")
-                    password_dialog.prompt_password_asynch(vc=waitDlg, onOk=onOk, prompt=prompt, title=title, onCancel=myOnCancel,
-                                                           onForcedDismissal = myOnCancel)
+                    self.prompt_password_if_needed_asynch(callBack = onOk, prompt = prompt, title = title, onCancel = myOnCancel,
+                                                          onForcedDismissal = myOnCancel, usingStorage = storage, vc = waitDlg)
             def promptPwLater() -> None:
                 utils.call_later(0.1, promptPW)
             waitDlg = utils.show_please_wait(vc = vc, message = "Opening " + wallet_name[:25] + "...", completion = promptPwLater)
@@ -1462,6 +1533,13 @@ class ElectrumGui(PrintError):
                 self.wallet = None
             
             os.rename(info.full_path, new_path)
+            oldEncPw = self.encPasswords.get(info.name)
+            if oldEncPw:
+                self.encPasswords.set(newName, oldEncPw, save = False) # migrate encrypted password to new name if present
+            self.encPasswords.pop(info.name, save = True) # remove encrypted password for old name
+            if self.touchIdAsked.get(info.name):
+                self.touchIdAsked.set(newName, True, save = False)
+                self.touchIdAsked.pop(info.name, save = True)
             utils.show_notification(_("Wallet successfully renamed"))
             self.refresh_components('wallets')
             if isCurrent:
@@ -1472,14 +1550,27 @@ class ElectrumGui(PrintError):
     def prompt_password_if_needed_asynch(self, callBack, prompt = None, title = None, vc = None, onCancel = None, onForcedDismissal = None,
                                          usingStorage : Any = None) -> ObjCInstance:
         if vc is None: vc = self.get_presented_viewcontroller()
+        touchIdTry = 0
+        wallet_name = None
         def DoPromptPW(my_callback) -> ObjCInstance:
-            return password_dialog.prompt_password_asynch(vc = vc, onOk = my_callback, prompt = prompt, title = title, onCancel = onCancel, onForcedDismissal = onForcedDismissal)            
+            nonlocal touchIdTry, wallet_name
+            encpw = self.encPasswords.get(wallet_name)
+            if not touchIdTry and encpw:
+                touchIdTry += 1
+                def MyTouchID_CB(pw : str) -> None:
+                    if pw: my_callback(pw)
+                    else: DoPromptPW(my_callback)
+                self.get_wallet_password_using_touchid(wallet_name, MyTouchID_CB)
+                return None
+            else:
+                return password_dialog.prompt_password_asynch(vc = vc, onOk = my_callback, prompt = prompt, title = title, onCancel = onCancel, onForcedDismissal = onForcedDismissal)            
         if usingStorage:
             storage = WalletStorage(usingStorage, manual_upgrades=True) if not isinstance(usingStorage, WalletStorage) else usingStorage
             if not isinstance(storage, WalletStorage):
                 raise ValueError('usingStorage parameter needs to be a WalletStorage instance or a string path!')
             if not storage.file_exists():  
                 raise WalletFileNotFound('Wallet File Not Found')
+            wallet_name = os.path.split(storage.path)[-1]
             if not storage.is_encrypted():
                 callBack(None)
                 return None
@@ -1492,6 +1583,7 @@ class ElectrumGui(PrintError):
             return DoPromptPW(cb)
         else:
             if self.wallet is None: return None
+            wallet_name = wallets.CurrentWalletName()
             if not self.wallet.has_password():
                 callBack(None)
                 return None
@@ -1526,34 +1618,33 @@ class ElectrumGui(PrintError):
                 
         if not path or not os.path.exists(path):
             self.on_open_last_wallet_fail()
-        else:      
-            self.do_wallet_open(path)
-
-
-    def do_wallet_open(self, path) -> None: 
-        def cancelled() -> None:
-            self.on_open_last_wallet_fail()
-        def gotpw(password) -> None:
-            if not self.daemon or self.wallet:
-                return
-            try:
-                self.wallet = self.daemon.load_wallet(path, password)
-                self.on_wallet_opened()
-            except:
-                traceback.print_exc(file=sys.stdout)
-                self.show_error(str(sys.exc_info()[1]), onOk = lambda: self.on_open_last_wallet_fail())
-        def forciblyDismissed() -> None:
-            #self.on_open_last_wallet_fail()
-            # the assumption here is it was dimmissed because they exited app, then it backgrounded, then they came back.
-            # ... we'll let it slide
-            pass
-        
-        name = os.path.split(path)[1]
-        if len(name) > 30:
-            name = name[:14] + "..." + name[-13:]
-        msg = "Opening encrypted wallet: '" + name + "'"
-        self.prompt_password_if_needed_asynch(callBack = gotpw, prompt = msg, onCancel = cancelled, onForcedDismissal = forciblyDismissed,
-                                              usingStorage = path)
+        else:
+            def do_wallet_open(path : str) -> None: 
+                def cancelled() -> None:
+                    self.on_open_last_wallet_fail()
+                def gotpw(password) -> None:
+                    if not self.daemon or self.wallet:
+                        return
+                    try:
+                        self.wallet = self.daemon.load_wallet(path, password)
+                        self.on_wallet_opened(password)
+                    except:
+                        traceback.print_exc(file=sys.stdout)
+                        self.show_error(str(sys.exc_info()[1]), onOk = lambda: self.on_open_last_wallet_fail())
+                def forciblyDismissed() -> None:
+                    #self.on_open_last_wallet_fail()
+                    # the assumption here is it was dimmissed because they exited app, then it backgrounded, then they came back.
+                    # ... we'll let it slide
+                    pass
+                
+                name = os.path.split(path)[1]
+                if len(name) > 30:
+                    name = name[:14] + "..." + name[-13:]
+                msg = "Opening encrypted wallet: '" + name + "'"
+                self.prompt_password_if_needed_asynch(callBack = gotpw, prompt = msg, onCancel = cancelled,
+                                                      onForcedDismissal = forciblyDismissed,
+                                                      usingStorage = path)
+            do_wallet_open(path)
 
     def sign_tx_with_password(self, tx, callback, password, vc = None):
         '''Sign the transaction in a separate thread.  When done, calls
@@ -1633,10 +1724,14 @@ class ElectrumGui(PrintError):
         utils.WaitingDialog(vc, _('Broadcasting transaction...'),
                             broadcast_thread, broadcast_done, on_error)
 
-    def change_password(self, oldpw : str, newpw : str, enc : bool) -> None:
-        print("change pw, old=",oldpw,"new=",newpw, "enc=", str(enc))
+    def change_password(self, oldpw : str, newpw : str, enc : bool, touchid : bool = False) -> None:
+        print("change pw, old=",oldpw,"new=",newpw, "enc=", str(enc), "touchid=",touchid)
         try:
             self.wallet.update_password(oldpw, newpw, enc)
+            if touchid and self.keyEnclave.has_keys():
+                self.set_wallet_use_touchid(wallets.CurrentWalletName(), newpw)
+            else:
+                self.set_wallet_use_touchid(wallets.CurrentWalletName(), None)
         except BaseException as e:
             self.show_error(str(e))
             return
@@ -1647,11 +1742,34 @@ class ElectrumGui(PrintError):
         msg = _('Password was updated successfully') if newpw else _('Password is disabled, this wallet is not protected')
         self.show_message(msg, title=_("Success"))
         self.refresh_components('helper')
+   
+    def is_touchid_possible(self) -> bool:
+        return self.keyEnclave.has_keys()
+    
+    def is_touchid_available(self) -> bool:
+        return self.is_touchid_possible() and self.keyEnclave.biometrics_available()
+    
+    def check_touchid_for_gui(self, onOff : bool) -> bool:
+        if not onOff: return False
+        if self.keyEnclave.has_keys():
+            if not self.keyEnclave.biometrics_available():
+                self.show_error(title=_("Biometrics Unavailable"),
+                                message = _("We will flag this wallet as requesting to use Touch/Face ID, however it is currently disabled on the device. Please enable Touch/Face ID from the iOS General settings in order to use biometrics for this wallet."))
+            return True
+        else:
+            self.show_error(title=_("Secure Enclave Unavailable"),
+                            message = _("This device lacks the secure enclave service. As such, Touch/Face ID based wallet authentication is unavailable."))
+        return False
         
 
     def show_change_password(self, msg = None, vc = None):
         if self.wallet is None or self.wallet.storage is None: return
-        pwvc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(), self.wallet.storage.is_encrypted(), self.change_password)
+         
+        pwvc = password_dialog.Create_PWChangeVC(msg, self.wallet.has_password(),
+                                                 self.wallet.storage.is_encrypted(),
+                                                 (self.encPasswords.has(wallets.CurrentWalletName()) and self.is_touchid_possible()),
+                                                 self.change_password,
+                                                 self.check_touchid_for_gui)
         (self.get_presented_viewcontroller() if not vc else vc).presentViewController_animated_completion_(pwvc, True, None)
 
         
@@ -1858,9 +1976,49 @@ class ElectrumGui(PrintError):
             wiz = newwallet.PresentOnBoardingWizard(vc = self.tabController, completion = Block(Completion))
             return wiz
         return None
+    
+    def set_wallet_use_touchid(self, wallet_name : str, wallet_pass_or_none : str, completion : Callable[[bool],None] = None) -> None:
+        if not callable(completion): completion = lambda x: None
+        if wallet_pass_or_none is None:
+            self.encPasswords.pop(wallet_name)
+            completion(True)
+            return
+        wallet_pass = wallet_pass_or_none
+        def DoEnc(b : bool, s : str) -> None:
+            if not b:
+                completion(False)
+            else:
+                self.encPasswords.set(wallet_name, self.keyEnclave.encrypt_str2hex(wallet_pass))
+                completion(True)
+        if not self.keyEnclave.has_keys():
+            self.keyEnclave.generate_keys(DoEnc)
+        else:
+            DoEnc(True, None)
 
+    def get_wallet_password_using_touchid(self, wallet_name : str, completion : Callable[[str],None]) -> None:
+        hexpass = self.encPasswords.get(wallet_name)
+        if not hexpass:
+            completion(None)
+            return
+        def MyCallback(pw : str, err : str) -> None:
+            if err: utils.NSLog("Got error from enclave attempting to get password for %s: %s",wallet_name, err)
+            completion(pw)
+        self.keyEnclave.decrypt_hex2str(hexpass, MyCallback)
+
+    def setup_key_enclave(self) -> None:
+        if not self.keyEnclave.has_keys():
+            # UGH.. they lost their keys, or never had them.  Zero out our enc_pws and our touchIdAsked files..
+            self.encPasswords.clearAll()
+            self.touchIdAsked.clearAll()
+            def Compl(b : bool, err : str) -> None:
+                if not b:
+                    utils.NSLog("*** WARNING: could not generate secure enclave keys. Error was: %s", err)
+                else:
+                    utils.NSLog("Secure enclave generated new public/private keys for biometrics-based auth.")
+            self.keyEnclave.generate_keys(Compl)
+        
     # this method is called by Electron Cash libs to start the GUI
-    def main(self):
+    def main(self):        
         self.createAndShowUI()
-
-        self.start_daemon()
+        
+        self.start_daemon()        

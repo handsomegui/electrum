@@ -86,7 +86,7 @@ class WalletsVC(WalletsVCBase):
     @objc_method
     def refresh(self) -> None:
         self.doChkTableViewCounts()
-        if self.walletName: self.walletName.text = str(_Get('current'))
+        if self.walletName: self.walletName.text = str(CurrentWalletName())
         if self.statusBlurb: self.statusBlurb.sizeToFit()
     
     @objc_method
@@ -308,7 +308,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
        
     @objc_method
     def refresh(self) -> None:
-        self.name.text = str(_Get('current'))
+        self.name.text = str(CurrentWalletName())
         self.tv and self.tv.reloadData()
         
     @objc_method
@@ -319,7 +319,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
     @objc_method
     def ensureCurrentIsVisible(self) -> None:
         if self.tv:
-            current = _Get('current')
+            current = CurrentWalletName()
             wallets = _Get()
             for i,wallet in enumerate(wallets):
                 if current == wallet.name:
@@ -388,7 +388,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
             but2.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered, blk)
         if not self.bluchk:
             self.bluchk = iv.image
-        chkd = info.name == _Get('current')
+        chkd = info.name == CurrentWalletName()
         if chkd:
             iv.image = self.bluchk
         else:
@@ -408,7 +408,7 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
             gui.ElectrumGui.gui.show_error(message=str(err), vc = self)
         try:
             name = _Get()[indexPath.row].name
-            if name == _Get('current'): return
+            if name == CurrentWalletName(): return
             gui.ElectrumGui.gui.switch_wallets(vc = self, wallet_name = name,
                                                onSuccess = lambda: utils.call_later(0.2, self.vc.toggleDrawer),
                                                onFailure = showErr)
@@ -457,6 +457,9 @@ class WalletsDrawerVC(WalletsDrawerVCBase):
 def _Get(key = None) -> list():
     # return a list of wallets ultimately from WalletsMgr's list_wallets() function below..
     return gui.ElectrumGui.gui.sigWallets.get(key)
+
+def CurrentWalletName() -> str:
+    return gui.ElectrumGui.gui.sigWallets.doReloadForKey('current') # force uncached value each time
 
 ''' Wallets Manager -- Misc functions to create, inspect, etc wallets all in 1 place.
     This class wasn't stricly needed but the rationale was to have all wallet management code
@@ -520,7 +523,7 @@ def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor 
     except:
         utils.NSLog("_ShowOptionsForWalletAtIndex got exception: %s",str(sys.exc_info()[1]))
     if info.size <= 0: return
-    isCurrent = info.name == _Get('current')
+    isCurrent = info.name == CurrentWalletName()
     parent = gui.ElectrumGui.gui
     if not parent.wallet: return # disallow context menu when no wallet is open
     tf = None
@@ -583,6 +586,7 @@ def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor 
                 if txt == 'delete':
                     try:
                         os.remove(info.full_path)
+                        parent.set_wallet_use_touchid(info.name, None) # clear cached password if any
                         parent.refresh_components('wallets')
                         utils.show_notification(message = _("Wallet deleted successfully"))
                     except:

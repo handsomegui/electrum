@@ -74,6 +74,19 @@ class NewWalletVC(NewWalletVCBase):
     def viewDidLoad(self) -> None:
         send_super(__class__, self, 'viewDidLoad')
         self.setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown()
+        if gui.ElectrumGui.gui.is_touchid_possible():
+            self.touchIdTit.setHidden_(False)
+            self.touchId.setHidden_(False)
+            self.touchId.setOn_animated_(True, False)
+            def Blk(sw : objc_id) -> None:
+                sw = ObjCInstance(sw)
+                gui.ElectrumGui.gui.check_touchid_for_gui(sw.isOn())
+            self.touchId.handleControlEvent_withBlock_(UIControlEventValueChanged, Blk)
+        else:
+            self.touchIdTit.setHidden_(True)
+            self.touchId.setHidden_(True)
+            self.touchId.setOn_animated_(False, False)
+
         
     @objc_method
     def setupNextButtonSmartLayoutMogrificationWhenKeyboardIsShown(self) -> None:
@@ -119,7 +132,7 @@ class NewWalletVC(NewWalletVCBase):
 
     @objc_method
     def translateUI(self) -> None:
-        lbls = [ self.walletNameTit, self.walletPw1Tit, self.walletPw2Tit ]
+        lbls = [ self.walletNameTit, self.walletPw1Tit, self.walletPw2Tit, self.touchIdTit ]
         if not self.origLabelTxts:
             self.origLabelTxts = { lbl.ptr.value : lbl.text for lbl in lbls }
         d = self.origLabelTxts
@@ -151,6 +164,14 @@ class NewWalletVC(NewWalletVCBase):
     @objc_method
     def textFieldShouldReturn_(self, tf) -> bool:
         tf.resignFirstResponder()
+        return True
+    
+    @objc_method
+    def textField_shouldChangeCharactersInRange_replacementString_(self, tf, r : NSRange, s : ObjCInstance) -> bool:
+        if not self.errMsgView.isHidden():
+            # hide the error message when they start typing
+            self.errMsgView.setHidden_(True)
+            self.touchIdView.setHidden_(not self.errMsgView.isHidden())
         return True
     
     @objc_method
@@ -186,6 +207,7 @@ class NewWalletVC(NewWalletVCBase):
         if errMsg:
             utils.uilabel_replace_attributed_text(self.errMsg, errMsg, font = UIFont.italicSystemFontOfSize_(14.0))
         self.errMsgView.setHidden_(not errMsg)
+        self.touchIdView.setHidden_(not self.errMsgView.isHidden())
         return not errMsg
 
     @objc_method
@@ -197,7 +219,8 @@ class NewWalletVC(NewWalletVCBase):
     def saveVars(self) -> None:
         _SetParam(self, 'WalletName', self.walletName.text)
         _SetParam(self, 'WalletPass', self.walletPw2.text)
-        
+        _SetParam(self, 'UseTouchID', bool((not self.touchId.isHidden()) and self.touchId.isOn()) )
+
     @objc_method
     def prepareForSegue_sender_(self, segue, sender) -> None:
         # pass along wallet name, password, etc..
@@ -476,6 +499,7 @@ class NewWalletSeed2(NewWalletSeedBase):
             wallet_name = _Params(self)['WalletName']
             wallet_pass = _Params(self)['WalletPass']
             wallet_seed = _Params(self)['seed']
+            wants_touchid = _Params(self).get('UseTouchID', False)
         except:
             utils.NSLog("onNext in Seed2, got exception: %s", str(sys.exc_info()[1]))
             _ToErrIsHuman(self)
@@ -488,7 +512,8 @@ class NewWalletSeed2(NewWalletSeedBase):
             vc = self, completion = Completion,
             wallet_name = wallet_name,
             wallet_pass = wallet_pass,
-            wallet_seed = wallet_seed)
+            wallet_seed = wallet_seed,
+            wants_touchid = wants_touchid)
  
     
     def prepareForSegue_sender_(self, segue, sender) -> None:
@@ -678,6 +703,7 @@ class RestoreWallet2(NewWalletVC):
                 seedext = _Params(self)['seedext']
                 is_bip39 = _Params(self)['is_bip39']
                 seed_type = _Params(self)['seed_type']
+                wants_touchid = _Params(self).get('UseTouchID', False)
 
             except:
                 utils.NSLog("onRestoreModeSave, got exception: %s", str(sys.exc_info()[1]))
@@ -690,7 +716,8 @@ class RestoreWallet2(NewWalletVC):
                 wallet_seed = seed,
                 seed_ext = seedext,
                 seed_type = seed_type,
-                have_keystore = ks)
+                have_keystore = ks,
+                wants_touchid = wants_touchid)
 
 
 class NewWalletMenu(NewWalletMenuBase):
@@ -1164,8 +1191,10 @@ class ImportSaveWallet(NewWalletVC):
                 keys = []
                 wallet_pass = None
                 ks = _Params(self).get('keystore', None)
+                wants_touchid = False
                 if _Params(self)['imported_keystore_type'] == 2:
                     wallet_pass = _Params(self)['WalletPass']
+                    wants_touchid = _Params(self).get('UseTouchID', False)
                     if not ks:
                         keys = [x.item for x in _Params(self)['valid_items']] 
                 elif _Params(self)['imported_keystore_type'] == 1:
@@ -1177,7 +1206,8 @@ class ImportSaveWallet(NewWalletVC):
                 _WizardGenerateNewWallet(vc = self, wallet_name = wallet_name, wallet_pass = wallet_pass,
                                          message = _("Generating your wallet..."),
                                          have_keystore = ks,
-                                         watching_addresses = addys, private_keys = keys, encrypt = True)
+                                         watching_addresses = addys, private_keys = keys, encrypt = True,
+                                         wants_touchid = wants_touchid)
             except:
                 utils.NSLog("Exception in ImportSaveWallet onSave: %s", sys.exc_info()[1])
                 _ToErrIsHuman(vc=self)

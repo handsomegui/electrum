@@ -1412,10 +1412,148 @@ class FileBackedDict(object):
     def pop(self, key : Any, save : bool = True) -> Any:
         if not isinstance(save, bool):
             NSLog("*** WARNING: FileBackedDict's pop() method doesn't take a default value. The second argument is always the 'save' arg!")
-        ret = self.pop(key, None)
+        ret = self._d.pop(key, None)
         if save: self.write()
         return ret
+    def clearAll(self, save : bool = True) -> None:
+        self._d = dict()
+        if save: self.write()
 
+##### Wrapper for iOS Secure key enclave -- instantiates a KeyInterface class on the Objective C side.  Note this requires TouchID/FaceID
+class SecureKeyEnclave:
+    instances = 0
+    
+    def __init__(self, keyDomain : str):
+        self._keyInterface = KeyInterface.keyInterfaceWithPublicKeyName_privateKeyName_(keyDomain + ".pubkey", keyDomain + ".privkey").retain()
+        SecureKeyEnclave.instances += 1
+        #NSLog("SecureKeyEnclave: instance created (%d total extant instances)",SecureKeyEnclave.instances)
+
+    def __del__(self):
+        try:
+            if self._keyInterface:
+                self._keyInterface.release()
+                self._keyInterface = None
+                SecureKeyEnclave.instances -= 1
+                NSLog("SecureKeyEnclave: instance deleted (%d total instances left)",SecureKeyEnclave.instances)
+        except:
+            pass
+
+    def biometrics_available(self) -> bool:
+        return self._keyInterface.biometricsAreAvailable
+
+    def biometrics_are_not_available_reason(self) -> str: # returns failure reason if unavailable, or '' if available
+        err = objc_id(0)
+        if not self._keyInterface.biometricsAreAvailableWithError_(byref(err)):
+            if err and err.value:
+                err = ObjCInstance(err)
+                return str(err.description)
+            else:
+                return 'Unknown Reason'
+        return ''
+
+    def has_keys(self) -> bool:
+        return bool(self._keyInterface.publicKeyExists)
+
+    def delete_keys(self) -> bool:
+        return self._keyInterface.deleteKeyPair()
+
+    # Asynchronously generate the private/public keypair.  Note that touchID doesn't seem to come up when this is called
+    # but it may.  Completion is called on success or error. If error, first arge is false and second arg may be an iOS error string.
+    def generate_keys(self, completion : Callable[[bool,str],None] = None) -> None:
+        if self._keyInterface.publicKeyExists:
+            if callable(completion):
+                completion(True,'')
+            return
+        def Compl(b : bool, e : objc_id) -> None:
+            e = ObjCInstance(e) if e and e.value else None
+            if callable(completion): completion(bool(b),str(e.description) if e else '')
+        self._keyInterface.generateTouchIDKeyPairWithCompletion_(Compl)
+     
+    def encrypt_data(self, data : bytes) -> bytes:
+        if isinstance(data, str): data = data.encode('utf-8')
+        if not isinstance(data, bytes): raise ValueError('SecureKeyEnclave.encrypt_data requires a bytes argument!')
+        plainText = NSData.dataWithBytes_length_(data,len(data))
+        err = objc_id(0)
+        cypherText = self._keyInterface.encryptData_error_(plainText, byref(err))
+        if not cypherText:
+            e = str(ObjCInstance(err).description) if err and err.value else ''
+            NSLog("SecureKeyEnclave encrypt data failed with error: %s",e)
+            return None
+        return bytes((c_ubyte * cypherText.length).from_address(cypherText.bytes))
+    
+    # input: any plaintext string.  output: a hex representation of the encrypted cyphertext data eg 'ff80be3376ff..' 
+    def encrypt_str2hex(self, plainText : str) -> str:
+        b = self.encrypt_data(plainText)
+        if b is not None:
+            import binascii
+            return binascii.hexlify(b).decode('utf-8')
+        return None
+
+    # the inverse of the above. input: a hex string, eg 'ff80be3376...',  callback is called with (plainText:str, error:str) as args   
+    def decrypt_hex2str(self, hexdata : str, completion : Callable[[str,str],None]) -> None:
+        if not callable(completion):
+            raise ValueError('A completion function is required as the second argument to this function!')
+        import binascii
+        cypherBytes = binascii.unhexlify(hexdata)
+        def MyCompl(pt : bytes, error : str) -> None:
+            plainText = pt.decode('utf-8') if pt is not None else None
+            completion(plainText, error)
+        self.decrypt_data(cypherBytes, MyCompl) 
+    
+    # May pop up a touchid window, which user may cancel.  If touchid not available, or user cancels, the completion is called
+    # with None,errstr as args (errStr comes from iOS and is pretty arcane).
+    # Otherwise completion is called with the plainText bytes as first argument on success.
+    def decrypt_data(self, data : bytes, completion : Callable[[bytes,str],None]) -> None:
+        if not callable(completion):
+            raise ValueError('A completion function is required as the second argument to this function!')
+        if isinstance(data, str): data = data.encode('utf-8')
+        if not isinstance(data, bytes): raise ValueError('A bytes or str object is required as the first argument to this function!')
+        cypherText = NSData.dataWithBytes_length_(data, len(data))
+        def Compl(dptr : objc_id, eptr : objc_id) -> None:
+            plainText = ObjCInstance(dptr) if dptr and dptr.value else None
+            error = ObjCInstance(eptr).description if eptr and eptr.value else None
+            if plainText:
+                plainText = bytes((c_ubyte * plainText.length).from_address(plainText.bytes))
+            completion(plainText, error)
+        self._keyInterface.decryptData_completion_(cypherText, Compl)
+
+    '''
+    @classmethod
+    def DoTests(cls, bundleId : str, doDelete : bool = False) -> None:
+        keyEnclave = cls(bundleId)
+        print("BioMetricsAvail:",keyEnclave.biometrics_available())
+        print("BioMetricsNotAvailReason:",keyEnclave.biometrics_are_not_available_reason())
+        if doDelete:
+            keyEnclave.delete_keys()
+            print("Deleted All Keys")
+        pt = b'The quick brown fox jumped over the lazy dogs!!\0\0'
+        ptstr = pt.decode('utf-8')
+        def DataDecrypted(pts : str, error : str) -> None:
+            if pts is None:
+                print("Got decryption error", error)
+            else:
+                print("decrypted data was [",pts.encode('utf-8'),"]","compare =", pts==ptstr)
+        def DoEnc() -> None:
+            c = keyEnclave.encrypt_str2hex(ptstr)
+            if c is not None:
+                print("cypherText=",c)
+                keyEnclave.decrypt_hex2str(c,DataDecrypted)
+            else:
+                print("CypherText was NONE...!")
+        def KeysGenerated(b : bool, e : str) -> None:
+            print("Keys generated:",b,e)
+            if b: DoEnc()
+        if not keyEnclave.has_keys():
+            keyEnclave.generate_keys(KeysGenerated)
+        else:
+            DoEnc()
+            
+        def Cleaner() -> None:
+            # keep a ref around for 10s then delete object.
+            nonlocal keyEnclave
+            keyEnclave = None
+        call_later(10.0, Cleaner)
+    '''
 
 ##### Boilerplate crap
 class boilerplate:

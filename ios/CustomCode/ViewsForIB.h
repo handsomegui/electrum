@@ -395,9 +395,10 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python newwallet.py
 @end
 @interface NewWalletVCBase : UIViewController
-@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit, *errMsg;
+@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit, *errMsg, *touchIdTit;
+@property (nonatomic, weak) IBOutlet UISwitch *touchId;
 @property (nonatomic, weak) IBOutlet UITextField *walletName, *walletPw1, *walletPw2;
-@property (nonatomic, weak) IBOutlet UIView *errMsgView;
+@property (nonatomic, weak) IBOutlet UIView *errMsgView, *touchIdView;
 @property (nonatomic, weak) IBOutlet UIButton *nextBut, *showHidePWBut;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS, *errHeightCS, *errTopCS;
 @property (nonatomic) BOOL noPWCheck; ///< set by ImportSaveWallet child class to skip the password check for wallets that lack a password (watching-only wallets)

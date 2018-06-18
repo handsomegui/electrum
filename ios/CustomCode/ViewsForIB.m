@@ -316,7 +316,7 @@ static BOOL IS_IPHONE_5(void) {
 - (void) setNoPWCheck:(BOOL)b {
     if (!!b == !!_noPWCheck) return;
     _noPWCheck = b;
-    NSArray<UIView *> * items = @[ _walletPw1Tit, _walletPw1, _walletPw2Tit, _walletPw2, _showHidePWBut ];
+    NSArray<UIView *> * items = @[ _walletPw1Tit, _walletPw1, _walletPw2Tit, _walletPw2, _showHidePWBut, _touchId, _touchIdTit ];
     for (UIView *v in items) {
         v.hidden = b;
     }
