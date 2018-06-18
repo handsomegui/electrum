@@ -202,6 +202,7 @@ class ReceiveVC(ReceiveBase):
         self.expiresTit.setText_withKerning_( _("Request expires"), utils._kern )
         self.expiresLink.linkText = _("Change")
         self.shareRequestBut.setTitle_forState_(_("Share request"), UIControlStateNormal)
+        self.desc.placeholder = _("Description of the transaction (not mandatory).")
         
 
     @objc_method
@@ -209,8 +210,8 @@ class ReceiveVC(ReceiveBase):
         if not self.viewIfLoaded or not parent().wallet: return
         # Placeholder for amount
         if self.isEditable():
-            self.amt.placeholder = (_("Input amount") + " ({})").format(self.amt.baseUnit())
-            self.amtFiat.placeholder = (_("Input amount") + " ({})").format(self.amtFiat.baseUnit())
+            self.amt.placeholder = _("Input amount") 
+            self.amtFiat.placeholder = _("Fiat amount") 
 
         if self.savedAmtSats:
             self.amt.setAmount_(self.savedAmtSats)
@@ -413,8 +414,8 @@ class ReceiveVC(ReceiveBase):
     def onSaveDone_(self, sender) -> None:
         self.onSave()
         if self.savedOk:
-            if self.navigationItem.leftBarButtonItem:
-                self.navigationItem.leftBarButtonItem.title = _("Close")
+            #if self.navigationItem.leftBarButtonItem:
+            #    self.navigationItem.leftBarButtonItem.title = _("Close")
             self.setEditable_(False)
             pr = utils.nspy_get_byname(self, 'payment_request')
             cb = utils.get_callback(self, 'on_done')

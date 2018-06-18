@@ -211,12 +211,13 @@ class ElectrumGui(PrintError):
         self.fee_unit = config.get('fee_unit', 0)
         self.num_zeros     = self.prefs_get_num_zeros()
         self.alias_info = None # TODO: IMPLEMENT alias stuff
+        self.lastHeightSeen = -2
         
         Address.show_cashaddr(self.prefs_get_use_cashaddr())
         
         self.cash_addr_sig = utils.PySig()
 
-        self.tx_notifications = []
+        self.tx_notifications = list()
         self.helper = None
         self.helperTimer = None
         self.lowMemoryToken = None
@@ -537,6 +538,7 @@ class ElectrumGui(PrintError):
         walletUnitTxt = ""
         walletUnconfTxt = ""
         networkStatusText = _("Offline")
+        blockHeightChanged = False
         #icon = ""
 
         if self.daemon.network is None or not self.daemon.network.is_running():
@@ -546,12 +548,16 @@ class ElectrumGui(PrintError):
             #icon = "status_disconnected.png"
 
         elif self.daemon.network.is_connected():
-            server_height = self.daemon.network.get_server_height()
-            server_lag = self.daemon.network.get_local_height() - server_height
+            lh, sh = self.daemon.network.get_status_value('updated')
+            # lh = local_height, sh = server_height
+            if self.lastHeightSeen != lh:
+                self.lastHeightSeen = lh
+                blockHeightChanged = True
+            server_lag = lh - sh
             # Server height can be 0 after switching to a new server
             # until we get a headers subscription request response.
             # Display the synchronizing message in that case.
-            if not self.wallet.up_to_date or server_height == 0:
+            if not self.wallet.up_to_date or sh == 0:
                 text = _("Synchronizing...")
                 networkStatusText = text
                 walletUnitTxt = text
@@ -592,7 +598,6 @@ class ElectrumGui(PrintError):
                 #else:
                 #    icon = "status_connected_proxy.png"
             
-            lh, sh = self.daemon.network.get_status_value('updated')        
             '''utils.NSLog("lh=%d sh=%d is_up_to_date=%d Wallet Network is_up_to_date=%d is_connecting=%d is_connected=%d",
                         int(lh), int(sh),
                         int(self.wallet.up_to_date),
@@ -603,7 +608,9 @@ class ElectrumGui(PrintError):
             if lh is not None and sh is not None and lh >= 0 and sh > 0 and lh < sh:
                 show_dl_pct = int((lh*100.0)/float(sh))
                 walletStatus = wallets.StatusDownloadingHeaders
-                
+
+            if blockHeightChanged:
+                self.refresh_components('history')
         else:
             text = _("Not connected")
             walletUnitTxt = text
@@ -643,6 +650,10 @@ class ElectrumGui(PrintError):
             return
         self.print_error("Notifying GUI")
         if len(self.tx_notifications) > 0:
+            if not self.wallet:
+                # spurious call, walled closed. kill all tx notifications since they are irrelevant at this point, and return
+                self.tx_notifications = list()
+                return
             # Combine the transactions if there are at least 2
             num_txns = len(self.tx_notifications)
             if num_txns >= 2:
@@ -1818,7 +1829,7 @@ class ElectrumGui(PrintError):
         self.sendNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.sendVC).autorelease())
         self.sendNav.navigationBar.backIndicatorImage = self.walletsNav.navigationBar.backIndicatorImage
         self.sendNav.navigationBar.backIndicatorTransitionMaskImage = self.walletsNav.navigationBar.backIndicatorTransitionMaskImage
-        self.add_navigation_bar_close_to_modal_vc(self.sendVC, leftSide = True)
+        self.add_navigation_bar_close_to_modal_vc(self.sendVC, leftSide = True, useXIcon = True)
         def doCleanup(oid : objc_id) -> None:
             self.sendVC = None
             self.sendNav = None
@@ -1866,7 +1877,7 @@ class ElectrumGui(PrintError):
         self.receiveNav = utils.tintify(UINavigationController.alloc().initWithRootViewController_(self.receiveVC).autorelease())
         self.receiveNav.navigationBar.backIndicatorImage = self.walletsNav.navigationBar.backIndicatorImage
         self.receiveNav.navigationBar.backIndicatorTransitionMaskImage = self.walletsNav.navigationBar.backIndicatorTransitionMaskImage
-        self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True, useXIcon = False)
+        self.add_navigation_bar_close_to_modal_vc(self.receiveVC, leftSide = True, useXIcon = True)
         def doCleanup(oid : objc_id) -> None:
             self.receiveVC = None
             self.receiveNav = None
