@@ -85,7 +85,7 @@
         return YES;
     }
     else {
-        [NSException raise:@"Unexpected OSStatus" format:@"Status: %i", status];
+        [NSException raise:@"Unexpected OSStatus" format:@"Status: %d", (int)status];
         return NO;
     }
 }
