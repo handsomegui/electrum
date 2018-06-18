@@ -307,9 +307,6 @@ class Network(util.DaemonThread):
         # Resend unanswered requests
         requests = self.unanswered_requests.values()
         self.unanswered_requests = {}
-        if self.interface.ping_required():
-            params = [PACKAGE_VERSION, PROTOCOL_VERSION]
-            self.queue_request('server.version', params, self.interface)
         for request in requests:
             message_id = self.queue_request(request[0], request[1])
             self.unanswered_requests[message_id] = request
@@ -690,6 +687,9 @@ class Network(util.DaemonThread):
         interface.mode = 'default'
         interface.request = None
         self.interfaces[server] = interface
+        # server.version should be the first message
+        params = [PACKAGE_VERSION, PROTOCOL_VERSION]
+        self.queue_request('server.version', params, interface)
         self.queue_request('blockchain.headers.subscribe', [True], interface)
         if server == self.default_server:
             self.switch_to_interface(server)
@@ -713,8 +713,7 @@ class Network(util.DaemonThread):
             if interface.has_timed_out():
                 self.connection_down(interface.server)
             elif interface.ping_required():
-                params = [PACKAGE_VERSION, PROTOCOL_VERSION]
-                self.queue_request('server.version', params, interface)
+                self.queue_request('server.ping', [], interface)
 
         now = time.time()
         # nodes
@@ -837,7 +836,7 @@ class Network(util.DaemonThread):
                         next_height = None
                     else:
                         interface.print_error('checkpoint conflicts with existing fork', branch.path())
-                        branch.write('', 0)
+                        branch.write(b'', 0)
                         branch.save_header(interface.bad_header)
                         interface.mode = 'catch_up'
                         interface.blockchain = branch
