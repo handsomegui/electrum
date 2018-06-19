@@ -297,8 +297,6 @@ class ElectrumGui(PrintError):
         self.window.rootViewController = self.tabController
 
         self.window.makeKeyAndVisible()                 
-
-        self.setup_key_enclave()
              
         utils.NSLog("UI Created Ok")
         
@@ -2016,7 +2014,7 @@ class ElectrumGui(PrintError):
             completion(pw)
         self.keyEnclave.decrypt_hex2str(hexpass, MyCallback, prompt = prompt)
 
-    def setup_key_enclave(self) -> None:
+    def setup_key_enclave(self, completion : Callable[[],None]) -> None:
         if not self.keyEnclave.has_keys():
             # UGH.. they lost their keys, or never had them.  Zero out our enc_pws and our touchIdAsked files..
             self.encPasswords.clearAll()
@@ -2026,10 +2024,13 @@ class ElectrumGui(PrintError):
                     utils.NSLog("*** WARNING: could not generate secure enclave keys. Error was: %s", err)
                 else:
                     utils.NSLog("Secure enclave generated new public/private keys for biometrics-based auth.")
+                completion()
             self.keyEnclave.generate_keys(Compl)
+        else:
+            completion()
         
     # this method is called by Electron Cash libs to start the GUI
     def main(self):        
         self.createAndShowUI()
         
-        self.start_daemon()        
+        self.setup_key_enclave(lambda: self.start_daemon())        
