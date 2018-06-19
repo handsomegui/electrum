@@ -1349,11 +1349,21 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
             origin = respFrame.origin
             bottomLeft = CGPoint(origin.x, origin.y+respFrame.size.height)
             diff = None
-            if  not CGRectContainsPoint(visible, bottomLeft): 
-                diff = (bottomLeft.y - (visible.origin.y+visible.size.height)) + 25
+            if not CGRectContainsPoint(visible, bottomLeft) and (is_portrait() or is_ipad()): 
+                diff = (bottomLeft.y - (visible.origin.y+visible.size.height)) + 25.0 
             elif not CGRectContainsPoint(visible, origin):
-                diff = origin.y - visible.origin.y - 25
+                diff = origin.y - visible.origin.y - 25.0
             if diff:
+                '''
+                def fmt(x):
+                    if isinstance(x, CGRect):
+                       return "%f,%f,%f,%f"%(x.origin.x,x.origin.y,x.size.width,x.size.height)
+                    elif isinstance(x, CGPoint):
+                        return "%f,%f"%(x.x,x.y)
+                    else:
+                        return str(x)
+                print("window",fmt(window.bounds),"origin",fmt(origin),"bottomLeft",fmt(bottomLeft),"respFrame",fmt(respFrame),"visible",fmt(visible),"contentOffset",fmt(sv.contentOffset))
+                '''
                 scrollPoint = CGPoint(0.0, sv.contentOffset.y + diff)#origin.y - visible.size.height + respFrame.size.height + 10)
                 sv.setContentOffset_animated_(scrollPoint, True)
     #def kbHide() -> None:

@@ -52,7 +52,7 @@
                 <constraints>
                     <constraint firstItem="GAH-V1-2AU" firstAttribute="top" secondItem="U7X-kk-sCt" secondAttribute="top" id="5MB-Km-GYE"/>
                     <constraint firstItem="GAH-V1-2AU" firstAttribute="leading" secondItem="oA5-n9-BB5" secondAttribute="trailing" constant="5" id="5aT-ps-Q4J"/>
-                    <constraint firstAttribute="right" secondItem="GAH-V1-2AU" secondAttribute="right" id="6i9-vK-qiu"/>
+                    <constraint firstAttribute="rightMargin" secondItem="GAH-V1-2AU" secondAttribute="right" constant="-16" id="6i9-vK-qiu"/>
                     <constraint firstItem="GAH-V1-2AU" firstAttribute="trailingMargin" secondItem="qIj-l7-hPb" secondAttribute="trailing" constant="10" id="BTX-Pb-V1A"/>
                     <constraint firstAttribute="bottom" secondItem="GAH-V1-2AU" secondAttribute="bottom" id="KjO-7g-iOm"/>
                     <constraint firstItem="oA5-n9-BB5" firstAttribute="centerY" secondItem="U7X-kk-sCt" secondAttribute="centerY" id="egx-MY-JCp"/>

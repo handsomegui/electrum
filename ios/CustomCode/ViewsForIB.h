@@ -348,6 +348,11 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onUTXOs;
 @end
 
+@interface CoinsCellSelectedBackgroundView : UIView
+@property (nonatomic, weak) IBOutlet UIView *blueView;
+@property (nonatomic, weak) IBOutlet UIButton *selBut;
+@end
+
 @interface CoinsCell : UITableViewCell
 @property (nonatomic, weak) IBOutlet LinkLabel *address;
 @property (nonatomic, weak) IBOutlet UILabel *utxo, *amount, *height, *desc, *flags;

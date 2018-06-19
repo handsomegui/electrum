@@ -244,6 +244,22 @@ static BOOL IS_IPHONE_5(void) {
 // auto synthesized properties
 @end
 
+@implementation CoinsCellSelectedBackgroundView
+- (void) layoutSubviews {
+    if (!_selBut || !_blueView) {
+        NSLog(@"** Warning in %s:%d: _selBut or _blueView are nil!", __FILE__, __LINE__);
+        return;
+    }
+    // this fixes an issue on iPhone X landscpae mode where the blue view didn't line up with the selectionButton
+    CGRect f = [_selBut convertRect:_selBut.bounds toView:self];
+    CGSize bsize = CGSizeMake(_blueView.layer.cornerRadius*2.0,_blueView.layer.cornerRadius*2.0);
+    f.origin.x += (f.size.width-bsize.width)/2.0;
+    f.origin.y += (f.size.height-bsize.height)/2.0;
+    f.size = bsize;
+    _blueView.frame = f;
+}
+@end
+
 @implementation CoinsCell {
     __weak IBOutlet UIImageView *_chevron;
     __weak IBOutlet NSLayoutConstraint *_rightCS;

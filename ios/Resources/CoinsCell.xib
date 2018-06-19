@@ -20,11 +20,11 @@
                 <rect key="frame" x="0.0" y="0.0" width="375" height="135.5"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <view autoresizesSubviews="NO" opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" tag="1234" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="nOc-HX-HxW" userLabel="selectedBackgroundView">
+                    <view autoresizesSubviews="NO" opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" tag="1234" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="nOc-HX-HxW" userLabel="selectedBackgroundView" customClass="CoinsCellSelectedBackgroundView">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="135"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vew-vT-LnV">
+                            <view opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" preservesSuperviewLayoutMargins="YES" layoutMarginsFollowReadableWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vew-vT-LnV">
                                 <rect key="frame" x="17" y="24" width="21" height="21"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" red="0.33333333329999998" green="0.5450980392" blue="1" alpha="1" colorSpace="deviceRGB"/>
@@ -37,6 +37,10 @@
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <viewLayoutGuide key="safeArea" id="MJW-ns-y9O"/>
+                        <connections>
+                            <outlet property="blueView" destination="vew-vT-LnV" id="dQw-ZV-63X"/>
+                            <outlet property="selBut" destination="G9o-Gc-Mt4" id="HL3-m4-jKN"/>
+                        </connections>
                     </view>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Amount" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="n0K-ks-GaN">
                         <rect key="frame" x="47" y="53" width="45" height="18"/>
@@ -222,7 +226,7 @@
                 <outlet property="flags" destination="eaf-U5-Tzm" id="Pwg-VK-7Zx"/>
                 <outlet property="height" destination="c3D-pS-eNG" id="RGM-83-Y6J"/>
                 <outlet property="heightTit" destination="xJ8-nv-JM7" id="zI3-wz-b6v"/>
-                <outlet property="selectedBackgroundView" destination="nOc-HX-HxW" id="nSS-Ql-0iI"/>
+                <outlet property="selectedBackgroundView" destination="nOc-HX-HxW" id="cY0-hq-pSK"/>
                 <outlet property="utxo" destination="eYe-3v-zle" id="Xh4-RY-jhV"/>
                 <outlet property="utxoTit" destination="zwI-9n-fth" id="uAM-ni-L76"/>
             </connections>
