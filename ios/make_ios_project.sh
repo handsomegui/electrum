@@ -122,6 +122,8 @@ if [ -f "${infoplist}" ]; then
 
 	# Un-comment the below to enforce only portrait orientation mode on iPHone
 	#plutil -replace "UISupportedInterfaceOrientations" -xml '<array><string>UIInterfaceOrientationPortrait</string></array>' -- ${infoplist}
+	# Because we are using FullScreen = NO, we must support all interface orientations
+	plutil -replace 'UISupportedInterfaceOrientations' -xml '<array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string><string>UIInterfaceOrientationPortraitUpsideDown</string></array>' -- ${infoplist}
 fi
 
 if [ -d overrides/ ]; then
