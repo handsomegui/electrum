@@ -586,9 +586,10 @@ class RestoreWallet1(NewWalletSeed2):
        
     @objc_method
     def onNext(self) -> None:
-        seed = ' '.join(self.seedtv.text.strip().lower().split())
+        seed = ' '.join(self.seedtv.text.strip().split())
         is_bip39 = self.bip39.isOn()
-        
+        if not is_bip39: seed = seed.lower()
+
         if not seed or (not is_bip39 and not bitcoin.is_seed(seed)):
             err = _('The seed you entered does not appear to be a valid wallet seed.')
             utils.uilabel_replace_attributed_text(self.errMsg, err, font=UIFont.italicSystemFontOfSize_(14.0))
@@ -596,7 +597,7 @@ class RestoreWallet1(NewWalletSeed2):
             self.infoView.setHidden_(True)
             return
 
-        seedext = self.seedExt.text.strip().lower() if self.seedExt.text else ''
+        seedext = self.seedExt.text.strip() if self.seedExt.text else ''
         seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
         
         def PushIt() -> None:
