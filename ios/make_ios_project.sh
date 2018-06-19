@@ -118,6 +118,7 @@ if [ -f "${infoplist}" ]; then
 	plutil -insert 'CFBundleURLTypes' -xml '<array><dict><key>CFBundleTypeRole</key><string>Viewer</string><key>CFBundleURLName</key><string>bitcoincash</string><key>CFBundleURLSchemes</key><array><string>bitcoincash</string></array></dict></array>' -- ${infoplist}
 	plutil -replace 'UIRequiresFullScreen' -bool NO -- ${infoplist}
 	plutil -insert 'NSFaceIDUsageDescription' -string 'FaceID is used for wallet authentication' -- ${infoplist}
+	plutil -insert 'ITSAppUsesNonExemptEncryption' -bool NO -- ${infoplist}
 
 	# Un-comment the below to enforce only portrait orientation mode on iPHone
 	#plutil -replace "UISupportedInterfaceOrientations" -xml '<array><string>UIInterfaceOrientationPortrait</string></array>' -- ${infoplist}
