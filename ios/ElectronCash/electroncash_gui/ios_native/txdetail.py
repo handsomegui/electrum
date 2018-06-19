@@ -796,7 +796,7 @@ class TxDetail(TxDetailBase):
             parent.sign_tx_with_password(tx, sign_done, password)
             
 
-        parent.prompt_password_if_needed_asynch(callBack = DoSign, prompt = _("Provide credentials to proceed"), vc = self)
+        parent.prompt_password_if_needed_asynch(callBack = DoSign, vc = self)
 
 
     @objc_method

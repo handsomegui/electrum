@@ -803,9 +803,6 @@ class SendVC(SendBase):
         #    msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
         password = None
         if wallet().has_password():
-            msg.append("")
-            msg.append(_("Provide credentials to proceed"))
-            #msg.append(_("Enter your password to proceed"))
             parent().prompt_password_if_needed_asynch(callBack = DoSign, prompt = '\n'.join(msg), vc = self)
         else:
             msg.append(_('Proceed?'))

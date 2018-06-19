@@ -1002,7 +1002,7 @@ class ElectrumGui(PrintError):
             alias_addr, alias_name, validated = self.alias_info
             if alias_addr:
                 if self.wallet.is_mine(alias_addr):
-                    msg = _('This payment request will be signed.') + '\n' + _('Please provide credentials')
+                    msg = _('This payment request will be signed.') #+ '\n' + _('Please provide credentials')
                     def DoSign(password) -> None:
                         if password:
                             try:
@@ -1467,7 +1467,7 @@ class ElectrumGui(PrintError):
                     wallet_pass = None # clear it now so we don't keep retrying it if it's bad
                     onOk(tmppw)
                 else:
-                    prompt = _("This wallet is encrypted, credentials are required to proceed.")
+                    prompt = _("Opening encrypted wallet: '{}'").format(wallet_name)
                     title = _("Password Required")
                     self.prompt_password_if_needed_asynch(callBack = onOk, prompt = prompt, title = title, onCancel = myOnCancel,
                                                           onForcedDismissal = myOnCancel, usingStorage = storage, vc = waitDlg)
@@ -1531,7 +1531,7 @@ class ElectrumGui(PrintError):
             def gotPW(pw : str) -> None:
                 self.do_wallet_rename(info = info, vc = vc, password = pw, newName = newName)
             self.prompt_password_if_needed_asynch(callBack = gotPW, vc = vc,
-                                                  prompt = _("You are renaming the currently open encrypted wallet '{}'. Please provide credentials to proceed.").format(info.name))
+                                                  prompt = _("You are renaming the currently open encrypted wallet '{}'.").format(info.name))
             return
         newName = utils.pathsafeify(newName)
         new_path = os.path.join(os.path.split(info.full_path)[0], newName)
