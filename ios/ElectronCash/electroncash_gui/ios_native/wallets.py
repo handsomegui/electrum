@@ -545,18 +545,22 @@ def _ShowOptionsForWalletAtIndex(index : int, vc : UIViewController, ipadAnchor 
         def Rename() -> None:
             nonlocal tf
             newName = utils.pathsafeify(str(tf.text))
+            hasInvalidChars = newName != str(tf.text)
             Release()
             def Retry() -> None:
                 nonlocal tf, prefill, placeholder
                 tf = None
                 prefill = newName
                 DoRename()
-            if not newName:
+            if not newName or hasInvalidChars:
                 parent.show_error(_('Invalid name, please try again.'), vc = vc, onOk = Retry)
+                return
             elif newName == info.name:
                 parent.show_error(_('You specified the same name!'), vc = vc, onOk = Retry)
+                return
             elif WalletsMgr.check_wallet_exists(newName):
                 parent.show_error(_('A wallet with that name already exists, please try again.'), vc = vc, onOk = Retry)
+                return
             parent.do_wallet_rename(info = info, newName = newName, vc = vc)
         
         prefill = prefill or info.name

@@ -1490,7 +1490,7 @@ class SecureKeyEnclave:
         return None
 
     # the inverse of the above. input: a hex string, eg 'ff80be3376...',  callback is called with (plainText:str, error:str) as args   
-    def decrypt_hex2str(self, hexdata : str, completion : Callable[[str,str],None]) -> None:
+    def decrypt_hex2str(self, hexdata : str, completion : Callable[[str,str],None], prompt : str = None) -> None:
         if not callable(completion):
             raise ValueError('A completion function is required as the second argument to this function!')
         import binascii
@@ -1498,14 +1498,15 @@ class SecureKeyEnclave:
         def MyCompl(pt : bytes, error : str) -> None:
             plainText = pt.decode('utf-8') if pt is not None else None
             completion(plainText, error)
-        self.decrypt_data(cypherBytes, MyCompl) 
+        self.decrypt_data(cypherBytes, MyCompl, prompt = prompt) 
     
     # May pop up a touchid window, which user may cancel.  If touchid not available, or user cancels, the completion is called
     # with None,errstr as args (errStr comes from iOS and is pretty arcane).
     # Otherwise completion is called with the plainText bytes as first argument on success.
-    def decrypt_data(self, data : bytes, completion : Callable[[bytes,str],None]) -> None:
+    def decrypt_data(self, data : bytes, completion : Callable[[bytes,str],None], prompt : str = None) -> None:
         if not callable(completion):
             raise ValueError('A completion function is required as the second argument to this function!')
+        if not prompt: prompt = _("Authenticate, please")
         if isinstance(data, str): data = data.encode('utf-8')
         if not isinstance(data, bytes): raise ValueError('A bytes or str object is required as the first argument to this function!')
         cypherText = NSData.dataWithBytes_length_(data, len(data))
@@ -1515,6 +1516,7 @@ class SecureKeyEnclave:
             if plainText:
                 plainText = bytes((c_ubyte * plainText.length).from_address(plainText.bytes))
             completion(plainText, error)
+        self._keyInterface.prompt = prompt
         self._keyInterface.decryptData_completion_(cypherText, Compl)
 
     '''

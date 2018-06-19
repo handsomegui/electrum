@@ -107,6 +107,16 @@
     return _publicKeyBits;
 }
 
+- (void) setPrompt:(NSString *)prompt {
+    if (!_prompt || ![prompt isEqualToString:_prompt]) {
+        _prompt = prompt ? [prompt copy] : [@"" copy];
+        if (_privateKeyRef)
+            /* by clearing the ref, we force re-setting of the kSecUseOperationPrompt
+               dictionary entry for this item... (see lookupPrivateKeyRef below) */
+            CFClean(_privateKeyRef);
+    }
+}
+
 // NB: DO NOT release returned value!!
 - (SecKeyRef) lookupPrivateKeyRef
 {

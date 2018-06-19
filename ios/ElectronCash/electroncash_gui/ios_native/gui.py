@@ -1002,7 +1002,7 @@ class ElectrumGui(PrintError):
             alias_addr, alias_name, validated = self.alias_info
             if alias_addr:
                 if self.wallet.is_mine(alias_addr):
-                    msg = _('This payment request will be signed.') + '\n' + _('Please enter your password')
+                    msg = _('This payment request will be signed.') + '\n' + _('Please provide credentials')
                     def DoSign(password) -> None:
                         if password:
                             try:
@@ -1467,7 +1467,7 @@ class ElectrumGui(PrintError):
                     wallet_pass = None # clear it now so we don't keep retrying it if it's bad
                     onOk(tmppw)
                 else:
-                    prompt = _("This wallet is encrypted with a password, please provide it to proceed:")
+                    prompt = _("This wallet is encrypted, credentials are required to proceed.")
                     title = _("Password Required")
                     self.prompt_password_if_needed_asynch(callBack = onOk, prompt = prompt, title = title, onCancel = myOnCancel,
                                                           onForcedDismissal = myOnCancel, usingStorage = storage, vc = waitDlg)
@@ -1531,7 +1531,7 @@ class ElectrumGui(PrintError):
             def gotPW(pw : str) -> None:
                 self.do_wallet_rename(info = info, vc = vc, password = pw, newName = newName)
             self.prompt_password_if_needed_asynch(callBack = gotPW, vc = vc,
-                                                  prompt = _("You are renaming the currently open encrypted wallet '{}'. Please provide the wallet password to proceed.").format(info.name))
+                                                  prompt = _("You are renaming the currently open encrypted wallet '{}'. Please provide credentials to proceed.").format(info.name))
             return
         newName = utils.pathsafeify(newName)
         new_path = os.path.join(os.path.split(info.full_path)[0], newName)
@@ -1571,7 +1571,7 @@ class ElectrumGui(PrintError):
                 def MyTouchID_CB(pw : str) -> None:
                     if pw: my_callback(pw)
                     else: DoPromptPW(my_callback)
-                self.get_wallet_password_using_touchid(wallet_name, MyTouchID_CB)
+                self.get_wallet_password_using_touchid(wallet_name, MyTouchID_CB, prompt = prompt)
                 return None
             else:
                 return password_dialog.prompt_password_asynch(vc = vc, onOk = my_callback, prompt = prompt, title = title, onCancel = onCancel, onForcedDismissal = onForcedDismissal)            
@@ -1651,7 +1651,7 @@ class ElectrumGui(PrintError):
                 name = os.path.split(path)[1]
                 if len(name) > 30:
                     name = name[:14] + "..." + name[-13:]
-                msg = "Opening encrypted wallet: '" + name + "'"
+                msg = _("Opening encrypted wallet: '{}'").format(name)
                 self.prompt_password_if_needed_asynch(callBack = gotpw, prompt = msg, onCancel = cancelled,
                                                       onForcedDismissal = forciblyDismissed,
                                                       usingStorage = path)
@@ -2006,7 +2006,7 @@ class ElectrumGui(PrintError):
         else:
             DoEnc(True, None)
 
-    def get_wallet_password_using_touchid(self, wallet_name : str, completion : Callable[[str],None]) -> None:
+    def get_wallet_password_using_touchid(self, wallet_name : str, completion : Callable[[str],None], prompt : str = None) -> None:
         hexpass = self.encPasswords.get(wallet_name)
         if not hexpass:
             completion(None)
@@ -2014,7 +2014,7 @@ class ElectrumGui(PrintError):
         def MyCallback(pw : str, err : str) -> None:
             if err: utils.NSLog("Got error from enclave attempting to get password for %s: %s",wallet_name, err)
             completion(pw)
-        self.keyEnclave.decrypt_hex2str(hexpass, MyCallback)
+        self.keyEnclave.decrypt_hex2str(hexpass, MyCallback, prompt = prompt)
 
     def setup_key_enclave(self) -> None:
         if not self.keyEnclave.has_keys():
