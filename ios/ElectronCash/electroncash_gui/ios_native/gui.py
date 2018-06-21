@@ -232,7 +232,7 @@ class ElectrumGui(PrintError):
         self.keyEnclave = utils.SecureKeyEnclave(self.appDomain)
         self.encPasswords = utils.FileBackedDict(os.path.join(self.config.path, 'enc_pws.json'))
         self.touchIdAsked = utils.FileBackedDict(os.path.join(self.config.path, 'touch_id_asked.json'))
-        self.killableAlerts = list()
+        self.killableAlerts = dict()
                 
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
         NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
@@ -395,7 +395,7 @@ class ElectrumGui(PrintError):
         self.keyEnclave = None
         self.encPasswords = None
         self.touchIdAsked = None
-        self.killableAlerts = []
+        self.killableAlerts = dict()
         self.cash_addr_sig.clear()
         
         self.sigHelper.clear()
@@ -412,19 +412,23 @@ class ElectrumGui(PrintError):
         ct = 0
         for a in self.killableAlerts:
             if a.presentingViewController:
-                a.dismissViewControllerAnimated_completion_(False, None)
+                cb = self.killableAlerts[a]
+                a.dismissViewControllerAnimated_completion_(False, Block(lambda: cb(),restype=None) if callable(cb) else None)
                 ct += 1
         wasLen = len(self.killableAlerts)
-        self.killableAlerts = list()
+        self.killableAlerts = dict()
         if ct or wasLen:
             utils.NSLog("on_backgrounded: Dismissed %d of %d extant killable alerts", ct, wasLen)
     
-    def register_killable_alert(self, alert):
+    # killable alerts are immediately dismissed when app goes to background (user hits home button) -- they are for things
+    # like convenient questions for the user that aren't important or critical (such as whether to enable touchid, etc)
+    # Be sure to use the 'onKilled' callback to react to the alert being killed due to user hitting home button.
+    def register_killable_alert(self, alert : UIViewController, onKilled : Callable[[],None] = None) -> None:
         if alert not in self.killableAlerts:
-            self.killableAlerts.append(alert)
+            self.killableAlerts[alert] = onKilled
             def OnDealloc(x : objc_id):
                 if alert in self.killableAlerts:
-                    self.killableAlerts.remove(alert)
+                    self.killableAlerts.pop(alert, None)
                     utils.NSLog("KillableAlert: Reaped 1 alert")
                 else:
                     utils.NSLog("KillableAlert: Alert was not found in list. Must have been auto-dismissed.")
@@ -1159,34 +1163,9 @@ class ElectrumGui(PrintError):
 
             def onWalletDelayed() -> None:
                 # This is a hack to prevent an esoteric crash.. TODO: fix me!
-                openingAModal = bool(self.ext_txn_check() or self.open_uri_check())
+                self.ext_txn_check() or self.open_uri_check()
                 self.queued_ext_txn = None # force these to None here .. no matter what happened above..
                 self.queued_payto_uri = None
-
-
-                if password and not openingAModal and not self.tabController.presentedViewController:
-                    wallet_name = wallets.CurrentWalletName()
-    
-                    if (self.is_touchid_available() and not self.touchIdAsked.get(wallet_name)
-                        and not self.encPasswords.has(wallet_name)):
-                        def SaidYes() -> None:
-                            def Compl(b : bool) -> None:
-                                if b:
-                                    self.touchIdAsked.set(wallet_name, True)
-                                    utils.show_notification(_("Touch/Face ID enabled for wallet"))
-                            self.set_wallet_use_touchid(wallet_name, password, Compl)
-                        def SaidNo() -> None:
-                            self.touchIdAsked.set(wallet_name, True)
-
-                        actions = [ [_("No"), SaidNo], [ _("Yes"), SaidYes ] ]
-                        alert = utils.show_alert(vc = self.get_presented_viewcontroller(),
-                                                 title = (_("Use Touch/Face ID") + '?'), actions=actions, cancel=_("No"),
-                                                 message = _("For convenience, would you like to use Touch ID or Face ID to " +
-                                                             "open this wallet?\n\n" +
-                                                             "Your wallet password will still be used as a backup mechanism for when " +
-                                                             "Touch/Face ID fails or is unavailable.\n\n" +
-                                                             "Your wallet will continue to be protected and secure.") )
-                        self.register_killable_alert(alert)
 
             utils.call_later(1.0, onWalletDelayed)
             
@@ -1561,8 +1540,15 @@ class ElectrumGui(PrintError):
         if vc is None: vc = self.get_presented_viewcontroller()
         touchIdTry = 0
         wallet_name = None
+        def GotAPasswordCallback(password : str) -> None:
+            def CallUserCallback(wallet_name, password) -> None:
+                callBack(password)
+            if not touchIdTry:
+                self.prompt_user_maybe_wants_touchid(wallet_name = wallet_name, password = password, completion = CallUserCallback, vc = vc)
+            else:
+                CallUserCallback(wallet_name, password)
         def DoPromptPW(my_callback) -> ObjCInstance:
-            nonlocal touchIdTry, wallet_name
+            nonlocal touchIdTry
             encpw = self.encPasswords.get(wallet_name)
             if not touchIdTry and encpw:
                 touchIdTry += 1
@@ -1586,7 +1572,7 @@ class ElectrumGui(PrintError):
             def cb(pw : str) -> None:
                 try:
                     storage.decrypt(pw)
-                    callBack(pw)
+                    GotAPasswordCallback(pw)
                 except Exception as e:
                     self.show_error(str(e), onOk = lambda: DoPromptPW(cb), vc = vc)
             return DoPromptPW(cb)
@@ -1600,7 +1586,7 @@ class ElectrumGui(PrintError):
                 try:
                     if not self.wallet: return
                     self.wallet.check_password(pw)
-                    callBack(pw)
+                    GotAPasswordCallback(pw)
                 except Exception as e:
                     self.show_error(str(e), onOk = lambda: DoPromptPW(cb), vc = vc)
             return DoPromptPW(cb)
@@ -1736,11 +1722,18 @@ class ElectrumGui(PrintError):
     def change_password(self, oldpw : str, newpw : str, enc : bool, touchid : bool = False) -> None:
         print("change pw, old=",oldpw,"new=",newpw, "enc=", str(enc), "touchid=",touchid)
         try:
+            wallet_name = wallets.CurrentWalletName()
             self.wallet.update_password(oldpw, newpw, enc)
-            if touchid and self.keyEnclave.has_keys():
-                self.set_wallet_use_touchid(wallets.CurrentWalletName(), newpw)
+            hadTouchId = self.encPasswords.get(wallet_name)
+            if touchid and self.is_touchid_possible():
+                self.set_wallet_use_touchid(wallet_name, newpw)
+                if not hadTouchId:
+                    utils.show_notification(_("Touch/Face ID enabled for wallet"))
             else:
-                self.set_wallet_use_touchid(wallets.CurrentWalletName(), None)
+                self.set_wallet_use_touchid(wallet_name, None)
+                if self.is_touchid_possible() and hadTouchId:
+                    utils.show_notification(_("Touch/Face ID disabled for wallet"))
+                    
         except BaseException as e:
             self.show_error(str(e))
             return
@@ -1985,6 +1978,34 @@ class ElectrumGui(PrintError):
             wiz = newwallet.PresentOnBoardingWizard(vc = self.tabController, completion = Block(Completion))
             return wiz
         return None
+    
+    def prompt_user_maybe_wants_touchid(self, wallet_name : str, password : str, completion : Callable[[str,str],None],
+                                        vc : UIViewController = None) -> None:
+        if (password and self.is_touchid_available() and not self.touchIdAsked.get(wallet_name)
+            and not self.encPasswords.has(wallet_name)):
+                def SaidYes() -> None:
+                    def Compl(b : bool) -> None:
+                        if b:
+                            self.touchIdAsked.set(wallet_name, True)
+                            utils.show_notification(_("Touch/Face ID enabled for wallet"))
+                        completion(wallet_name, password)
+                    self.set_wallet_use_touchid(wallet_name, password, Compl)
+                def SaidNo() -> None:
+                    self.touchIdAsked.set(wallet_name, True)
+                    completion(wallet_name, password)
+
+                actions = [ [_("No"), SaidNo], [ _("Yes"), SaidYes ] ]
+                alert = utils.show_alert(vc = vc or self.get_presented_viewcontroller(),
+                                         title = (_("Use Touch/Face ID") + '?'), actions=actions, cancel=_("No"),
+                                         message = _("For convenience, would you like to use Touch ID or Face ID to " +
+                                                     "open this wallet?\n\n" +
+                                                     "Your wallet password will still be used as a backup mechanism for when " +
+                                                     "Touch/Face ID fails or is unavailable.\n\n" +
+                                                     "Your wallet will continue to be protected and secure.") )
+                self.register_killable_alert(alert, lambda: completion(wallet_name, password))
+        else:
+            completion(wallet_name, password)
+        
     
     def set_wallet_use_touchid(self, wallet_name : str, wallet_pass_or_none : str, completion : Callable[[bool],None] = None) -> None:
         if not callable(completion): completion = lambda x: None
