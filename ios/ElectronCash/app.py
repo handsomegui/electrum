@@ -26,9 +26,6 @@ def main():
     config = SimpleConfig(config_options, read_user_dir_function = get_user_dir)
 
     gui = ElectrumGui(config)
-    def later() -> None:
-        gui.main()
-    # this deferred call allows for that loading animation to play at least a little bit
-    call_later(0.030,later)
+    gui.main()
 
     return "Bitcoin Cash FTW!"

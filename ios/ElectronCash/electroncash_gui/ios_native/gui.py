@@ -235,7 +235,25 @@ class ElectrumGui(PrintError):
         self.killableAlerts = dict()
                 
         self.window = UIWindow.alloc().initWithFrame_(UIScreen.mainScreen.bounds)
-        NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)        
+
+        #For now we got rid of the launch screen with logo -- Max says it's better to show an empty UI as users
+        #feel this is a faster/better experience, and I tend to agree. If we want to change it back we can do this
+        #and also rename LaunchScreen_WithLogo.storyboard -> LaunchScreen.storyboard
+        #NSBundle.mainBundle.loadNibNamed_owner_options_("Splash2",self.window,None)
+                
+        # This is seemingly redundant but..
+        # 1. We do the below in case user is on a very slow device so that iOS doesn't kill us for not creating a window in time.
+        #    I timed it and on my iPhone 6s this adds about 20-30ms to startup time. Surprisingly quick. So we do it.
+        # 2. This also safeguards against us possibly doing callbacks later that delay the creation of the window and root view controller
+        #
+        # DO NOT REMOVE THIS!
+        sb = UIStoryboard.storyboardWithName_bundle_("LaunchScreen", None)
+        if not sb:
+            utils.NSLog("*** ERROR: LaunchScreen.storyboard not found! WTF?")
+        else:
+            tb = sb.instantiateViewControllerWithIdentifier_("TabController")
+            self.window.rootViewController = tb
+
         self.window.makeKeyAndVisible()
         utils.NSLog("GUI instance created, splash screen 2 presented")
 
@@ -2051,7 +2069,7 @@ class ElectrumGui(PrintError):
             completion()
         
     # this method is called by Electron Cash libs to start the GUI
-    def main(self):        
+    def main(self):
         self.createAndShowUI()
         
         self.setup_key_enclave(lambda: self.start_daemon())        
