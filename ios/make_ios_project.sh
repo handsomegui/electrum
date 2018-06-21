@@ -124,6 +124,8 @@ if [ -f "${infoplist}" ]; then
 	#plutil -replace "UISupportedInterfaceOrientations" -xml '<array><string>UIInterfaceOrientationPortrait</string></array>' -- ${infoplist}
 	# Because we are using FullScreen = NO, we must support all interface orientations
 	plutil -replace 'UISupportedInterfaceOrientations' -xml '<array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string><string>UIInterfaceOrientationPortraitUpsideDown</string></array>' -- ${infoplist}
+	plutil -insert 'UIViewControllerBasedStatusBarAppearance' -bool NO -- ${infoplist}
+	plutil -insert 'UIStatusBarStyle' -string 'UIStatusBarStyleLightContent' -- ${infoplist}
 fi
 
 if [ -d overrides/ ]; then
