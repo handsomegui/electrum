@@ -161,9 +161,12 @@ def _get_report_string(vc : CrashReporterVC) -> str:
     info["traceback"] = "".join(traceback.format_exception(*ei))
     return issue_template.format(**info)
 
+
 '''
+th = None
 def Test():
     # testing
+    import time
     def duh() -> None:
         raise Exception("A random exception!!")
     
@@ -174,16 +177,19 @@ def Test():
     def duh2() -> None:
         global th
         def thrd():
-            utils.NSLog("In another thread.. sleeping 5 secs")
-            print(th)
-            time.sleep(5.0)
-            utils.NSLog("Woke up.. raising exception...")
-            raise Exception("From another thread!!")
+            global th
+            try:
+                utils.NSLog("In another thread.. sleeping 5 secs")
+                print(th)
+                time.sleep(5.0)
+                utils.NSLog("Woke up.. raising exception...")
+                raise Exception("From another thread!!")
+            finally:
+                th = None
+        
         import threading
         th = threading.Thread(target=thrd, name="Exception thread...", daemon=True)
         th.start()
 
     utils.call_later(5.0, duh2)
-
-th = None
 '''
