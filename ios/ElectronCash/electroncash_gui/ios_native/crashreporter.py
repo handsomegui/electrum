@@ -10,7 +10,7 @@ from electroncash.i18n import _
 
 from .uikit_bindings import *
 from .custom_objc import *
-import json, locale, traceback, requests, sys
+import json, traceback, requests, sys
 from electroncash import PACKAGE_VERSION
 
 
