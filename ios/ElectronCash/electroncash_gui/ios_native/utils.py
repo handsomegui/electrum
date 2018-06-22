@@ -109,6 +109,10 @@ def cleanup_tmp_dir():
     if tot:
         NSLog("Cleaned up %d/%d files from tmp dir in %f ms",ct,tot,(time.time()-t0)*1e3)
 
+def ios_version_string() -> str:
+    dev = UIDevice.currentDevice
+    return "%s %s %s (%s)"%(str(dev.systemName), str(dev.systemVersion), str(dev.model), str(dev.identifierForVendor))
+
 # new color schem from Max
 _ColorScheme = None
     
@@ -233,6 +237,35 @@ def nsurl_read_local_file(url : ObjCInstance, binary = False) -> tuple:
     except:
         NSLog("nsurl_read_local_file got exception: %s",str(sys.exc_info[1]))
         return None, None        
+
+_setup_thread_excepthook_called_already = False
+def setup_thread_excepthook():
+    """
+    Workaround for `sys.excepthook` thread bug from:
+    http://bugs.python.org/issue1230540
+    Call once from the main thread before creating any threads.
+    """
+    global _setup_thread_excepthook_called_already
+    if _setup_thread_excepthook_called_already:
+        NSLog("*** ERROR: setup_thread_excepthook already called once in this app!")
+        return
+    _setup_thread_excepthook_called_already = True
+    init_original = threading.Thread.__init__
+
+    def MyInit(self, *args, **kwargs):
+
+        init_original(self, *args, **kwargs)
+        run_original = self.run
+
+        def run_with_except_hook(*args2, **kwargs2):
+            try:
+                run_original(*args2, **kwargs2)
+            except Exception:
+                sys.excepthook(*sys.exc_info())
+
+        self.run = run_with_except_hook
+
+    threading.Thread.__init__ = MyInit
 
 ###################################################
 ### Show Share ActionSheet

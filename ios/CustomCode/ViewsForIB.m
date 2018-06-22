@@ -421,4 +421,13 @@ static BOOL IS_IPHONE_5(void) {
 @implementation SeedDisplayBase
 @end
 
+@implementation CrashReporterNav
+- (UIInterfaceOrientationMask) supportedInterfaceOrientations { return UIInterfaceOrientationMaskPortrait; }
+- (UIInterfaceOrientation) preferredInterfaceOrientationForPresentation { return UIInterfaceOrientationPortrait; }
+- (BOOL) shouldAutorotate { return NO; }
+@end
+
+@implementation CrashReporterBase
+@end
+
 

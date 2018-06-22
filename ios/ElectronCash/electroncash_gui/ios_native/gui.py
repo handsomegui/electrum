@@ -314,8 +314,11 @@ class ElectrumGui(PrintError):
         self.window.backgroundColor = UIColor.whiteColor
         self.window.rootViewController = self.tabController
 
-        self.window.makeKeyAndVisible()                 
-             
+        self.window.makeKeyAndVisible()
+        
+        sys.excepthook = self.exception_handler
+        utils.setup_thread_excepthook()
+        
         utils.NSLog("UI Created Ok")
         
     def register_network_callbacks(self):
@@ -372,6 +375,10 @@ class ElectrumGui(PrintError):
         self.queued_ext_txn = None
         if self.window is None:
             return
+        
+        if sys.excepthook != sys.__excepthook__:
+            sys.excepthook = sys.__excepthook__
+
         self.stop_daemon()
         if self.lowMemoryToken is not None:
             NSNotificationCenter.defaultCenter.removeObserver_(self.lowMemoryToken.autorelease())
@@ -2068,9 +2075,35 @@ class ElectrumGui(PrintError):
             self.keyEnclave.generate_keys(Compl)
         else:
             completion()
-        
+            
+    def show_crash_reporter(self, etype : type, eobj : object, tb : object) -> bool:
+        from . import crashreporter
+        if crashreporter.Singleton:
+            utils.NSLog("*** WARNING: A crash reporter is already active! Cannot show another crash reporter!")
+            return False
+        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("CrashReporter", None, None)
+        nav = None
+        for o in objs:
+            if isinstance(o, UINavigationController):
+                nav = o
+                break
+        if nav:
+            vc = nav.viewControllers[0]
+            crashreporter.Set(vc, (etype, eobj, tb))
+            self.add_navigation_bar_close_to_modal_vc(vc, leftSide = True, useXIcon = True)
+            self.get_presented_viewcontroller().presentViewController_animated_completion_(nav, True, None)
+            return True
+        return False
+    
+    def exception_handler(self, etype : type, eobj : object, tb : object) -> None:
+        def InMain(etype, eobj, tb):
+            if not self.show_crash_reporter(etype, eobj, tb):
+                sys.__excepthook__(etype, eobj, tb)
+        utils.do_in_main_thread(InMain, etype, eobj, tb)
+
     # this method is called by Electron Cash libs to start the GUI
     def main(self):
         self.createAndShowUI()
         
         self.setup_key_enclave(lambda: self.start_daemon())
+

@@ -602,4 +602,21 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onSeedLblTap:(id)sender;
 - (IBAction) onOk:(id)sender;
 @end
+
+@interface CrashReporterNav : UINavigationController
+@end
+
+@interface CrashReporterBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *errMsg, *reportTit, *descTit;
+@property (nonatomic, weak) IBOutlet UITextView *report, *desc;
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
+@property (nonatomic) NSInteger kbas;
+@property (nonatomic, weak) IBOutlet UIScrollView *sv;
+@property (nonatomic, weak) IBOutlet UIView *bottomView, *contentView;
+@property (nonatomic, weak) IBOutlet UIButton *sendBut;
+@end
+@interface CrashReporterVC : CrashReporterBase
+// implemented in python crashreporter.py
+- (IBAction) onSendBut:(id)sender;
+@end
 #endif /* ViewsForIB_h */
