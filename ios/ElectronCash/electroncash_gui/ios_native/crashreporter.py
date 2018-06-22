@@ -30,6 +30,9 @@ issue_template = """<font face=arial color="#414141">
 </ul>
 </font>
 """
+#BauerJ's testing server
+#report_server = "https://crashhubtest.bauerj.eu/crash"
+# "Live" (Marcel's server)
 report_server = "https://crashhub.electroncash.org/crash"
 
 Singleton = None
@@ -102,10 +105,14 @@ class CrashReporterVC(CrashReporterBase):
         def OnSuccess(response : str) -> None:
             utils.NSLog("Response from server: %s", response)
             response = response.strip()
-            if len(response) > 60: response = response[:60] + "..."
-            parent().show_message(message = ("%s\n\nYou can track issues at:\n\nhttp://www.github.com/fyookball/electrum/issues"%response), title=_("Report Sent"), vc = self, onOk=onOk)
+            if len(response) > 255: response = response[:255] + "..."
+            try:
+                response = str(utils.nsattributedstring_from_html(response).string)
+            except:
+                pass
+            parent().show_message(message = response, title=_("Report Sent"), vc = self, onOk=onOk)
         def OnError(exc) -> None:
-            parent().show_error(message = str(exc[1]), vc = self, onOk=onOk)
+            parent().show_error(message = str(exc[1]), vc = self)
 
         utils.WaitingDialog(self, _("Sending Report..."), SendReport,  OnSuccess, OnError)
         
@@ -137,16 +144,18 @@ def _get_traceback_info(vc : CrashReporterVC) -> dict:
 
 def _get_additional_info(vc : CrashReporterVC) -> dict:
     import platform
-    xtraInfo = "iOS Build: " + str(NSBundle.mainBundle.objectForInfoDictionaryKey_("CFBundleVersion")) + "\niOS Version String: " + utils.ios_version_string() + "\n\n"
+    bundleVer = "iOS Build: " + str(NSBundle.mainBundle.objectForInfoDictionaryKey_("CFBundleVersion"))
+    #xtraInfo = bundleVer + "\niOS Version String: " + utils.ios_version_string() + "\n\n"
     args = {
-        "app_version": PACKAGE_VERSION,
+        "app_version": PACKAGE_VERSION + (" (%s)"%bundleVer),
         "python_version": sys.version,
-        "os": platform.platform(),
-#        "os": utils.ios_version_string(),
+        "os": platform.platform() + " " + utils.ios_version_string(),
         "wallet_type": "unknown",
-        "locale": locale.getdefaultlocale()[0],
-        "description": xtraInfo + (vc.descDel.text if vc.descDel.text else "")
+        "locale": (parent().language or 'UNK'),
+        "description": (vc.descDel.text if vc.descDel.text else "")
     }
+    if len(args['os']) > 255:
+        args['os'] = args['os'][:255]
     try:
         args["wallet_type"] = parent().wallet.wallet_type
     except:

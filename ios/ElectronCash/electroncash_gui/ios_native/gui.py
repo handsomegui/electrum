@@ -318,7 +318,7 @@ class ElectrumGui(PrintError):
         
         sys.excepthook = self.exception_handler
         utils.setup_thread_excepthook()
-        
+
         utils.NSLog("UI Created Ok")
         
     def register_network_callbacks(self):
@@ -375,7 +375,9 @@ class ElectrumGui(PrintError):
         self.queued_ext_txn = None
         if self.window is None:
             return
-        
+
+        utils.cleanup_thread_excepthook()
+
         if sys.excepthook != sys.__excepthook__:
             sys.excepthook = sys.__excepthook__
 
@@ -816,6 +818,7 @@ class ElectrumGui(PrintError):
 
     def set_language(self):
         langs = NSLocale.preferredLanguages
+        self.language = 'en'
         if langs:
             l = langs[0].replace('-','_')
             if not languages.get(l):
@@ -828,6 +831,7 @@ class ElectrumGui(PrintError):
                         l = k
                         break
             print ("Setting language to {}".format(l))
+            self.language = l
             set_language(l)
             
     def prefs_set_downloading_notif_hidden(self, b : bool) -> None:
