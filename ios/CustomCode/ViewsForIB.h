@@ -305,6 +305,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onPayTo;
 - (IBAction) cpyAddressToClipboard;
 - (IBAction) cpyNameToClipboard;
+- (IBAction) onQRImgTap;
 @end
 
 @interface AddressesVCBase : UIViewController
@@ -346,6 +347,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (void) onOptions;
 - (IBAction) onSpendFrom;
 - (IBAction) onUTXOs;
+- (IBAction) onQRImgTap;
 @end
 
 @interface CoinsCellSelectedBackgroundView : UIView
@@ -386,6 +388,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) cpyUTXO;
 - (void) onOptions;
 - (IBAction) onSpendFrom;
+- (IBAction) onQRImgTap;
 @end
 
 @interface PleaseWaitVC : UIViewController
@@ -582,6 +585,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface ReceiveVC : ReceiveBase
 // implemented in python receive.py
 - (IBAction) onShareRequestBut:(id)sender;
+- (IBAction) onQRImgTap;
 @end
 
 @interface SeedDisplayBase : UIViewController

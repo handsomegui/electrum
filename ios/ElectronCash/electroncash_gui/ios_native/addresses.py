@@ -270,7 +270,18 @@ class AddressDetail(AddressDetailBase):
 
     @objc_method
     def onCloseKeyboard_(self, sender : ObjCInstance) -> None:
-        self.view.endEditing_(True) 
+        self.view.endEditing_(True)
+        
+    @objc_method
+    def onQRImgTap(self) -> None:
+        if not self.qr.image: gui.ElectrumGui.gui.show_error(vc = self, message = "Error, No QR Image")
+        else:
+            def ShowIt() -> None:
+                utils.show_share_actions(vc = self, img = self.qr.image, ipadAnchor = self.qr.convertRect_toView_(self.qr.bounds, self.view), objectName = _("Image"))
+            c1 = UIColor.clearColor
+            c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.3)
+            self.qr.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1, c2, 0.2, True, ShowIt)
+
 
         
 ModeNormal = 0
@@ -860,15 +871,17 @@ def _ShowAddressContextMenu(entry, parentvc, ipadAnchor, toggleFreezeCallback = 
     actions = [
             [ _('Cancel') ],
             [ _('Copy Address'), on_copy ],
-            #[ _('Show as QR code'), lambda: parentvc.onQRBut() ],
             [ _("Request payment"), on_request_payment ],
         ]
-    
+        
     watch_only = entry.is_watch_only
     
     if entry.num_utxos and parentvc.navigationController:
         from .coins import PushCoinsVC
         actions.insert(2, [_('Show Coins (UTXOs)'), PushCoinsVC, [entry.address], parentvc.navigationController])
+
+    if isinstance(parentvc, AddressDetail):
+        actions.insert(2, [ _('Share/Save QR...'), lambda: parentvc.onQRImgTap() ])
 
     if not watch_only:
         def onToggleFreeze() -> None:

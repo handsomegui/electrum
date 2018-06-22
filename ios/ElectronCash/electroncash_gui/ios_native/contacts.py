@@ -647,6 +647,17 @@ class ContactDetailVC(ContactDetailVCBase):
     @objc_method
     def cpyNameToClipboard(self) -> None:
         gui.ElectrumGui.gui.copy_to_clipboard(str(self.name.text).strip(),"Name")
+        
+    @objc_method
+    def onQRImgTap(self) -> None:
+        if not self.qr.image: gui.ElectrumGui.gui.show_error(vc = self, message = "Error, No QR Image")
+        else:
+            def ShowIt() -> None:
+                utils.show_share_actions(vc = self, img = self.qr.image, ipadAnchor = self.qr.convertRect_toView_(self.qr.bounds, self.view), objectName = _("Image"))
+            c1 = UIColor.clearColor
+            c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.3)
+            self.qr.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1, c2, 0.2, True, ShowIt)
+
 
         
 def _Contact(slf : ObjCInstance) -> ContactsEntry:
@@ -877,8 +888,10 @@ def show_contact_options_actionsheet(contact : ContactsEntry, vc : ObjCInstance,
         
         if parent.wallet.is_watching_only():
             actions.pop(3)
-                        
-                
+
+        if isinstance(vc, ContactDetailVC):
+            actions.insert(2, [ _('Share/Save QR...'), lambda: vc.onQRImgTap() ])
+                                        
         utils.show_alert(
             vc = vc,
             title = contact.name,#_("Options"),

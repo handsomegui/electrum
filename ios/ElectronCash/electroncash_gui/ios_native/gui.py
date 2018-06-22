@@ -1231,6 +1231,7 @@ class ElectrumGui(PrintError):
         self.wallet = None
         self.daemon = None
         self.dismiss_downloading_notif()
+        utils.cleanup_tmp_dir()
         
     def start_daemon(self):
         if self.daemon_is_running(): return
@@ -1240,7 +1241,7 @@ class ElectrumGui(PrintError):
             # uselessly trying to connect to one that doesn't exist anyway.
             # (We're guaranteed only 1 instance of this app by iOS regardless)
             os.remove(ed.get_lockfile(self.config))
-            print("Pre-existing 'daemon' lock-file removed!")
+            utils.NSLog("Pre-existing 'daemon' lock-file removed!")
         except:
             pass
         if not self.config.get('use_exchange'):
@@ -2072,4 +2073,4 @@ class ElectrumGui(PrintError):
     def main(self):
         self.createAndShowUI()
         
-        self.setup_key_enclave(lambda: self.start_daemon())        
+        self.setup_key_enclave(lambda: self.start_daemon())

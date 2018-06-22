@@ -356,6 +356,23 @@ static long UIButtonBlockKey = 0xb10cb10c;
 
 @end
 
+@implementation UIGestureRecognizer (BlockSupport)
+static long _UIGRBlockKey = 0xb10cb18c;
+- (void)addBlock:(ActionBlock)block {
+    objc_setAssociatedObject(self, &_UIGRBlockKey, block, OBJC_ASSOCIATION_COPY);
+    if (block)
+        [self addTarget:self action:@selector(callActionBlock:)];
+    else
+        [self removeTarget:self action:@selector(callActionBlock:)];
+}
+- (void)callActionBlock:(id)sender {
+    ActionBlock block = (ActionBlock)objc_getAssociatedObject(self, &_UIGRBlockKey);
+    if (block) {
+        block(sender);
+    }
+}
+@end
+
 // UIView+ViewRecursion.m
 @implementation UIView (ViewRecursion)
 - (NSArray * )allSubviewsRecursively

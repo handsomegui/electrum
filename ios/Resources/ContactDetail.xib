@@ -40,12 +40,15 @@
                                 <outletCollection property="gestureRecognizers" destination="FYm-QX-yP8" appends="YES" id="733-Of-v7Q"/>
                             </connections>
                         </label>
-                        <imageView userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="nnX-OG-QpY" userLabel="QR">
+                        <imageView contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="nnX-OG-QpY" userLabel="QR">
                             <rect key="frame" x="0.0" y="53" width="375" height="180"/>
                             <gestureRecognizers/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="180" id="ihf-tC-0aE"/>
                             </constraints>
+                            <connections>
+                                <outletCollection property="gestureRecognizers" destination="NSP-cM-q14" appends="YES" id="Xru-Rd-xwJ"/>
+                            </connections>
                         </imageView>
                         <label opaque="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="19KVgvPXU8Lcucswsdvsor484839vnso22c9187709fkj1277nv84ur7kjd" textAlignment="natural" lineBreakMode="middleTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hU3-ix-UVn">
                             <rect key="frame" x="15" y="243" width="345" height="44"/>
@@ -131,6 +134,11 @@
         <tapGestureRecognizer id="FYm-QX-yP8" userLabel="Name Tap Gesture Recognizer">
             <connections>
                 <action selector="cpyNameToClipboard" destination="-1" id="qvX-eB-S5v"/>
+            </connections>
+        </tapGestureRecognizer>
+        <tapGestureRecognizer id="NSP-cM-q14" userLabel="QR Tap Gesture Recognizer">
+            <connections>
+                <action selector="onQRImgTap" destination="-1" id="mKh-rF-zki"/>
             </connections>
         </tapGestureRecognizer>
     </objects>

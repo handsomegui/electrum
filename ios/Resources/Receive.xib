@@ -148,12 +148,16 @@
                                     <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="deviceRGB"/>
                                     <nil key="highlightedColor"/>
                                 </label>
-                                <imageView userInteractionEnabled="NO" tag="600" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Rnz-WW-kcf">
+                                <imageView tag="600" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Rnz-WW-kcf">
                                     <rect key="frame" x="60" y="-5" width="200" height="200"/>
+                                    <gestureRecognizers/>
                                     <constraints>
                                         <constraint firstAttribute="width" constant="200" id="Gfv-w5-IjS"/>
                                         <constraint firstAttribute="width" secondItem="Rnz-WW-kcf" secondAttribute="height" multiplier="1:1" id="ICc-Kv-1Xh"/>
                                     </constraints>
+                                    <connections>
+                                        <outletCollection property="gestureRecognizers" destination="YO6-Dt-p7N" appends="YES" id="m4m-TK-Whw"/>
+                                    </connections>
                                 </imageView>
                                 <button opaque="NO" tag="120" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pMx-TV-ta6">
                                     <rect key="frame" x="287" y="205" width="18" height="22"/>
@@ -394,6 +398,11 @@
             <viewLayoutGuide key="safeArea" id="AUd-Hp-5gQ"/>
             <point key="canvasLocation" x="-418" y="182"/>
         </view>
+        <tapGestureRecognizer id="YO6-Dt-p7N" userLabel="QR Tap Gesture Recognizer">
+            <connections>
+                <action selector="onQRImgTap" destination="-1" id="i8Z-cd-4Fx"/>
+            </connections>
+        </tapGestureRecognizer>
     </objects>
     <resources>
         <image name="bang_red.png" width="18" height="18"/>

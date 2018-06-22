@@ -502,6 +502,16 @@ class ReceiveVC(ReceiveBase):
                                  cancel = _("Cancel"),
                                  ipadAnchor = ipadAnchor)
 
+    @objc_method
+    def onQRImgTap(self) -> None:
+        if not self.qr.image: parent().show_error(vc = self, message = "Error, No QR Image")
+        else:
+            def ShowIt() -> None:
+                utils.show_share_actions(vc = self, img = self.qr.image, ipadAnchor = self.qr.convertRect_toView_(self.qr.bounds, self.view), objectName = _("Image"))
+            c1 = UIColor.clearColor
+            c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.3)
+            self.qr.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1, c2, 0.2, True, ShowIt)
+
 
 def _GetReqs() -> list:
     return parent().sigRequests.get(None)

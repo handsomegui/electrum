@@ -91,6 +91,24 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
 def pathsafeify(s : str) -> str:
     return s.translate({ord(i):None for i in ':/.\$#@[]}{*?'}).strip()
 
+def cleanup_tmp_dir():
+    t0 = time.time()
+    d = get_tmp_dir()
+    ct = 0
+    tot = 0
+    import glob
+    if os.path.isdir(d):
+        it = glob.iglob(os.path.join(d,'*'))
+        for f in it:
+            tot += 1
+            try:
+                os.remove(f)
+                ct += 1
+            except:
+                pass
+    if tot:
+        NSLog("Cleaned up %d/%d files from tmp dir in %f ms",ct,tot,(time.time()-t0)*1e3)
+
 # new color schem from Max
 _ColorScheme = None
     
@@ -779,6 +797,15 @@ def present_qrcode_vc_for_data(vc : ObjCInstance, data : str, title : str = "QR 
     iv.contentMode = UIViewContentModeScaleAspectFit
     iv.opaque = True
     iv.backgroundColor = UIColor.whiteColor
+    gr = UITapGestureRecognizer.new().autorelease()
+    iv.addGestureRecognizer_(gr)
+    def ActionBlock(gr : objc_id) -> None:
+        def ShowIt() -> None: show_share_actions(vc = qvc, img = iv.image, ipadAnchor = iv.frame, objectName = _("Image"))
+        c1 = UIColor.whiteColor
+        c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.3)
+        iv.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1, c2, 0.2, True, ShowIt)
+    gr.addBlock_(ActionBlock)
+    iv.userInteractionEnabled = True
     qvc.view = iv
     nav = tintify(UINavigationController.alloc().initWithRootViewController_(qvc).autorelease())
     vc.presentViewController_animated_completion_(nav,True,None)

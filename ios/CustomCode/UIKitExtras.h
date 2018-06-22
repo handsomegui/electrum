@@ -54,9 +54,13 @@
                        completion:(void(^)(void))completion;
 @end
 
-typedef void(^ActionBlock)(UIControl *);
+typedef void(^ActionBlock)(id);
 @interface UIControl (UIControlBlockAction)
 - (void)handleControlEvent:(UIControlEvents)event withBlock:(ActionBlock)block;
+@end
+
+@interface UIGestureRecognizer (BlockSupport)
+- (void)addBlock:(ActionBlock)block;
 @end
 
 @interface UIView (ViewRecursion)

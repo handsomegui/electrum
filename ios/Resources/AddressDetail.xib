@@ -42,11 +42,15 @@
                 <view tag="1" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="3WW-S2-Z6u" userLabel="Content View">
                     <rect key="frame" x="0.0" y="0.0" width="375" height="1000"/>
                     <subviews>
-                        <imageView userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="nnX-OG-QpY" userLabel="QR">
+                        <imageView contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="nnX-OG-QpY" userLabel="QR">
                             <rect key="frame" x="0.0" y="2" width="375" height="175"/>
+                            <gestureRecognizers/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="175" id="ihf-tC-0aE"/>
                             </constraints>
+                            <connections>
+                                <outletCollection property="gestureRecognizers" destination="XMx-i5-bRd" appends="YES" id="8xX-9t-MPq"/>
+                            </connections>
                         </imageView>
                         <label opaque="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="19KVgvPXU8Lcucswsdvsor484839vnso22c9187709fkj1277nv84ur7kjd" textAlignment="natural" lineBreakMode="middleTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hU3-ix-UVn">
                             <rect key="frame" x="15" y="187" width="345" height="44"/>
@@ -287,6 +291,11 @@
                 <outlet property="tv" destination="tiG-l2-mAN" id="Tyo-jV-9xT"/>
             </connections>
         </customObject>
+        <tapGestureRecognizer id="XMx-i5-bRd" userLabel="QR Tap Gesture Recognizer">
+            <connections>
+                <action selector="onQRImgTap" destination="-1" id="yVJ-K6-sn7"/>
+            </connections>
+        </tapGestureRecognizer>
     </objects>
     <resources>
         <image name="Rect_For_Chk.png" width="24" height="24"/>

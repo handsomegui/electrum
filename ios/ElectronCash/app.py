@@ -7,10 +7,12 @@
 import os
 from electroncash.util import set_verbosity
 from electroncash_gui.ios_native import ElectrumGui
-from electroncash_gui.ios_native.utils import call_later, get_user_dir
+from electroncash_gui.ios_native.utils import call_later, get_user_dir, cleanup_tmp_dir
 from electroncash.simple_config import SimpleConfig
 
 def main():
+    cleanup_tmp_dir()
+    
     config_options = {
             'verbose': True,
             'cmd': 'gui',
