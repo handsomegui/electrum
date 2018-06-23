@@ -314,6 +314,8 @@ def show_share_actions(vc : ObjCInstance,
             UIActivityTypePostToTencentWeibo,
             UIActivityTypeOpenInIBooks,
         ]
+        if isinstance(img, UIImage):
+            excludedActivityTypes.remove(UIActivityTypeSaveToCameraRoll)
     avc.excludedActivityTypes = excludedActivityTypes
     if is_ipad():
         popover = avc.popoverPresentationController()
@@ -351,6 +353,8 @@ def show_share_actions(vc : ObjCInstance,
             show_notification(message = _("{} sent successfully").format(objectName))
         elif activity in (py_from_ns(UIActivityTypePrint)):
             show_notification(message = _("{} sent to printer").format(objectName))
+        elif activity in (py_from_ns(UIActivityTypeSaveToCameraRoll)):
+            show_notification(message = _("{} saved to photo library").format(objectName))
         else:
             show_notification(message = _("{} exported successfully").format(objectName))
         
