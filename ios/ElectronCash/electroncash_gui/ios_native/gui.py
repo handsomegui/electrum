@@ -779,7 +779,7 @@ class ElectrumGui(PrintError):
         self.cash_addr_sig.emit(on)
                   
     def format_amount(self, x, is_diff=False, whitespaces=False):
-        return format_satoshis(x, is_diff, self.num_zeros, self.decimal_point, whitespaces)
+        return format_satoshis(x, is_diff=is_diff, num_zeros=self.num_zeros, decimal_point=self.decimal_point, whitespaces=whitespaces)
 
     def format_amount_and_units(self, amount, usenl=False):
         text = self.format_amount(amount) + ' '+ self.base_unit()

@@ -264,7 +264,7 @@ class FiatAmountEdit(BTCAmountEdit):
 
     @objc_method
     def formatPlain_(self, amount : int) -> ObjCInstance:
-        return ns_from_py(format_satoshis(amount, False, 2, self.decimalPoint()))
+        return ns_from_py(format_satoshis(amount, is_diff=False, num_zeros=2, decimal_point=self.decimalPoint()))
 
 class BTCkBEdit(BTCAmountEdit):
     @objc_method
