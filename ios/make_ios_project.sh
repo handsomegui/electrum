@@ -126,7 +126,8 @@ if [ -f "${infoplist}" ]; then
 	plutil -replace 'UISupportedInterfaceOrientations' -xml '<array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string><string>UIInterfaceOrientationPortraitUpsideDown</string></array>' -- ${infoplist}
 	plutil -insert 'UIViewControllerBasedStatusBarAppearance' -bool NO -- ${infoplist}
 	plutil -insert 'UIStatusBarStyle' -string 'UIStatusBarStyleLightContent' -- ${infoplist}
-	plutil -insert 'NSPhotoLibraryAddUsageDescription' -string 'Permission required to save QR image to the photo library' -- ${infoplist}
+	plutil -insert 'NSPhotoLibraryAddUsageDescription' -string 'Required to save QR images to the photo library' -- ${infoplist}
+	plutil -insert 'NSPhotoLibraryUsageDescription' -string 'Required to save QR images to the photo library' -- ${infoplist}
 fi
 
 if [ -d overrides/ ]; then
