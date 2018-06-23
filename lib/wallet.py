@@ -851,7 +851,7 @@ class Abstract_Wallet(PrintError):
                 'height':height,
                 'confirmations':conf,
                 'timestamp':timestamp,
-                'value': format_satoshis(value, True) if value is not None else '--',
+                'value': format_satoshis(value, is_diff=True) if value is not None else '--',
                 'balance': format_satoshis(balance)
             }
             if item['height']>0:
@@ -1992,4 +1992,4 @@ class Wallet(object):
             return Multisig_Wallet
         if wallet_type in wallet_constructors:
             return wallet_constructors[wallet_type]
-        raise RuntimeError("Unknown wallet type: " + wallet_type)
+        raise RuntimeError("Unknown wallet type: " + str(wallet_type))

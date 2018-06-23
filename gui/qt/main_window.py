@@ -40,8 +40,6 @@ import PyQt5.QtCore as QtCore
 from .exception_window import Exception_Hook
 from PyQt5.QtWidgets import *
 
-from electroncash.util import bh2u, bfh
-
 from electroncash import keystore
 from electroncash.address import Address
 from electroncash.bitcoin import COIN, TYPE_ADDRESS
@@ -50,7 +48,7 @@ from electroncash.plugins import run_hook
 from electroncash.i18n import _
 from electroncash.util import (format_time, format_satoshis, PrintError,
                            format_satoshis_plain, NotEnoughFunds, ExcessiveFee,
-                           UserCancelled)
+                           UserCancelled, bh2u, bfh, format_fee_satoshis)
 import electroncash.web as web
 from electroncash import Transaction
 from electroncash import util, bitcoin, commands
@@ -296,7 +294,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def on_error(self, exc_info):
         if not isinstance(exc_info[1], UserCancelled):
-            traceback.print_exception(*exc_info)
+            try:
+                traceback.print_exception(*exc_info)
+            except OSError:
+                # Issue #662, user got IO error.
+                # We want them to still get the error displayed to them.
+                pass
             self.show_error(str(exc_info[1]))
 
     def on_network(self, event, *args):
@@ -429,7 +432,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         new_path = os.path.join(wallet_folder, filename)
         if new_path != path:
             try:
-                shutil.copy2(path, new_path)
+                # Copy file contents
+                shutil.copyfile(path, new_path)
+
+                # Copy file attributes if possible
+                # (not supported on targets like Flatpak documents)
+                try:
+                    shutil.copystat(path, new_path)
+                except (IOError, os.error):
+                    pass
+
                 self.show_message(_("A copy of your wallet file was created in")+" '%s'" % str(new_path), title=_("Wallet backup created"))
             except (IOError, os.error) as reason:
                 self.show_critical(_("Electrum was unable to copy your wallet file to the specified location.") + "\n" + str(reason), title=_("Unable to create backup"))
@@ -647,7 +659,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.require_fee_update = False
 
     def format_amount(self, x, is_diff=False, whitespaces=False):
-        return format_satoshis(x, is_diff, self.num_zeros, self.decimal_point, whitespaces)
+        return format_satoshis(x, self.num_zeros, self.decimal_point, is_diff=is_diff, whitespaces=whitespaces)
 
     def format_amount_and_units(self, amount):
         text = self.format_amount(amount) + ' '+ self.base_unit()
@@ -657,10 +669,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return text
 
     def format_fee_rate(self, fee_rate):
-        if self.fee_unit == 0:
-            return '{:.2f} sats/byte'.format(fee_rate/1000)
-        else:
-            return self.format_amount(fee_rate) + ' ' + self.base_unit() + '/kB'
+        return format_fee_satoshis(fee_rate/1000, self.num_zeros) + ' sat/byte'
 
     def get_decimal_point(self):
         return self.decimal_point
@@ -2049,10 +2058,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             # This can throw on invalid base64
             sig = base64.b64decode(signature.toPlainText())
+            verified = bitcoin.verify_message(address, sig, message)
         except:
             verified = False
-        else:
-            verified = bitcoin.verify_message(address, sig, message)
 
         if verified:
             self.show_message(_("Signature verified"))
@@ -2215,7 +2223,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         file_content = file_content.strip()
         tx_file_dict = json.loads(str(file_content))
         tx = self.tx_from_text(file_content)
-        if len(tx_file_dict['input_values']) >= len(tx.inputs()):
+        # Older saved transaction do not include this key.
+        if 'input_values' in tx_file_dict and len(tx_file_dict['input_values']) >= len(tx.inputs()):
             for i in range(len(tx.inputs())):
                 tx._inputs[i]['value'] = tx_file_dict['input_values'][i]
         return tx
@@ -2931,16 +2940,28 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.wallet.thread.stop()
         if self.network:
             self.network.unregister_callback(self.on_network)
-        self.config.set_key("is_maximized", self.isMaximized())
+            
+        # We catch these errors with the understanding that there is no recovery at
+        # this point, given user has likely performed an action we cannot recover
+        # cleanly from.  So we attempt to exit as cleanly as possible.
+        try:
+            self.config.set_key("is_maximized", self.isMaximized())
+            self.config.set_key("console-history", self.console.history[-50:], True)
+        except (OSError, PermissionError) as e:
+            self.print_error("unable to write to config (directory removed?)", e)
+
         if not self.isMaximized():
-            g = self.geometry()
-            self.wallet.storage.put("winpos-qt", [g.left(),g.top(),
-                                                  g.width(),g.height()])
-        self.config.set_key("console-history", self.console.history[-50:],
-                            True)
+            try:
+                g = self.geometry()
+                self.wallet.storage.put("winpos-qt", [g.left(),g.top(),g.width(),g.height()])
+            except (OSError, PermissionError) as e:
+                self.print_error("unable to write to wallet storage (directory removed?)", e)
+
+        # Should be no side-effects in this function relating to file access past this point.
         if self.qr_window:
             self.qr_window.close()
         self.close_wallet()
+
         self.gui_object.close_window(self)
 
     def internal_plugins_dialog(self):
@@ -3009,10 +3030,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d.exec_()
 
     def external_plugins_dialog(self):
-        import importlib
         from . import external_plugins_window
-        importlib.reload(external_plugins_window)
-
         self.externalpluginsdialog = d = external_plugins_window.ExternalPluginsDialog(self, _('Plugin Manager'))
         d.exec_()
 
