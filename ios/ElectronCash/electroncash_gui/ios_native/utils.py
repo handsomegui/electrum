@@ -1279,6 +1279,7 @@ class DataMgr(PySig):
 ######
 _f1 = UIFont.systemFontOfSize_weight_(16.0,UIFontWeightBold).retain()
 _f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
+_f2_ipad = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightSemibold).retain()
 _f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
 _f4 = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightLight).retain()
 _s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
@@ -1297,7 +1298,7 @@ def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCIn
         r = NSRange(ix,l-ix)
         ats.addAttribute_value_range_(NSFontAttributeName,font,r)
     return ats
-def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None, amtColor = None) -> ObjCInstance:
+def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None, amtColor = None, isIpad = False) -> ObjCInstance:
     #print("str=",amtStr,"pad=",pad,"spacesize=",_s3.width)
     p = ''
     if fiatStr:
@@ -1317,7 +1318,7 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
         ats.addAttribute_value_range_(NSFontAttributeName,_f3,r0)
         r = NSRange(len(amtStr)+len(p),len(fiatStr)-len(p))
         r2 = NSRange(ats.length()-(len(ccy)+1),len(ccy))
-        ats.addAttribute_value_range_(NSFontAttributeName,_f2,r)
+        ats.addAttribute_value_range_(NSFontAttributeName,_f2 if not isIpad else _f2_ipad,r)
         if kern: ats.addAttribute_value_range_(NSKernAttributeName,kern,r)
         #ats.addAttribute_value_range_(NSBaselineOffsetAttributeName,3.0,r)
         if color:

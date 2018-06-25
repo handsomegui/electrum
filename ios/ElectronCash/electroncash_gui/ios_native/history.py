@@ -139,6 +139,7 @@ class HistoryMgr(utils.DataMgr):
 
 _tx_cell_height = 76.0 # TxHistoryCell height in points
 _date_width = None
+_is_ipad = utils.is_ipad()
 
 class TxHistoryHelper(TxHistoryHelperBase):
     haveShowMoreTxs = objc_property()
@@ -258,7 +259,7 @@ class TxHistoryHelper(TxHistoryHelperBase):
         cell.statusTit.setText_withKerning_(_("Status"), utils._kern)
         amtStr = utils.stripAmount(entry.v_str)
         balStr = utils.stripAmount(entry.balance_str)
-        if self.compactMode or (not entry.fiat_amount_str and not entry.fiat_balance_str):
+        if (self.compactMode and not _is_ipad) or (not entry.fiat_amount_str and not entry.fiat_balance_str):
             if cell.amount.numberOfLines != 1:
                 cell.amount.numberOfLines = 1
                 cell.balance.numberOfLines = 1
@@ -274,9 +275,12 @@ class TxHistoryHelper(TxHistoryHelperBase):
             s1 = ns_from_py(amtStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
             s2 = ns_from_py(balStr).sizeWithAttributes_({NSFontAttributeName:utils._f1})
             def adjustCS() -> None:
-                cell.dateWidthCS.constant = _date_width - 24.0
-            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,utils.stripAmount(entry.fiat_amount_str),entry.ccy,s2.width-s1.width,utils.uicolor_custom('light'),adjustCS,utils._kern*1.25) 
-            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,utils.stripAmount(entry.fiat_balance_str),entry.ccy,s1.width-s2.width,utils.uicolor_custom('light'),adjustCS,utils._kern*1.25)
+                if _is_ipad:
+                    pass
+                else:
+                    cell.dateWidthCS.constant = _date_width - 24.0
+            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(amtStr,utils.stripAmount(entry.fiat_amount_str),entry.ccy,s2.width-s1.width,utils.uicolor_custom('light'),adjustCS,utils._kern*1.25, isIpad=_is_ipad) 
+            cell.balance.attributedText = utils.hackyFiatAmtAttrStr(balStr,utils.stripAmount(entry.fiat_balance_str),entry.ccy,s1.width-s2.width,utils.uicolor_custom('light'),adjustCS,utils._kern*1.25, isIpad=_is_ipad)
             # end experimental zone...
         cell.desc.setText_withKerning_(entry.label.strip() if isinstance(entry.label, str) else '', utils._kern)
         cell.icon.image = UIImage.imageNamed_("tx_send.png") if entry.value and entry.value < 0 else UIImage.imageNamed_("tx_recv.png")
