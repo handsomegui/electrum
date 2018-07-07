@@ -36,18 +36,12 @@ from electroncash.i18n import _
 from electroncash import WalletStorage, Wallet
        
 
-def Create_SeedDisplayVC(seed, passphrase) -> ObjCInstance:
-    ret = SeedDisplayVC.seedDisplayVCWithSeed_passphrase_(seed, passphrase)
+def Create_SeedDisplayVC(seed : str, passphrase : str) -> ObjCInstance:
+    ret = SeedDisplayVC.seedDisplayVCWithSeed_passphrase_(ns_from_py(seed), ns_from_py(passphrase))
     #utils.add_callback(ret, 'okcallback', callback)
     return ret
 
-class SeedDisplayVC(UIViewController):
-    okBut = objc_property()
-    seedLbl = objc_property()
-    titLbl = objc_property()
-    msgLbl = objc_property()
-    seed = objc_property()
-    passphrase = objc_property()
+class SeedDisplayVC(SeedDisplayBase):
     
     @objc_classmethod
     def seedDisplayVCWithSeed_passphrase_(cls : ObjCInstance, seed : ObjCInstance, passphrase : ObjCInstance) -> ObjCInstance:
@@ -61,62 +55,68 @@ class SeedDisplayVC(UIViewController):
     
     @objc_method
     def dealloc(self) -> None:
-        self.okBut = None
-        self.seedLbl = None
-        self.titLbl = None
-        self.msgLbl = None
-        self.seed = None
-        self.passphrase = None
         utils.remove_all_callbacks(self)
         send_super(__class__, self, 'dealloc')    
-    
-    @objc_method
-    def viewDidAppear_(self, animated : bool) -> None:
-        pass
-    
+        
     @objc_method
     def loadView(self) -> None:
-        seed = self.seed
-        objs = NSBundle.mainBundle.loadNibNamed_owner_options_("SeedDialog",None,None)
-        v = None
-        for o in objs:
-            if isinstance(o, UIView):
-                v = o
-            elif isinstance(o, UITapGestureRecognizer):
-                o.addTarget_action_(self, SEL('onSeedLblTap:'))
-        allviews = v.allSubviewsRecursively()
-        for a in allviews:
-            if isinstance(a, UILabel):
-                # translate UI automatically since placeholder text has potential translations 
-                a.text = _(a.text)
-            elif isinstance(a, UIButton):
-                a.setTitle_forState_(_(a.titleForState_(UIControlStateNormal)), UIControlStateNormal)
-        self.titLbl = v.viewWithTag_(20)
-        self.okBut = v.viewWithTag_(1000)
-        self.msgLbl = v.viewWithTag_(200)
-        self.seedLbl = v.viewWithTag_(100)
-        
-        self.titLbl.text = _("Your wallet generation seed is:")
-        self.msgLbl.attributedText = utils.nsattributedstring_from_html(seed_warning_msg(py_from_ns(self.seed),py_from_ns(self.passphrase)))
-        utils.uilabel_replace_attributed_text(self.seedLbl, py_from_ns(self.seed))
-        sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,320,350)).autorelease()
-        sv.contentSize = CGSizeMake(320,400)
+        NSBundle.mainBundle.loadNibNamed_owner_options_("SeedDialog",self,None)
+
+        f = self.contentView.frame
+        sv = UIScrollView.alloc().initWithFrame_(CGRectMake(0,0,f.size.width,f.size.height)).autorelease()
+        sv.contentSize = CGSizeMake(f.size.width,f.size.height)
         sv.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.,0.,0.,0.3)
         sv.opaque = False
-        sv.addSubview_(v)
+        sv.addSubview_(self.contentView)
         self.view = sv
 
-        def onOk(but_in : objc_id) -> None:
-            but = ObjCInstance(but_in)
-            self.dismissViewControllerAnimated_completion_(True,None)
-        self.okBut.handleControlEvent_withBlock_(UIControlEventPrimaryActionTriggered,onOk)
-
+    @objc_method
+    def viewWillAppear_(self, animated : bool) -> None:
+        send_super(__class__, self, 'viewWillAppear:', animated, argtypes=[c_bool])
+        seed = py_from_ns(self.seed)
+        passphrase = py_from_ns(self.passphrase)
+        self.seedTit.setText_withKerning_( _("Your wallet generation seed is:"), utils._kern )
+        self.extTit.setText_withKerning_( _("Your seed extension is") + ":", utils._kern )
+        f1 = UIFont.systemFontOfSize_weight_(16.0, UIFontWeightBold)
+        utils.uilabel_replace_attributed_text(self.seedLbl, seed, font = f1)        
+        utils.uilabel_replace_attributed_text(self.extLbl, passphrase or '', font = f1)
+        utils.uilabel_replace_attributed_text(self.blurb,
+                                              (_("Please save these %d words on paper (order is important). ") % (len(seed.split()) + (len(passphrase.split()) if passphrase else 0)))
+                                              + _("This seed will allow you to recover your wallet in case of computer failure."),
+                                              font = UIFont.italicSystemFontOfSize_(14.0))
+        self.okBut.setTitle_forState_(_("OK"), UIControlStateNormal)
+        self.warnTit.text = _("WARNING")
+        self.warn1.text = _("Never disclose your seed.") 
+        self.warn3.text = _("Never type it on a website.")
+        self.warn2.text = _("Do not store it electronically.")
+        if not passphrase:
+            self.extTit.setHidden_(True)
+            self.extLbl.setHidden_(True)
+            self.csBlurbTop.constant = -40.0
+            self.csBlurbHeight.constant = 80.0
+            self.csBlurbBot.constant = 40.0
+            self.csOkButHeight.constant = 40.0
+            self.csTitTop.constant = 20.0
+        else:
+            self.extTit.setHidden_(False)
+            self.extLbl.setHidden_(False)
+            self.csBlurbTop.constant = 20.0
+            self.csBlurbBot.constant = 20.0
+            self.csBlurbHeight.constant = 60.0
+            self.csOkButHeight.constant = 30.0
+            self.csTitTop.constant = 10.0
+            
+        
     @objc_method
     def onCopyBut_(self, but) -> None:
-        data = self.seed
-        if self.passphrase: data += " / " + self.passphrase
+        data = str(self.seed)
+        if self.passphrase: data += " / " + str(self.passphrase)
         UIPasteboard.generalPasteboard.string = data
         utils.show_notification(message=_("Text copied to clipboard"))
+
+    @objc_method
+    def onOk_(self, sender) -> None:
+        self.presentingViewController.dismissViewControllerAnimated_completion_(True,None)
 
     @objc_method
     def onQRBut_(self, but) -> None:
@@ -152,7 +152,7 @@ class SeedDisplayVC(UIViewController):
             style = UIAlertControllerStyleActionSheet,
             ipadAnchor = ipadAnchor
         )
-
+'''
 def seed_warning_msg(seed, passphrase):
     return ''.join([
         '<font face="Verdana, Arial, Helvetica" color=#414141>',
@@ -172,3 +172,4 @@ def seed_warning_msg(seed, passphrase):
         '</p>',
         '</font>',
     ]) % len(seed.split())
+'''

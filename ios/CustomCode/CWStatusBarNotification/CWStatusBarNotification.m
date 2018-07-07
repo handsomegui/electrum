@@ -16,7 +16,16 @@
 #define SCROLL_SPEED 40.0f
 #define SCROLL_DELAY 1.0f
 
+static BOOL IS_IPHONEX() {
+    return UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone
+    && fabs(UIScreen.mainScreen.nativeBounds.size.height - 2436.0) < 0.5;
+}
+
 # pragma mark - ScrollLabel
+
+@interface ScrollLabel ()
+@property (nonatomic) BOOL alignBottom;
+@end
 
 @implementation ScrollLabel
 {
@@ -69,7 +78,15 @@
                          }];
     } else {
         textImage.image = nil;
-        [super drawTextInRect:CGRectInset(rect, PADDING, 0)];
+        if (!_alignBottom)
+            [super drawTextInRect:CGRectInset(rect, PADDING, 0)];
+        else {
+            CGFloat height = [self sizeThatFits:rect.size].height;
+
+            rect.origin.y += rect.size.height - height;
+            rect.size.height = height;
+            [super drawTextInRect:CGRectInset(rect, PADDING, 0)];
+        }
     }
 }
 
@@ -242,6 +259,8 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
     if (SYSTEM_VERSION_LESS_THAN(@"8.0") && UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation)) {
         statusBarHeight = [[UIApplication sharedApplication] statusBarFrame].size.width;
     }
+    if (IS_IPHONEX())
+        statusBarHeight = 50.0; //20.0; // hack for iPhoneX
     return statusBarHeight > 0 ? statusBarHeight : 20;
 }
 
@@ -255,6 +274,8 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
 
 - (CGFloat)getStatusBarOffset
 {
+    if (IS_IPHONEX())
+        return 0.0; //30.0; // hack for iPhoneX
     if ([self getStatusBarHeight] == 40.0f) {
         return -20.0f;
     }
@@ -356,6 +377,8 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
     self.notificationLabel.font = self.notificationLabelFont;
     self.notificationLabel.backgroundColor = self.notificationLabelBackgroundColor;
     self.notificationLabel.textColor = self.notificationLabelTextColor;
+    if (self.notificationStyle == CWNotificationStyleStatusBarNotification && IS_IPHONEX())
+        self.notificationLabel.alignBottom = YES;
     [self setupNotificationView:self.notificationLabel];
 }
 

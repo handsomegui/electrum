@@ -408,7 +408,7 @@ class SendVC(SendBase):
         tf.text = str(address) if address is not None else tf.text
         tf.resignFirstResponder() # just in case
         # label
-        self.descDel.text = str(message) if message is not None else tf.text
+        self.descDel.text = str(message) if message is not None else ""
         self.desc.resignFirstResponder()
         # amount
         if amount == "!":
@@ -531,7 +531,6 @@ class SendVC(SendBase):
     @objc_method
     def checkQRData_(self, text) -> None:
         self.qrScanErr = False
-        scan_f =  parent().pay_to_URI
         parser = Parser()
 
         errors = []
@@ -548,9 +547,10 @@ class SendVC(SendBase):
         if len(lines) == 1:
             data = lines[0]
             if data.lower().startswith(NetworkConstants.CASHADDR_PREFIX + ":"):
-                def errFunc(): self.qrScanErr = True
                 self.isMax = False
-                scan_f(data, errFunc)
+                if not parent().pay_to_URI(data, showErr = False):
+                    self.qrScanErr = True
+                    return
                 self.updateFee() # schedule a fee update later after qr decode completes
                 return
             try:
@@ -803,8 +803,6 @@ class SendVC(SendBase):
         #    msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
         password = None
         if wallet().has_password():
-            msg.append("")
-            msg.append(_("Enter your password to proceed"))
             parent().prompt_password_if_needed_asynch(callBack = DoSign, prompt = '\n'.join(msg), vc = self)
         else:
             msg.append(_('Proceed?'))

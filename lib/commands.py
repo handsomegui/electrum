@@ -175,7 +175,7 @@ class Commands:
         """Return the transaction history of any address. Note: This is a
         walletless server query, results are not checked by SPV.
         """
-        sh = bitcoin.address_to_scripthash(address)
+        sh = Address.from_string(address).to_scripthash_hex()
         return self.network.synchronous_get(('blockchain.scripthash.get_history', [sh]))
 
     @command('w')
@@ -194,7 +194,7 @@ class Commands:
         """Returns the UTXO list of any address. Note: This
         is a walletless server query, results are not checked by SPV.
         """
-        sh = bitcoin.address_to_scripthash(address)
+        sh = Address.from_string(address).to_scripthash_hex()
         return self.network.synchronous_get(('blockchain.scripthash.listunspent', [sh]))
 
     @command('')
@@ -323,7 +323,7 @@ class Commands:
         """Return the balance of any address. Note: This is a walletless
         server query, results are not checked by SPV.
         """
-        sh = bitcoin.address_to_scripthash(address)
+        sh = Address.from_string(address).to_scripthash_hex()
         out = self.network.synchronous_get(('blockchain.scripthash.get_balance', [sh]))
         out["confirmed"] =  str(Decimal(out["confirmed"])/COIN)
         out["unconfirmed"] =  str(Decimal(out["unconfirmed"])/COIN)
@@ -579,7 +579,7 @@ class Commands:
     @command('w')
     def createnewaddress(self):
         """Create a new receiving address, beyond the gap limit of the wallet"""
-        return self.wallet.create_new_address(False)
+        return self.wallet.create_new_address(False).to_ui_string()
 
     @command('w')
     def getunusedaddress(self):
@@ -808,6 +808,7 @@ def add_global_options(parser):
     group.add_argument("-D", "--dir", dest="electron_cash_path", help="electron cash directory")
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
+    group.add_argument("-wp", "--walletpassword", dest="wallet_password", default=None, help="Supply wallet password")
     group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
 
 def get_parser():

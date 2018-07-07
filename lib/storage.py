@@ -52,6 +52,8 @@ FINAL_SEED_VERSION = 17     # electrum >= 2.7 will set this to prevent
 def multisig_type(wallet_type):
     '''If wallet_type is mofn multi-sig, return [m, n],
     otherwise return None.'''
+    if not wallet_type:
+        return None
     match = re.match('(\d+)of(\d+)', wallet_type)
     if match:
         match = [int(x) for x in match.group(1, 2)]
@@ -69,8 +71,11 @@ class WalletStorage(PrintError):
         self.modified = False
         self.pubkey = None
         if self.file_exists():
-            with open(self.path, "r") as f:
-                self.raw = f.read()
+            try:
+                with open(self.path, "r") as f:
+                    self.raw = f.read()
+            except UnicodeDecodeError as e:
+                raise IOError("Error reading file: "+ str(e))
             if not self.is_encrypted():
                 self.load_data(self.raw)
         else:
@@ -344,7 +349,7 @@ class WalletStorage(PrintError):
                     d['seed'] = seed
                 self.put(key, d)
         else:
-            raise
+            raise Exception('Unable to tell wallet type. Is this even a wallet file?')
         # remove junk
         self.put('master_public_key', None)
         self.put('master_public_keys', None)

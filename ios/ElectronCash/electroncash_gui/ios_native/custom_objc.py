@@ -77,7 +77,7 @@ ForwardingDelegate = ObjCClass('ForwardingDelegate')
 # Custom activity indicator created by Calin
 CCActivityIndicator = ObjCClass('CCActivityIndicator')
 
-# The below are found in ViewForIB.h
+# Some of the below are found in ViewForIB.h, but also in misc other .h files (search project if you really want to track them down)
 AddrConvBase = ObjCClass('AddrConvBase')
 NewContactBase = ObjCClass('NewContactBase')
 SendBase = ObjCClass('SendBase')
@@ -113,3 +113,6 @@ Import2Base = ObjCClass('Import2Base')
 PrivateKeyDialogBase = ObjCClass('PrivateKeyDialogBase')
 SignDecryptBase = ObjCClass('SignDecryptBase')
 ReceiveBase = ObjCClass('ReceiveBase')
+SeedDisplayBase = ObjCClass('SeedDisplayBase')
+KeyInterface = ObjCClass('KeyInterface')
+CrashReporterBase = ObjCClass('CrashReporterBase')

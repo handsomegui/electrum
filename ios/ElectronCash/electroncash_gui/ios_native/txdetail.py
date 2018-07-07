@@ -16,6 +16,7 @@ from electroncash.address import Address, PublicKey
 from electroncash.util import timestamp_to_datetime
 import json, sys
 from . import coins
+from . import contacts
 
 _TxInputsOutputsCellHeight = 85.0
 _TxInputsOutputsHeaderHeight = 22.0
@@ -63,11 +64,14 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                 outputTV.reloadData()
             
             gui.ElectrumGui.gui.cash_addr_sig.connect(lambda x: refresh(), self)
+            gui.ElectrumGui.gui.sigContacts.connect(lambda: refresh(), self)
+
         return self
     
     @objc_method
     def dealloc(self) -> None:
         print("TxInputsOutputsTVC dealloc")
+        gui.ElectrumGui.gui.sigContacts.disconnect(self)
         gui.ElectrumGui.gui.cash_addr_sig.disconnect(self)
         self.tagin = None
         self.tagout = None
@@ -195,6 +199,9 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                         typ = _("My Receiving Address")
                 else:
                     typ = _("External Address")
+                    contact = contacts.Find(addr)
+                    if contact:
+                        typ += ', ' + _('Contact') + ": " + contact.name
             cell.addressType.text = typ                
             cell.accessoryType = UITableViewCellAccessoryNone #UITableViewCellAccessoryDisclosureIndicator#UITableViewCellAccessoryDetailDisclosureButton#UITableViewCellAccessoryDetailButton #
         except Exception as e:
@@ -301,18 +308,14 @@ class TxInputsOutputsTVC(TxInputsOutputsTVCBase):
                     addresses.PushDetail(addy,self.txDetailVC.navigationController)
                 
                 actions.insert(0, [ _("Address Details"), onShowAddy, addy ] )
-            elif addy.to_ui_string() not in parent.wallet.contacts.keys(): # is not mine, isn't in contacts, offer user the option of adding
-                def doAddNewContact(addy):
-                    from .contacts import show_new_edit_contact
-                    show_new_edit_contact(addy, self.txDetailVC, onEdit=lambda x:utils.show_notification(_("Contact added")), title = _("New Contact"))
-                actions.insert(1, [ _("Add to Contacts"), doAddNewContact, addy ] )
-            elif self.txDetailVC.navigationController: # is not mine but is in contacts, so offer them a chance to view the contact
-                def doShowContact(addy):
-                    from .contacts import Find, PushNewContactDetailVC
-                    entry = Find(addy)
-                    if entry:
-                        PushNewContactDetailVC(entry, self.txDetailVC.navigationController)
-                actions.insert(1, [ _("Show Contact"), doShowContact, addy ] )
+            else:
+                entry = contacts.Find(addy)
+                if not entry: # is not mine, isn't in contacts, offer user the option of adding
+                    def doAddNewContact(addy):
+                        contacts.show_new_edit_contact(addy, self.txDetailVC, onEdit=lambda x:utils.show_notification(_("Contact added")), title = _("New Contact"))
+                    actions.insert(1, [ _("Add to Contacts"), doAddNewContact, addy ] )
+                elif self.txDetailVC.navigationController: # is not mine but is in contacts, so offer them a chance to view the contact
+                    actions.insert(1, [ _("Show Contact"), contacts.PushNewContactDetailVC, entry, self.txDetailVC.navigationController ] )
 
         
         utils.show_alert(vc = vc,
@@ -333,9 +336,8 @@ def CreateTxInputsOutputsTVC(txDetailVC : ObjCInstance, tx : Transaction, itv : 
     tvc.txDetailVC = txDetailVC
     return tvc
 
-# returns the view itself, plus the copy button and the qrcode button, plus the (sometimes nil!!) UITextField for the editable description
-#  the copy and the qrcode buttons are so that caller may attach event handing to them
-def setup_transaction_detail_view(vc : ObjCInstance) -> None:
+# internal function to setup and/or refresh the TxDetail viewcontroller with data
+def _setup_transaction_detail_view(vc : ObjCInstance) -> None:
     entry = utils.nspy_get_byname(vc, 'tx_entry')
     tx, tx_hash, status_str, label, v_str, balance_str, date, ts, conf, status, value, fiat_amount, fiat_balance, fiat_amount_str, fiat_balance_str, ccy, img, *dummy2 = entry
     parent = gui.ElectrumGui.gui
@@ -464,14 +466,18 @@ def setup_transaction_detail_view(vc : ObjCInstance) -> None:
         except:
             pass
         if not img: img = UIImage.imageNamed_("empty.png")
-    statusIV.image = img
     ff = str(status_) #status_str
+    vc.canRefresh = False
     try:
         if int(conf) > 0:
            ff = "%s %s"%(str(conf), _('confirmations'))
+        vc.canRefresh = conf >= 0 # if we got here means refresh has meaning.. it's not an external tx or if it is, it now is on the network, so enable refreshing
     except:
         pass        
     statusLbl.text = _(ff)
+    if vc.canRefresh and conf >= 1: img = StatusImages[min(len(StatusImages)-1,3+min(6,conf))]
+    statusIV.image = img
+
     
     if timestamp or exp_n:
         if timestamp:
@@ -556,29 +562,44 @@ class TxDetail(TxDetailBase):
     unrelated = objc_property() # by default false, if set to true, hide the desc tf and other layout niceties
     noBlkXplo = objc_property()
     cbTimer = objc_property()
+    canRefresh = objc_property()
+    blockRefresh = objc_property()
+    refreshNeeded = objc_property()
     # Various other properties, weak and strong, are in ViewsForIB.h in Obj-C declared for TxDetailbase
 
     @objc_method
     def init(self) -> ObjCInstance:
         self = ObjCInstance(send_super(__class__, self, 'init'))
         if self:
-            self.notsigned = False
-            self.unrelated = False
-            self.noBlkXplo = False
             self.title = _("Transaction") + " " + _("Details")
             bb = UIBarButtonItem.new().autorelease()
             bb.title = _("Back")
             self.navigationItem.backBarButtonItem = bb
-
-
+            self.commonInit()
         return self
+    
+    @objc_method
+    def initWithCoder_(self, coder : ObjCInstance) -> ObjCInstance:
+        self = ObjCInstance(send_super(__class__, self, 'initWithCoder:', coder.ptr, argtypes=[objc_id]))
+        if self:
+            self.commonInit()
+        return self
+    
+    @objc_method
+    def commonInit(self) -> None:
+        gui.ElectrumGui.gui.sigHistory.connect(lambda:self.refresh(), self)
+
     
     @objc_method
     def dealloc(self) -> None:
         print("TxDetail dealloc")
+        gui.ElectrumGui.gui.sigHistory.disconnect(self)
         self.notsigned = None
         self.unrelated = None
         self.noBlkXplo = None
+        self.canRefresh = None
+        self.blockRefresh = None
+        self.refreshNeeded = None
         if self.cbTimer: self.cbTimer.invalidate()
         self.cbTimer = None
         utils.nspy_pop(self)
@@ -589,7 +610,27 @@ class TxDetail(TxDetailBase):
     def loadView(self) -> None:
         self.edgesForExtendedLayout = 0
         self.extendedLayoutIncludesOpaqueBars = False
-        setup_transaction_detail_view(self)
+        _setup_transaction_detail_view(self)
+        
+    @objc_method
+    def refresh(self) -> None:
+        if not self.viewIfLoaded: return
+        if self.canRefresh:
+            if self.blockRefresh:
+                self.refreshNeeded = True
+                utils.NSLog("TxDetail will refresh transaction later (user is editing)")
+            else:
+                _setup_transaction_detail_view(self)
+                utils.NSLog("TxDetail refreshed transaction")
+                self.refreshNeeded = False
+        else:
+            utils.NSLog("TxDetail will not refresh transaction (not refreshable)")
+            self.refreshNeeded = False
+            self.blockRefresh = False
+    
+    @objc_method
+    def doRefreshIfNeeded(self) -> None:
+        if self.refreshNeeded: self.refresh()
             
     @objc_method
     def viewWillAppear_(self, animated : bool) -> None:
@@ -602,11 +643,6 @@ class TxDetail(TxDetailBase):
     def viewDidAppear_(self, animated : bool) -> None:
         send_super(__class__, self, 'viewDidAppear:', animated, argtypes=[c_bool])
         utils.get_callback(self, "on_appear")()
-
-    @objc_method
-    def viewWillDisappear_(self, animated : bool) -> None:
-        send_super(__class__, self, 'viewWillDisappear:', animated, argtypes=[c_bool])
-
         
     @objc_method
     def viewDidLayoutSubviews(self) -> None:
@@ -628,6 +664,10 @@ class TxDetail(TxDetailBase):
         return True
     
     @objc_method
+    def textFieldDidBeginEditing_(self, tf) -> None:
+        self.blockRefresh = True
+    
+    @objc_method
     def textFieldDidEndEditing_(self, tf : ObjCInstance) -> None:
         entry = utils.nspy_get_byname(self, 'tx_entry')
         tx_hash = entry.tx_hash
@@ -639,6 +679,8 @@ class TxDetail(TxDetailBase):
             gui.ElectrumGui.gui.on_label_edited(tx_hash, new_label)
         utils.get_callback(self, 'on_label')(new_label)
         utils.uitf_redo_attrs(tf)
+        self.blockRefresh = False
+        self.doRefreshIfNeeded()
 
     @objc_method
     def onCpyBut_(self, but) -> None:
@@ -662,6 +704,7 @@ class TxDetail(TxDetailBase):
         parent = gui.ElectrumGui.gui        
         ipadAnchor = sender.view.frame if isinstance(sender, UIGestureRecognizer) else sender # else clause means it's a UIBarButtonItem
         if not parent.wallet: return
+        self.view.endEditing_(True)
         tx = utils.nspy_get_byname(self, 'tx_entry').tx
         waitDlg = None
         def Dismiss(compl, animated = True) -> None:
@@ -734,6 +777,7 @@ class TxDetail(TxDetailBase):
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
         if not wallet: return
+        self.view.endEditing_(True)
         entry = utils.nspy_get_byname(self, 'tx_entry')
         tx = entry.tx
 
@@ -746,13 +790,13 @@ class TxDetail(TxDetailBase):
                     tx_hash, *dummy = wallet.get_tx_info(tx)
                     entry = utils.set_namedtuple_field(entry, 'tx_hash', tx_hash)
                     utils.nspy_put_byname(self, entry, 'tx_entry')
-                    setup_transaction_detail_view(self) # recreate ui
+                    _setup_transaction_detail_view(self) # recreate ui
                 #else:
                 #    parent.show_error(_("An Unknown Error Occurred"))
             parent.sign_tx_with_password(tx, sign_done, password)
             
 
-        parent.prompt_password_if_needed_asynch(callBack = DoSign, prompt = _("Enter your password to proceed"), vc = self)
+        parent.prompt_password_if_needed_asynch(callBack = DoSign, vc = self)
 
 
     @objc_method
@@ -760,6 +804,7 @@ class TxDetail(TxDetailBase):
         parent = gui.ElectrumGui.gui
         wallet = parent.wallet
         if not wallet: return
+        self.view.endEditing_(True)
         entry = utils.nspy_get_byname(self, 'tx_entry')
         tx = entry.tx
         
@@ -784,7 +829,7 @@ class TxDetail(TxDetailBase):
             if status is not None and status >= 0 and status < len(StatusImages):
                 entry = utils.set_namedtuple_field(entry, 'status_image', StatusImages[status])
                 utils.nspy_put_byname(self, entry, 'tx_entry')
-            setup_transaction_detail_view(self)
+            _setup_transaction_detail_view(self) # nb: don't call refresh here, instead call this to re-evaluate everything, including 'canRefresh'
             
         parent.broadcast_transaction(tx, self.descTf.text, broadcastDone)
 
@@ -793,6 +838,7 @@ def CreateTxDetailWithEntry(entry : HistoryEntry, on_label = None, on_appear = N
     txvc = TxDetail.alloc()
     if not isinstance(entry.tx, Transaction) or isinstance(tx, Transaction):
         if isinstance(tx, Transaction):
+            tx.deserialize()
             entry = utils.set_namedtuple_field(entry, 'tx', tx)
         else:
             raise ValueError('CreateWithEntry -- HistoryEntry provided must have an entry.tx that is a transaction!')
@@ -827,7 +873,7 @@ def CreateTxDetailWithTx(tx : Transaction, on_label = None, on_appear = None, as
     ccy = None #fx().get_currency() if doFX else None
     fiat_amount_str = None #str(self.fiat.text) if doFX else None 
     #HistoryEntry = namedtuple("HistoryEntry", "extra_data tx_hash status_str label v_str balance_str date ts conf status value fiat_amount fiat_balance fiat_amount_str fiat_balance_str ccy status_image")
-    entry = HistoryEntry(tx,tx_hash,status_str,"",parent.format_amount(amount) if amount is not None else _("Transaction unrelated to your wallet"),
+    entry = HistoryEntry(tx,tx_hash,status_str,label_,parent.format_amount(amount) if amount is not None else _("Transaction unrelated to your wallet"),
                          "",timestamp_to_datetime(time.time() if conf <= 0 else timestamp),
                          timestamp,conf,status,amount,None,None,fiat_amount_str,None,ccy,img)
       

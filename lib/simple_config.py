@@ -4,8 +4,9 @@ import time
 import os
 import stat
 
+from . import util
 from copy import deepcopy
-from .util import user_dir, print_error, PrintError
+from .util import user_dir, make_dir, print_error, PrintError
 
 from .bitcoin import MAX_FEE_RATE, FEE_TARGETS
 
@@ -90,14 +91,6 @@ class SimpleConfig(PrintError):
         path = self.get('electron_cash_path')
         if path is None:
             path = self.user_dir()
-
-        def make_dir(path):
-            # Make directory if it does not yet exist.
-            if not os.path.exists(path):
-                if os.path.islink(path):
-                    raise BaseException('Dangling link: ' + path)
-                os.mkdir(path)
-                os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
         make_dir(path)
         if self.get('testnet'):
@@ -219,12 +212,9 @@ class SimpleConfig(PrintError):
             return path
 
         # default path
+        util.assert_datadir_available(self.path)
         dirpath = os.path.join(self.path, "wallets")
-        if not os.path.exists(dirpath):
-            if os.path.islink(dirpath):
-                raise BaseException('Dangling link: ' + dirpath)
-            os.mkdir(dirpath)
-            os.chmod(dirpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        make_dir(dirpath)
 
         new_path = os.path.join(self.path, "wallets", "default_wallet")
 
@@ -297,8 +287,17 @@ class SimpleConfig(PrintError):
     def has_fee_estimates(self):
         return len(self.fee_estimates)==4
 
-    def fee_per_kb(self):
-        return self.get('fee_per_kb', self.max_fee_rate()/2)
+    def custom_fee_rate(self):
+        f = self.get('customfee')
+        return f
+
+    def fee_per_kb(self): 
+       retval=self.get('customfee')
+       if (retval is None):
+           retval=self.get('fee_per_kb')                
+       if (retval is None):
+           retval=1000  # New wallet
+       return retval
 
     def estimate_fee(self, size):
         return int(self.fee_per_kb() * size / 1000.)

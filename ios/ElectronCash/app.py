@@ -7,15 +7,17 @@
 import os
 from electroncash.util import set_verbosity
 from electroncash_gui.ios_native import ElectrumGui
-from electroncash_gui.ios_native.utils import call_later, get_user_dir
+from electroncash_gui.ios_native.utils import call_later, get_user_dir, cleanup_tmp_dir
 from electroncash.simple_config import SimpleConfig
 
 def main():
+    cleanup_tmp_dir()
+    
     config_options = {
             'verbose': True,
             'cmd': 'gui',
             'gui': 'ios_native',
-            'cwd': os.getcwd()
+            'cwd': os.getcwd(),
     }
 
     set_verbosity(config_options.get('verbose'))
@@ -26,9 +28,6 @@ def main():
     config = SimpleConfig(config_options, read_user_dir_function = get_user_dir)
 
     gui = ElectrumGui(config)
-    def later() -> None:
-        gui.main()
-    # this deferred call allows for that loading animation to play at least a little bit
-    call_later(0.030,later)
+    gui.main()
 
     return "Bitcoin Cash FTW!"

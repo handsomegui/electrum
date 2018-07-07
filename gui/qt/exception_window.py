@@ -47,6 +47,7 @@ issue_template = """<h2>Traceback</h2>
 <h2>Additional information</h2>
 <ul>
   <li>Electron Cash version: {app_version}</li>
+  <li>Python version: {python_version}</li>
   <li>Operating system: {os}</li>
   <li>Wallet type: {wallet_type}</li>
   <li>Locale: {locale}</li>
@@ -62,7 +63,7 @@ class Exception_Window(QWidget):
         self.exc_args = (exctype, value, tb)
         self.main_window = main_window
         QWidget.__init__(self)
-        self.setWindowTitle('Electron Cash - ' + _('An Error Occured'))
+        self.setWindowTitle('Electron Cash - ' + _('An Error Occurred'))
         self.setMinimumSize(600, 300)
 
         main_box = QVBoxLayout()
@@ -79,7 +80,10 @@ class Exception_Window(QWidget):
         collapse_info.clicked.connect(lambda: QMessageBox.about(self, "Report contents", self.get_report_string()))
         main_box.addWidget(collapse_info)
 
-        main_box.addWidget(QLabel(_("Please briefly describe what led to the error (optional):")))
+        label = QLabel(_("Please briefly describe what led to the error (optional):") +"<br/>"+
+            "<i>"+ _("Feel free to add your email address if you are willing to provide further detail, but note that it will appear in the relevant github issue.") +"</i>")
+        label.setTextFormat(QtCore.Qt.RichText)
+        main_box.addWidget(label)
 
         self.description_textfield = QTextEdit()
         self.description_textfield.setFixedHeight(50)
@@ -146,6 +150,7 @@ class Exception_Window(QWidget):
     def get_additional_info(self):
         args = {
             "app_version": PACKAGE_VERSION,
+            "python_version": sys.version,
             "os": platform.platform(),
             "wallet_type": "unknown",
             "locale": locale.getdefaultlocale()[0],

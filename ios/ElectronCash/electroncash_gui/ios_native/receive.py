@@ -202,6 +202,7 @@ class ReceiveVC(ReceiveBase):
         self.expiresTit.setText_withKerning_( _("Request expires"), utils._kern )
         self.expiresLink.linkText = _("Change")
         self.shareRequestBut.setTitle_forState_(_("Share request"), UIControlStateNormal)
+        self.desc.placeholder = _("Description of the transaction (not mandatory).")
         
 
     @objc_method
@@ -209,8 +210,8 @@ class ReceiveVC(ReceiveBase):
         if not self.viewIfLoaded or not parent().wallet: return
         # Placeholder for amount
         if self.isEditable():
-            self.amt.placeholder = (_("Input amount") + " ({})").format(self.amt.baseUnit())
-            self.amtFiat.placeholder = (_("Input amount") + " ({})").format(self.amtFiat.baseUnit())
+            self.amt.placeholder = _("Input amount") 
+            self.amtFiat.placeholder = _("Fiat amount") 
 
         if self.savedAmtSats:
             self.amt.setAmount_(self.savedAmtSats)
@@ -413,8 +414,8 @@ class ReceiveVC(ReceiveBase):
     def onSaveDone_(self, sender) -> None:
         self.onSave()
         if self.savedOk:
-            if self.navigationItem.leftBarButtonItem:
-                self.navigationItem.leftBarButtonItem.title = _("Close")
+            #if self.navigationItem.leftBarButtonItem:
+            #    self.navigationItem.leftBarButtonItem.title = _("Close")
             self.setEditable_(False)
             pr = utils.nspy_get_byname(self, 'payment_request')
             cb = utils.get_callback(self, 'on_done')
@@ -500,6 +501,16 @@ class ReceiveVC(ReceiveBase):
                                  style = UIAlertControllerStyleActionSheet,
                                  cancel = _("Cancel"),
                                  ipadAnchor = ipadAnchor)
+
+    @objc_method
+    def onQRImgTap(self) -> None:
+        if not self.qr.image: parent().show_error(vc = self, message = "Error, No QR Image")
+        else:
+            def ShowIt() -> None:
+                utils.show_share_actions(vc = self, img = self.qr.image, ipadAnchor = self.qr.convertRect_toView_(self.qr.bounds, self.view), objectName = _("Image"))
+            c1 = UIColor.clearColor
+            c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.3)
+            self.qr.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1, c2, 0.2, True, ShowIt)
 
 
 def _GetReqs() -> list:
@@ -613,38 +624,42 @@ class ReqTVD(ReqTVDBase):
  
     @objc_method
     def tableView_cellForRowAtIndexPath_(self, tv, indexPath) -> ObjCInstance:
-        reqs = _GetReqs()
-        identifier = "RequestListCell"
-        if not self.didReg.containsObject_(tv.ptr.value):
-            nib = UINib.nibWithNibName_bundle_(identifier, None)
-            tv.registerNib_forCellReuseIdentifier_(nib, identifier)
-            self.didReg.addObject_(tv.ptr.value)
-        if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
+        try:
+            reqs = _GetReqs()
+            identifier = "RequestListCell"
+            if not self.didReg.containsObject_(tv.ptr.value):
+                nib = UINib.nibWithNibName_bundle_(identifier, None)
+                tv.registerNib_forCellReuseIdentifier_(nib, identifier)
+                self.didReg.addObject_(tv.ptr.value)
+            if not reqs or indexPath.row < 0 or indexPath.row >= len(reqs):
+                raise Exception('Bad index path row -- wallet closed and reopened?')
+            cell = tv.dequeueReusableCellWithIdentifier_(identifier)
+            #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
+            item = reqs[indexPath.row]
+            cell.addressTit.setText_withKerning_(_('Address'),utils._kern)
+            cell.statusTit.setText_withKerning_(_('Status'),utils._kern)
+            cell.amountTit.setText_withKerning_(_('Amount'),utils._kern)
+            if item.fiatStr:
+                cell.amount.attributedText = utils.hackyFiatAmtAttrStr(item.amountStr.strip(), item.fiatStr.strip(), '', 2.5, cell.amountTit.textColor)
+            else:
+                cell.amount.text = item.amountStr.strip() if item.amountStr else ''
+            cell.address.text = item.addrStr.strip() if item.addrStr else ''
+            if item.dateStr:
+                cell.date.attributedText = utils.makeFancyDateAttrString(item.dateStr.strip())
+            else:
+                cell.date.text = ''
+            if item.message:
+                cell.desc.setText_withKerning_(item.message,utils._kern)
+            else:
+                cell.desc.text = ''
+            cell.status.text = item.statusStr if item.statusStr else _('Unknown')
+            cell.selectionStyle = UITableViewCellSelectionStyleNone if not self.vc or not self.vc.navigationController else UITableViewCellSelectionStyleDefault
+            cell.chevron.setHidden_(cell.selectionStyle == UITableViewCellSelectionStyleNone)
+        except:
+            utils.NSLog("Exception in ReqTVD cellForRowAtIndexPath: %s", str(sys.exc_info()[1]))
             # this sometimes happens on app re-foregrounding.. so guard against it
             cell = UITableViewCell.alloc().initWithStyle_reuseIdentifier_(UITableViewCellStyleSubtitle, "Cell").autorelease()
             cell.selectionStyle = UITableViewCellSelectionStyleNone
-        cell = tv.dequeueReusableCellWithIdentifier_(identifier)
-        #ReqItem = namedtuple("ReqItem", "date addrStr signedBy message amountStr statusStr addr iconSign iconStatus")
-        item = reqs[indexPath.row]
-        cell.addressTit.setText_withKerning_(_('Address'),utils._kern)
-        cell.statusTit.setText_withKerning_(_('Status'),utils._kern)
-        cell.amountTit.setText_withKerning_(_('Amount'),utils._kern)
-        if item.fiatStr:
-            cell.amount.attributedText = utils.hackyFiatAmtAttrStr(item.amountStr.strip(), item.fiatStr.strip(), '', 2.5, cell.amountTit.textColor)
-        else:
-            cell.amount.text = item.amountStr.strip() if item.amountStr else ''
-        cell.address.text = item.addrStr.strip() if item.addrStr else ''
-        if item.dateStr:
-            cell.date.attributedText = utils.makeFancyDateAttrString(item.dateStr.strip())
-        else:
-            cell.date.text = ''
-        if item.message:
-            cell.desc.setText_withKerning_(item.message,utils._kern)
-        else:
-            cell.desc.text = ''
-        cell.status.text = item.statusStr if item.statusStr else _('Unknown')
-        cell.selectionStyle = UITableViewCellSelectionStyleNone if not self.vc or not self.vc.navigationController else UITableViewCellSelectionStyleDefault
-        cell.chevron.setHidden_(cell.selectionStyle == UITableViewCellSelectionStyleNone)
         return cell
 
     # Below 3 methods conform to UITableViewDelegate protocol

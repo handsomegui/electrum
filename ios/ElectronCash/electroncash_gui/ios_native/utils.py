@@ -25,21 +25,12 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
-import os
+import sys, os, json, qrcode, qrcode.image.svg, tempfile, random, queue, threading, time, stat
+from collections import namedtuple
 from inspect import signature
 from typing import Callable, Any
 from .uikit_bindings import *
 from .custom_objc import *
-
-import qrcode
-import qrcode.image.svg
-import tempfile
-import random
-import queue
-from collections import namedtuple
-import threading
-import time
 
 from electroncash.i18n import _
 
@@ -58,6 +49,10 @@ def is_iphone4() -> bool:
     # iphone4 has <1136 pix height
     return is_iphone() and ( UIScreen.mainScreen.nativeBounds.size.height - 1136.0 < -0.5 )
 
+def is_iphoneX() -> bool:
+    # iphone X has 2436 pix height
+    return is_iphone() and ( UIScreen.mainScreen.nativeBounds.size.height - 2436.0 < 0.5 )
+   
 def is_ipad() -> bool:
     return not is_iphone()
 
@@ -95,6 +90,28 @@ def uiview_set_enabled(view : ObjCInstance, b : bool) -> None:
 
 def pathsafeify(s : str) -> str:
     return s.translate({ord(i):None for i in ':/.\$#@[]}{*?'}).strip()
+
+def cleanup_tmp_dir():
+    t0 = time.time()
+    d = get_tmp_dir()
+    ct = 0
+    tot = 0
+    import glob
+    if os.path.isdir(d):
+        it = glob.iglob(os.path.join(d,'*'))
+        for f in it:
+            tot += 1
+            try:
+                os.remove(f)
+                ct += 1
+            except:
+                pass
+    if tot:
+        NSLog("Cleaned up %d/%d files from tmp dir in %f ms",ct,tot,(time.time()-t0)*1e3)
+
+def ios_version_string() -> str:
+    dev = UIDevice.currentDevice
+    return "%s %s %s (%s)"%(str(dev.systemName), str(dev.systemVersion), str(dev.model), str(dev.identifierForVendor))
 
 # new color schem from Max
 _ColorScheme = None
@@ -221,6 +238,43 @@ def nsurl_read_local_file(url : ObjCInstance, binary = False) -> tuple:
         NSLog("nsurl_read_local_file got exception: %s",str(sys.exc_info[1]))
         return None, None        
 
+_threading_original__init__ = None
+def setup_thread_excepthook():
+    """
+    Workaround for `sys.excepthook` thread bug from:
+    http://bugs.python.org/issue1230540
+    Call once from the main thread before creating any threads.
+    """
+    global _threading_original__init__
+    if _threading_original__init__:
+        NSLog("*** ERROR: setup_thread_excepthook already called once in this app!")
+        return
+    _threading_original__init__ = threading.Thread.__init__
+
+    def MyInit(self, *args, **kwargs):
+
+        _threading_original__init__(self, *args, **kwargs)
+        run_original = self.run
+
+        def run_with_except_hook(*args2, **kwargs2):
+            try:
+                run_original(*args2, **kwargs2)
+            except ConnectionError:
+                NSLog("ConnectionError: %s",str(sys.exc_info()[1]))
+            except Exception:
+                sys.excepthook(*sys.exc_info())
+
+        self.run = run_with_except_hook
+
+    threading.Thread.__init__ = MyInit
+def cleanup_thread_excepthook():
+    global _threading_original__init__
+    
+    if _threading_original__init__:
+        threading.Thread.__init__ = _threading_original__init__
+        _threading_original__init__ = None
+
+
 ###################################################
 ### Show Share ActionSheet
 ###################################################
@@ -260,6 +314,8 @@ def show_share_actions(vc : ObjCInstance,
             UIActivityTypePostToTencentWeibo,
             UIActivityTypeOpenInIBooks,
         ]
+        if isinstance(img, UIImage):
+            excludedActivityTypes.remove(UIActivityTypeSaveToCameraRoll)
     avc.excludedActivityTypes = excludedActivityTypes
     if is_ipad():
         popover = avc.popoverPresentationController()
@@ -297,6 +353,8 @@ def show_share_actions(vc : ObjCInstance,
             show_notification(message = _("{} sent successfully").format(objectName))
         elif activity in (py_from_ns(UIActivityTypePrint)):
             show_notification(message = _("{} sent to printer").format(objectName))
+        elif activity in (py_from_ns(UIActivityTypeSaveToCameraRoll)):
+            show_notification(message = _("{} saved to photo library").format(objectName))
         else:
             show_notification(message = _("{} exported successfully").format(objectName))
         
@@ -784,6 +842,15 @@ def present_qrcode_vc_for_data(vc : ObjCInstance, data : str, title : str = "QR 
     iv.contentMode = UIViewContentModeScaleAspectFit
     iv.opaque = True
     iv.backgroundColor = UIColor.whiteColor
+    gr = UITapGestureRecognizer.new().autorelease()
+    iv.addGestureRecognizer_(gr)
+    def ActionBlock(gr : objc_id) -> None:
+        def ShowIt() -> None: show_share_actions(vc = qvc, img = iv.image, ipadAnchor = iv.frame, objectName = _("Image"))
+        c1 = UIColor.whiteColor
+        c2 = UIColor.colorWithRed_green_blue_alpha_(0.0,0.0,0.0,0.3)
+        iv.backgroundColorAnimationFromColor_toColor_duration_reverses_completion_(c1, c2, 0.2, True, ShowIt)
+    gr.addBlock_(ActionBlock)
+    iv.userInteractionEnabled = True
     qvc.view = iv
     nav = tintify(UINavigationController.alloc().initWithRootViewController_(qvc).autorelease())
     vc.presentViewController_animated_completion_(nav,True,None)
@@ -1044,16 +1111,21 @@ class PySig:
             return
         func = None
         key = None
+        removeAll = False
         if callable(func_or_key):
             func = func_or_key
         else:
             key = func_or_key
             if isinstance(key, ObjCInstance):
                 key = key.ptr.value
+                removeAll = True
+        removeCt = 0
         for i,entry in enumerate(self.entries):
             if (key is not None and key == entry.key) or (func is not None and func == entry.func):
                 self.entries.pop(i)
-                return
+                removeCt += 1
+                if not removeAll: return
+        if removeCt: return
         name = "<Unknown NSObject>"
         try:
             name = str(func_or_key)
@@ -1207,6 +1279,7 @@ class DataMgr(PySig):
 ######
 _f1 = UIFont.systemFontOfSize_weight_(16.0,UIFontWeightBold).retain()
 _f2 = UIFont.systemFontOfSize_weight_(11.0,UIFontWeightBold).retain()
+_f2_ipad = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightSemibold).retain()
 _f3 = UIFont.systemFontOfSize_weight_(1.0,UIFontWeightThin).retain()
 _f4 = UIFont.systemFontOfSize_weight_(14.0,UIFontWeightLight).retain()
 _s3 = ns_from_py(' ').sizeWithAttributes_({NSFontAttributeName:_f3})
@@ -1225,7 +1298,7 @@ def makeFancyDateAttrString(datestr : str, font : ObjCInstance = None) -> ObjCIn
         r = NSRange(ix,l-ix)
         ats.addAttribute_value_range_(NSFontAttributeName,font,r)
     return ats
-def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None, amtColor = None) -> ObjCInstance:
+def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, color : ObjCInstance = None, cb : Callable = None, kern : float = None, amtColor = None, isIpad = False) -> ObjCInstance:
     #print("str=",amtStr,"pad=",pad,"spacesize=",_s3.width)
     p = ''
     if fiatStr:
@@ -1245,7 +1318,7 @@ def hackyFiatAmtAttrStr(amtStr : str, fiatStr : str, ccy : str, pad : float, col
         ats.addAttribute_value_range_(NSFontAttributeName,_f3,r0)
         r = NSRange(len(amtStr)+len(p),len(fiatStr)-len(p))
         r2 = NSRange(ats.length()-(len(ccy)+1),len(ccy))
-        ats.addAttribute_value_range_(NSFontAttributeName,_f2,r)
+        ats.addAttribute_value_range_(NSFontAttributeName,_f2 if not isIpad else _f2_ipad,r)
         if kern: ats.addAttribute_value_range_(NSKernAttributeName,kern,r)
         #ats.addAttribute_value_range_(NSBaselineOffsetAttributeName,3.0,r)
         if color:
@@ -1349,11 +1422,21 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
             origin = respFrame.origin
             bottomLeft = CGPoint(origin.x, origin.y+respFrame.size.height)
             diff = None
-            if  not CGRectContainsPoint(visible, bottomLeft): 
-                diff = (bottomLeft.y - (visible.origin.y+visible.size.height)) + 25
+            if not CGRectContainsPoint(visible, bottomLeft) and (is_portrait() or is_ipad()): 
+                diff = (bottomLeft.y - (visible.origin.y+visible.size.height)) + 25.0 
             elif not CGRectContainsPoint(visible, origin):
-                diff = origin.y - visible.origin.y - 25
+                diff = origin.y - visible.origin.y - 25.0
             if diff:
+                '''
+                def fmt(x):
+                    if isinstance(x, CGRect):
+                       return "%f,%f,%f,%f"%(x.origin.x,x.origin.y,x.size.width,x.size.height)
+                    elif isinstance(x, CGPoint):
+                        return "%f,%f"%(x.x,x.y)
+                    else:
+                        return str(x)
+                print("window",fmt(window.bounds),"origin",fmt(origin),"bottomLeft",fmt(bottomLeft),"respFrame",fmt(respFrame),"visible",fmt(visible),"contentOffset",fmt(sv.contentOffset))
+                '''
                 scrollPoint = CGPoint(0.0, sv.contentOffset.y + diff)#origin.y - visible.size.height + respFrame.size.height + 10)
                 sv.setContentOffset_animated_(scrollPoint, True)
     #def kbHide() -> None:
@@ -1363,6 +1446,199 @@ def register_keyboard_autoscroll(sv : UIScrollView) -> int:
 # be sure to unregister the autoscroller when view disappears. Install unregister call in viewWillDisappear.
 def unregister_keyboard_autoscroll(handle : int) -> None:
     unregister_keyboard_callbacks(handle)
+
+##### File Backed Dict
+class FileBackedDict(object):
+    def __init__(self, fileName : str, other : object = None):
+        self._d = dict()
+        self._fn = fileName
+        if isinstance(other, FileBackedDict):
+            self._d = other._d.copy()
+            if self.write():
+                NSLog("File-backed dict '%s' created as copy of '%s'",os.path.split(self._fn)[-1],os.path.split(other._fn)[-1])
+        else:
+            if os.path.exists(self._fn): self.read()
+            else: NSLog("New empty file-backed dict '%s' -- will create file once data is added.",os.path.split(self._fn)[-1])
+    def read(self) -> bool:
+        if not os.path.exists(self._fn):
+            NSLog("*** WARNING: JSON dict file does not (yet?) exist: %s", self._fn)
+            return False
+        try:
+            with open(self._fn, "r") as f:
+                result = json.load(f)
+        except:
+            NSLog("*** WARNING: Cannot read JSON dict file (%s) exception was: %s", self._fn, str(sys.exc_info()[1]))
+            return False
+        if not isinstance(result, dict):
+            NSLog("*** WARNING: JSON file read but is not a dict: %s", self._fn)
+            return False
+        self._d = result
+        return True        
+    def write(self) -> bool:
+        try:
+            with open(self._fn, "w") as f:
+                json.dump(self._d, f, indent=4)
+            os.chmod(self._fn, stat.S_IREAD | stat.S_IWRITE)
+        except:
+            NSLog("*** WARNING: Cannot write JSON dict file (%s) exception was: %s", self._fn, str(sys.exc_info()[1]))
+            return False
+        return True
+    def dict(self) -> dict:
+        return self._d
+    def get(self, key : Any, default : Any = None) -> Any:
+        return self._d.get(key, default)
+    def set(self, key : Any, value : Any, save : bool = True) -> None:
+        self._d[key] = value
+        if save: self.write()
+    def has(self, key : Any) -> bool:
+        return bool(key in self._d)
+    def pop(self, key : Any, save : bool = True) -> Any:
+        if not isinstance(save, bool):
+            NSLog("*** WARNING: FileBackedDict's pop() method doesn't take a default value. The second argument is always the 'save' arg!")
+        ret = self._d.pop(key, None)
+        if save: self.write()
+        return ret
+    def clearAll(self, save : bool = True) -> None:
+        self._d = dict()
+        if save: self.write()
+
+##### Wrapper for iOS Secure key enclave -- instantiates a KeyInterface class on the Objective C side.  Note this requires TouchID/FaceID
+class SecureKeyEnclave:
+    instances = 0
+    
+    def __init__(self, keyDomain : str):
+        self._keyInterface = KeyInterface.keyInterfaceWithPublicKeyName_privateKeyName_(keyDomain + ".pubkey", keyDomain + ".privkey").retain()
+        SecureKeyEnclave.instances += 1
+        #NSLog("SecureKeyEnclave: instance created (%d total extant instances)",SecureKeyEnclave.instances)
+
+    def __del__(self):
+        try:
+            if self._keyInterface:
+                self._keyInterface.release()
+                self._keyInterface = None
+                SecureKeyEnclave.instances -= 1
+                NSLog("SecureKeyEnclave: instance deleted (%d total instances left)",SecureKeyEnclave.instances)
+        except:
+            pass
+
+    def biometrics_available(self) -> bool:
+        return self._keyInterface.biometricsAreAvailable
+
+    def biometrics_are_not_available_reason(self) -> str: # returns failure reason if unavailable, or '' if available
+        err = objc_id(0)
+        if not self._keyInterface.biometricsAreAvailableWithError_(byref(err)):
+            if err and err.value:
+                err = ObjCInstance(err)
+                return str(err.description)
+            else:
+                return 'Unknown Reason'
+        return ''
+
+    def has_keys(self) -> bool:
+        return bool(self._keyInterface.publicKeyExists)
+
+    def delete_keys(self) -> bool:
+        return self._keyInterface.deleteKeyPair()
+
+    # Asynchronously generate the private/public keypair.  Note that touchID doesn't seem to come up when this is called
+    # but it may.  Completion is called on success or error. If error, first arge is false and second arg may be an iOS error string.
+    def generate_keys(self, completion : Callable[[bool,str],None] = None) -> None:
+        if self._keyInterface.publicKeyExists:
+            if callable(completion):
+                completion(True,'')
+            return
+        def Compl(b : bool, e : objc_id) -> None:
+            e = ObjCInstance(e) if e and e.value else None
+            if callable(completion): completion(bool(b),str(e.description) if e else '')
+        self._keyInterface.generateTouchIDKeyPairWithCompletion_(Compl)
+     
+    def encrypt_data(self, data : bytes) -> bytes:
+        if isinstance(data, str): data = data.encode('utf-8')
+        if not isinstance(data, bytes): raise ValueError('SecureKeyEnclave.encrypt_data requires a bytes argument!')
+        plainText = NSData.dataWithBytes_length_(data,len(data))
+        err = objc_id(0)
+        cypherText = self._keyInterface.encryptData_error_(plainText, byref(err))
+        if not cypherText:
+            e = str(ObjCInstance(err).description) if err and err.value else ''
+            NSLog("SecureKeyEnclave encrypt data failed with error: %s",e)
+            return None
+        return bytes((c_ubyte * cypherText.length).from_address(cypherText.bytes))
+    
+    # input: any plaintext string.  output: a hex representation of the encrypted cyphertext data eg 'ff80be3376ff..' 
+    def encrypt_str2hex(self, plainText : str) -> str:
+        b = self.encrypt_data(plainText)
+        if b is not None:
+            import binascii
+            return binascii.hexlify(b).decode('utf-8')
+        return None
+
+    # the inverse of the above. input: a hex string, eg 'ff80be3376...',  callback is called with (plainText:str, error:str) as args   
+    def decrypt_hex2str(self, hexdata : str, completion : Callable[[str,str],None], prompt : str = None) -> None:
+        if not callable(completion):
+            raise ValueError('A completion function is required as the second argument to this function!')
+        import binascii
+        cypherBytes = binascii.unhexlify(hexdata)
+        def MyCompl(pt : bytes, error : str) -> None:
+            plainText = pt.decode('utf-8') if pt is not None else None
+            completion(plainText, error)
+        self.decrypt_data(cypherBytes, MyCompl, prompt = prompt) 
+    
+    # May pop up a touchid window, which user may cancel.  If touchid not available, or user cancels, the completion is called
+    # with None,errstr as args (errStr comes from iOS and is pretty arcane).
+    # Otherwise completion is called with the plainText bytes as first argument on success.
+    def decrypt_data(self, data : bytes, completion : Callable[[bytes,str],None], prompt : str = None) -> None:
+        if not callable(completion):
+            raise ValueError('A completion function is required as the second argument to this function!')
+        if not prompt: prompt = _("Authenticate, please")
+        if isinstance(data, str): data = data.encode('utf-8')
+        if not isinstance(data, bytes): raise ValueError('A bytes or str object is required as the first argument to this function!')
+        cypherText = NSData.dataWithBytes_length_(data, len(data))
+        def Compl(dptr : objc_id, eptr : objc_id) -> None:
+            plainText = ObjCInstance(dptr) if dptr and dptr.value else None
+            error = ObjCInstance(eptr).description if eptr and eptr.value else None
+            if plainText:
+                plainText = bytes((c_ubyte * plainText.length).from_address(plainText.bytes))
+            completion(plainText, error)
+        self._keyInterface.prompt = prompt
+        self._keyInterface.decryptData_completion_(cypherText, Compl)
+
+    '''
+    @classmethod
+    def DoTests(cls, bundleId : str, doDelete : bool = False) -> None:
+        keyEnclave = cls(bundleId)
+        print("BioMetricsAvail:",keyEnclave.biometrics_available())
+        print("BioMetricsNotAvailReason:",keyEnclave.biometrics_are_not_available_reason())
+        if doDelete:
+            keyEnclave.delete_keys()
+            print("Deleted All Keys")
+        pt = b'The quick brown fox jumped over the lazy dogs!!\0\0'
+        ptstr = pt.decode('utf-8')
+        def DataDecrypted(pts : str, error : str) -> None:
+            if pts is None:
+                print("Got decryption error", error)
+            else:
+                print("decrypted data was [",pts.encode('utf-8'),"]","compare =", pts==ptstr)
+        def DoEnc() -> None:
+            c = keyEnclave.encrypt_str2hex(ptstr)
+            if c is not None:
+                print("cypherText=",c)
+                keyEnclave.decrypt_hex2str(c,DataDecrypted)
+            else:
+                print("CypherText was NONE...!")
+        def KeysGenerated(b : bool, e : str) -> None:
+            print("Keys generated:",b,e)
+            if b: DoEnc()
+        if not keyEnclave.has_keys():
+            keyEnclave.generate_keys(KeysGenerated)
+        else:
+            DoEnc()
+            
+        def Cleaner() -> None:
+            # keep a ref around for 10s then delete object.
+            nonlocal keyEnclave
+            keyEnclave = None
+        call_later(10.0, Cleaner)
+    '''
 
 ##### Boilerplate crap
 class boilerplate:

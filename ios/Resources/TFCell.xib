@@ -45,7 +45,7 @@
                     </textField>
                 </subviews>
                 <constraints>
-                    <constraint firstAttribute="right" secondItem="Kcr-Ru-LdZ" secondAttribute="right" id="1Ub-ah-dhd"/>
+                    <constraint firstAttribute="rightMargin" secondItem="Kcr-Ru-LdZ" secondAttribute="right" constant="-16" id="1Ub-ah-dhd"/>
                     <constraint firstAttribute="bottom" secondItem="Kcr-Ru-LdZ" secondAttribute="bottom" id="2Oh-41-Sib"/>
                     <constraint firstItem="oA5-n9-BB5" firstAttribute="leading" secondItem="U7X-kk-sCt" secondAttribute="leadingMargin" id="Psc-dX-eZj"/>
                     <constraint firstItem="Kcr-Ru-LdZ" firstAttribute="centerY" secondItem="U7X-kk-sCt" secondAttribute="centerY" id="Tei-Wd-BII"/>

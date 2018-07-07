@@ -30,8 +30,8 @@ import os
 
 import sys
 
-if sys.version_info < (3, 5):
-    sys.exit("Error: Must be using Python 3.5 or higher")
+if sys.version_info < (3, 5, 2):
+    sys.exit("Error: Must be using Python 3.5.2 or higher")
 
 # from https://gist.github.com/tito/09c42fb4767721dc323d
 import threading
@@ -192,7 +192,10 @@ def init_daemon(config_options):
         print_msg("Type 'electron-cash create' to create a new wallet, or provide a path to a wallet with the -w option")
         sys.exit(0)
     if storage.is_encrypted():
-        if config.get('password'):
+        if 'wallet_password' in config_options:
+            print_msg('Warning: unlocking wallet with commandline argument \"--walletpassword\"')
+            password = config_options['wallet_password']
+        elif config.get('password'):
             password = config.get('password')
         else:
             password = prompt_password('Password:', False)

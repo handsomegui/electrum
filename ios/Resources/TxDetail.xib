@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14113" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14113" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -7,7 +7,7 @@
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14088"/>
         <capability name="Alignment constraints to the first baseline" minToolsVersion="6.0"/>
-        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -422,14 +422,15 @@
             </subviews>
             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
             <constraints>
-                <constraint firstItem="qk7-07-Klt" firstAttribute="leading" secondItem="CYd-Ge-4U4" secondAttribute="leading" id="3rC-Ru-wdI"/>
-                <constraint firstAttribute="bottom" secondItem="qk7-07-Klt" secondAttribute="bottom" id="8wn-93-Xaw"/>
-                <constraint firstAttribute="bottom" secondItem="vc2-GA-rdq" secondAttribute="bottom" id="XU6-Zb-EIG"/>
-                <constraint firstItem="vc2-GA-rdq" firstAttribute="leading" secondItem="CYd-Ge-4U4" secondAttribute="leading" id="XnR-C6-PUb"/>
-                <constraint firstItem="vc2-GA-rdq" firstAttribute="top" secondItem="CYd-Ge-4U4" secondAttribute="topMargin" id="bTy-xU-AdQ"/>
-                <constraint firstAttribute="trailing" secondItem="vc2-GA-rdq" secondAttribute="trailing" id="dvx-E7-jqq"/>
-                <constraint firstAttribute="trailing" secondItem="qk7-07-Klt" secondAttribute="trailing" id="m3P-xG-3KJ"/>
+                <constraint firstItem="qk7-07-Klt" firstAttribute="leading" secondItem="TLP-lD-QY8" secondAttribute="leading" id="3rC-Ru-wdI"/>
+                <constraint firstItem="TLP-lD-QY8" firstAttribute="bottom" secondItem="qk7-07-Klt" secondAttribute="bottom" id="8wn-93-Xaw"/>
+                <constraint firstItem="TLP-lD-QY8" firstAttribute="bottom" secondItem="vc2-GA-rdq" secondAttribute="bottom" id="XU6-Zb-EIG"/>
+                <constraint firstItem="vc2-GA-rdq" firstAttribute="leading" secondItem="TLP-lD-QY8" secondAttribute="leading" id="XnR-C6-PUb"/>
+                <constraint firstItem="vc2-GA-rdq" firstAttribute="top" secondItem="TLP-lD-QY8" secondAttribute="top" id="bTy-xU-AdQ"/>
+                <constraint firstItem="TLP-lD-QY8" firstAttribute="trailing" secondItem="vc2-GA-rdq" secondAttribute="trailing" id="dvx-E7-jqq"/>
+                <constraint firstItem="TLP-lD-QY8" firstAttribute="trailing" secondItem="qk7-07-Klt" secondAttribute="trailing" id="m3P-xG-3KJ"/>
             </constraints>
+            <viewLayoutGuide key="safeArea" id="TLP-lD-QY8"/>
             <point key="canvasLocation" x="-227" y="-247"/>
         </view>
     </objects>

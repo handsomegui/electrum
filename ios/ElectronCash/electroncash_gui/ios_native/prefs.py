@@ -6,7 +6,6 @@
 #
 from . import utils
 from . import gui
-from . import heartbeat
 from . import addrconv
 from . import amountedit
 from electroncash.util import timestamp_to_datetime
@@ -43,8 +42,8 @@ class PrefsVC(UITableViewController):
     warnButtonColor = objc_property()
     
     networkStatusText = objc_property()
-    networkStatusIcon = objc_property()
-    lockIcon = objc_property()
+    #networkStatusIcon = objc_property()
+    #lockIcon = objc_property()
     hasSeed = objc_property()
     hasPW = objc_property()
         
@@ -57,8 +56,8 @@ class PrefsVC(UITableViewController):
         self.exchanges = None
         self.normalButtonColor = None
         self.networkStatusText = None
-        self.networkStatusIcon = None
-        self.lockIcon = None
+        #self.networkStatusIcon = None
+        #self.lockIcon = None
         self.hasSeed = None
         self.hasPW = None
         self.warnButtonColor = UIColor.colorWithRed_green_blue_alpha_(0.8,0.0,0.0,1.0)
@@ -84,8 +83,8 @@ class PrefsVC(UITableViewController):
         self.currencies = None
         self.exchanges = None
         self.networkStatusText = None
-        self.networkStatusIcon = None
-        self.lockIcon = None
+        #self.networkStatusIcon = None
+        #self.lockIcon = None
         self.hasSeed = None
         self.hasPW = None
         send_super(__class__, self, 'dealloc')
@@ -227,17 +226,17 @@ class PrefsVC(UITableViewController):
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
             elif row == 1:
                 statusText = self.networkStatusText if self.networkStatusText else _("Offline")
-                cell.imageView.image = self.networkStatusIcon if self.networkStatusIcon else UIImage.imageNamed_("status_disconnected")
+                cell.imageView.image = UIImage.imageNamed_("network_icon_new")
                 cell.textLabel.text = _("Network Settings")
                 cell.detailTextLabel.text = _("Status:") + " " + statusText
                 cell.accessoryType = UITableViewCellAccessoryNone
             elif row == 2:
-                cell.imageView.image = UIImage.imageNamed_(self.lockIcon) if self.lockIcon else None
+                cell.imageView.image = UIImage.imageNamed_("password_icon_new")
                 cell.textLabel.text = _("Change or Set Password")
                 cell.detailTextLabel.text = _("Modify wallet password & encryption settings")
                 cell.accessoryType = UITableViewCellAccessoryNone
             elif row == 3:
-                cell.imageView.image = UIImage.imageNamed_("seed")
+                cell.imageView.image = UIImage.imageNamed_("seed_icon_new")
                 cell.textLabel.text = _("Wallet Recovery Seed")
                 cell.detailTextLabel.text = _("View the wallet seed phrase used for wallet recovery")
                 cell.accessoryType = UITableViewCellAccessoryNone

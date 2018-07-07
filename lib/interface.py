@@ -104,6 +104,9 @@ class TcpConnection(threading.Thread, util.PrintError):
         except socket.gaierror:
             self.print_error("cannot resolve hostname")
             return
+        except UnicodeDecodeError:
+            self.print_error("hostname cannot be decoded with 'idna' codec")
+            return
         e = None
         for res in l:
             try:
@@ -172,8 +175,11 @@ class TcpConnection(threading.Thread, util.PrintError):
                 # workaround android bug
                 cert = re.sub("([^\n])-----END CERTIFICATE-----","\\1\n-----END CERTIFICATE-----",cert)
                 temporary_path = cert_path + '.temp'
+                util.assert_datadir_available(self.config_path)
                 with open(temporary_path,"w") as f:
                     f.write(cert)
+                    f.flush()
+                    os.fsync(f.fileno())
             else:
                 is_new = False
 
@@ -199,6 +205,7 @@ class TcpConnection(threading.Thread, util.PrintError):
                         os.unlink(rej)
                     os.rename(temporary_path, rej)
                 else:
+                    util.assert_datadir_available(self.config_path)
                     with open(cert_path) as f:
                         cert = f.read()
                     try:
@@ -256,9 +263,7 @@ class Interface(util.PrintError):
         self.debug = False
         self.unsent_requests = []
         self.unanswered_requests = {}
-        # Set last ping to zero to ensure immediate ping
-        self.last_request = time.time()
-        self.last_ping = 0
+        self.last_send = time.time()
         self.closed_remotely = False
 
     def diagnostic_name(self):
@@ -290,6 +295,7 @@ class Interface(util.PrintError):
 
     def send_requests(self):
         '''Sends queued requests.  Returns False on failure.'''
+        self.last_send = time.time()
         make_dict = lambda m, p, i: {'method': m, 'params': p, 'id': i}
         n = self.num_requests()
         wire_requests = self.unsent_requests[0:n]
@@ -306,14 +312,8 @@ class Interface(util.PrintError):
         return True
 
     def ping_required(self):
-        '''Maintains time since last ping.  Returns True if a ping should
-        be sent.
-        '''
-        now = time.time()
-        if now - self.last_ping > 60:
-            self.last_ping = now
-            return True
-        return False
+        '''Returns True if a ping should be sent.'''
+        return time.time() - self.last_send > 300
 
     def has_timed_out(self):
         '''Returns True if the interface has timed out.'''

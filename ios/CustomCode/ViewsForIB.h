@@ -305,6 +305,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) onPayTo;
 - (IBAction) cpyAddressToClipboard;
 - (IBAction) cpyNameToClipboard;
+- (IBAction) onQRImgTap;
 @end
 
 @interface AddressesVCBase : UIViewController
@@ -346,6 +347,12 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (void) onOptions;
 - (IBAction) onSpendFrom;
 - (IBAction) onUTXOs;
+- (IBAction) onQRImgTap;
+@end
+
+@interface CoinsCellSelectedBackgroundView : UIView
+@property (nonatomic, weak) IBOutlet UIView *blueView;
+@property (nonatomic, weak) IBOutlet UIButton *selBut;
 @end
 
 @interface CoinsCell : UITableViewCell
@@ -381,6 +388,7 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 - (IBAction) cpyUTXO;
 - (void) onOptions;
 - (IBAction) onSpendFrom;
+- (IBAction) onQRImgTap;
 @end
 
 @interface PleaseWaitVC : UIViewController
@@ -395,15 +403,17 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 // implemented in python newwallet.py
 @end
 @interface NewWalletVCBase : UIViewController
-@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit, *errMsg;
+@property (nonatomic, weak) IBOutlet UILabel *walletNameTit, *walletPw1Tit, *walletPw2Tit, *errMsg, *touchIdTit;
+@property (nonatomic, weak) IBOutlet UISwitch *touchId;
 @property (nonatomic, weak) IBOutlet UITextField *walletName, *walletPw1, *walletPw2;
-@property (nonatomic, weak) IBOutlet UIView *errMsgView;
-@property (nonatomic, weak) IBOutlet UIButton *nextBut;
+@property (nonatomic, weak) IBOutlet UIView *errMsgView, *touchIdView;
+@property (nonatomic, weak) IBOutlet UIButton *nextBut, *showHidePWBut;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *nextButBotCS, *errHeightCS, *errTopCS;
 @property (nonatomic) BOOL noPWCheck; ///< set by ImportSaveWallet child class to skip the password check for wallets that lack a password (watching-only wallets)
 @end
 @interface NewWalletVC : NewWalletVCBase
 // implemented in python newwallet.py..
+- (IBAction) toggleShowHidePW;
 @end
 @interface RestoreWallet2 : NewWalletVC
 // implemented in python newwallet.py
@@ -575,5 +585,38 @@ typedef NS_ENUM(NSInteger, WalletsStatusMode) {
 @interface ReceiveVC : ReceiveBase
 // implemented in python receive.py
 - (IBAction) onShareRequestBut:(id)sender;
+- (IBAction) onQRImgTap;
+@end
+
+@interface SeedDisplayBase : UIViewController
+@property (nonatomic, strong) NSString *seed, *passphrase;
+@property (nonatomic, weak) IBOutlet UIView *contentView, *warnView;
+@property (nonatomic, weak) IBOutlet UILabel *seedTit, *extTit, *seedLbl, *extLbl, *blurb, *warnTit, *warn1, *warn2, *warn3;
+@property (nonatomic, weak) IBOutlet UIButton *okBut;
+@property (nonatomic, weak) IBOutlet UIGestureRecognizer *grSeed, *grExt;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *csBlurbTop, *csBlurbBot, *csBlurbHeight, *csOkButHeight, *csTitTop;
+@end
+
+@interface SeedDisplayVC : SeedDisplayBase
+// implemented in python seed_dialog.py
+- (IBAction) onSeedLblTap:(id)sender;
+- (IBAction) onOk:(id)sender;
+@end
+
+@interface CrashReporterNav : UINavigationController
+@end
+
+@interface CrashReporterBase : UIViewController
+@property (nonatomic, weak) IBOutlet UILabel *errMsg, *reportTit, *descTit;
+@property (nonatomic, weak) IBOutlet UITextView *report, *desc;
+@property (nonatomic, strong) IBOutlet ECTextViewDelegate *descDel;
+@property (nonatomic) NSInteger kbas;
+@property (nonatomic, weak) IBOutlet UIScrollView *sv;
+@property (nonatomic, weak) IBOutlet UIView *bottomView, *contentView;
+@property (nonatomic, weak) IBOutlet UIButton *sendBut;
+@end
+@interface CrashReporterVC : CrashReporterBase
+// implemented in python crashreporter.py
+- (IBAction) onSendBut:(id)sender;
 @end
 #endif /* ViewsForIB_h */

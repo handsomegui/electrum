@@ -165,7 +165,7 @@ class ElectrumGui:
 
     def show_network_dialog(self, parent):
         if not self.daemon.network:
-            parent.show_warning(_('You are using Electrum in offline mode; restart Electrum if you want to get connected'), title=_('Offline'))
+            parent.show_warning(_('You are using Electron Cash in offline mode; restart Electron Cash if you want to get connected'), title=_('Offline'))
             return
         if self.nd:
             self.nd.on_update()
@@ -194,25 +194,30 @@ class ElectrumGui:
         else:
             try:
                 wallet = self.daemon.load_wallet(path, None)
+                if not wallet:
+                    storage = WalletStorage(path, manual_upgrades=True)
+                    wizard = InstallWizard(self.config, self.app, self.plugins, storage)
+                    try:
+                        wallet = wizard.run_and_get_wallet()
+                    except UserCancelled:
+                        pass
+                    except GoBack as e:
+                        print_error('[start_new_window] Exception caught (GoBack)', e)
+                    finally:
+                        wizard.terminate()
+                    if not wallet:
+                        return
+                    wallet.start_threads(self.daemon.network)
+                    self.daemon.add_wallet(wallet)
             except BaseException as e:
                 traceback.print_exc(file=sys.stdout)
-                d = QMessageBox(QMessageBox.Warning, _('Error'), 'Cannot load wallet:\n' + str(e))
-                d.exec_()
+                if '2fa' in str(e):
+                    d = QMessageBox(QMessageBox.Warning, _('Error'), '2FA wallets for Bitcoin Cash are currently unsupported by <a href="https://api.trustedcoin.com/#/">TrustedCoin</a>. Follow <a href="https://github.com/fyookball/electrum/issues/41#issuecomment-357468208">this guide</a> in order to recover your funds.')
+                    d.exec_()
+                else:
+                    d = QMessageBox(QMessageBox.Warning, _('Error'), 'Cannot load wallet:\n' + str(e))
+                    d.exec_()
                 return
-            if not wallet:
-                storage = WalletStorage(path, manual_upgrades=True)
-                wizard = InstallWizard(self.config, self.app, self.plugins, storage)
-                try:
-                    wallet = wizard.run_and_get_wallet()
-                except UserCancelled:
-                    pass
-                except GoBack as e:
-                    print_error('[start_new_window] Exception caught (GoBack)', e)
-                wizard.terminate()
-                if not wallet:
-                    return
-                wallet.start_threads(self.daemon.network)
-                self.daemon.add_wallet(wallet)
             w = self.create_window_for_wallet(wallet)
         if uri:
             w.pay_to_URI(uri)

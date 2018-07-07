@@ -46,7 +46,7 @@ class FeeSlider(UISlider):
     @objc_method
     def initWithCoder_(self, coder : ObjCInstance) -> ObjCInstance:
         #utils.NSLog("Fee Slider initWithCoder!")
-        self = ObjCInstance(send_super(__class__, self, 'initWithCoder:', coder.ptr, argtypes=[c_void_p]))
+        self = ObjCInstance(send_super(__class__, self, 'initWithCoder:', coder.ptr, argtypes=[objc_id]))
         if self is not None: self.commonInit()
         return self
     
