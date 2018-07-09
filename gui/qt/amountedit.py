@@ -93,7 +93,7 @@ class BTCAmountEdit(AmountEdit):
         except:
             return None
         p = pow(10, self.decimal_point())
-        return int( p * x ) if x > 0 else None
+        return int( p * x )
 
     def setAmount(self, amount):
         if amount is None:
@@ -104,3 +104,20 @@ class BTCAmountEdit(AmountEdit):
 class BTCkBEdit(BTCAmountEdit):
     def _base_unit(self):
         return BTCAmountEdit._base_unit(self) + '/kB'
+
+class BTCSatsByteEdit(BTCAmountEdit):
+    def __init__(self, parent=None):
+        BTCAmountEdit.__init__(self, decimal_point = lambda: 2, is_int = False, parent = parent)
+    def _base_unit(self):
+        return 'sats' + '/B'
+    def get_amount(self):
+        try:
+            x = float(Decimal(str(self.text())))
+        except:
+            return None
+        return x if x > 0.0 else None    
+    def setAmount(self, amount):
+        if amount is None:
+            self.setText(" ") # Space forces repaint in case units changed
+        else:
+            self.setText(str(round(amount*100.0)/100.0))
